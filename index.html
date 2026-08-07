@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pentest Workspace | OWASP WSTG v4.2</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="grid"></div>
+
+<div class="app">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-icon">P</div>
+      <div>
+        <h1>Pentest Workspace</h1>
+        <p>OWASP WSTG v4.2</p>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-title" data-i18n="navWorkspace">Workspace</div>
+      <button class="nav-item active" id="dashboardNav">
+        <span class="dot"></span><span data-i18n="navDashboard">Dashboard</span>
+      </button>
+
+      <div class="nav-title" data-i18n="navCategories">WSTG Kategorileri</div>
+      <div id="categoryNav"><!-- JS ile doldurulur --></div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="nav-item" id="exportBtn"><span class="dot"></span><span data-i18n="exportReport">Raporu Dışa Aktar</span></button>
+      <button class="nav-item" id="resetBtn"><span class="dot"></span><span data-i18n="resetProgress">İlerlemeyi Sıfırla</span></button>
+
+      <div class="settings-block">
+        <span class="settings-label" data-i18n="langLabel">Dil</span>
+        <div class="lang-select">
+          <select id="langSelect">
+            <option value="tr">Türkçe</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="settings-block">
+        <span class="settings-label" data-i18n="themeLabel">Tema</span>
+        <button type="button" class="theme-trigger" id="themeTrigger">
+          <span class="theme-trigger-swatch" id="themeTriggerSwatch"></span>
+          <span class="theme-trigger-name" id="themeTriggerName">Midnight</span>
+          <svg class="theme-trigger-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="topbar">
+      <div class="search">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.3-4.3M10.8 18a7.2 7.2 0 1 1 0-14.4 7.2 7.2 0 0 1 0 14.4z"/>
+        </svg>
+        <input type="text" id="globalSearch" data-i18n-placeholder="searchPlaceholder" placeholder="WSTG testi, XSS, SQLi, JWT, SSRF ara...">
+        <div class="search-results" id="searchResults"></div>
+      </div>
+      <div class="profile">
+        <div class="avatar">P</div>
+      </div>
+    </div>
+
+    <!-- Hero -->
+    <section class="hero">
+      <div>
+        <h2 data-i18n="heroTitle">Web Pentest Workspace</h2>
+        <p data-i18n="heroDesc">OWASP Web Security Testing Guide v4.2 tabanlı, tıklanabilir checklist ile her test maddesinin nasıl uygulanacağını adım adım ve örnekli şekilde gösteren pentest çalışma alanı.</p>
+        <div class="hero-actions">
+          <button class="btn btn-primary" id="startBtn" data-i18n="startTest">Teste Başla</button>
+          <a href="wstg-v4_2.pdf" target="_blank" class="btn btn-secondary" style="text-decoration:none;display:inline-flex;align-items:center" data-i18n="openPdf">WSTG PDF'i Aç</a>
+        </div>
+      </div>
+      <div class="ring" id="ringFill">
+        <div class="ring-inner">
+          <span id="ringPct">0%</span>
+          <small data-i18n="completedLabel">Tamamlandı</small>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stats -->
+    <section class="stats">
+      <div class="card">
+        <div class="label" data-i18n="statDoneLabel">Tamamlanan</div>
+        <div class="value" id="statDone">0</div>
+        <div class="sub" data-i18n="statDoneSub">Bitirilen testler</div>
+      </div>
+      <div class="card">
+        <div class="label" data-i18n="statPendingLabel">Bekleyen</div>
+        <div class="value" id="statPending">0</div>
+        <div class="sub" data-i18n="statPendingSub">Kalan testler</div>
+      </div>
+      <div class="card">
+        <div class="label" data-i18n="statCategoriesLabel">Kategori</div>
+        <div class="value" id="statCategories">0</div>
+        <div class="sub" data-i18n="statCategoriesSub">WSTG modülü</div>
+      </div>
+      <div class="card">
+        <div class="label" data-i18n="statTotalLabel">Toplam Test</div>
+        <div class="value" id="statTotal">0</div>
+        <div class="sub" data-i18n="statTotalSub">WSTG v4.2 madde sayısı</div>
+      </div>
+    </section>
+
+    <!-- Categories -->
+    <section>
+      <div class="section-header">
+        <h3 data-i18n="sectionTitle">OWASP WSTG Kategorileri</h3>
+        <span style="color:var(--muted);font-size:.9rem" data-i18n="sectionSub">Başlamak için bir modül seçin</span>
+      </div>
+      <div class="categories" id="categoriesGrid"><!-- JS ile doldurulur --></div>
+    </section>
+  </main>
+
+</div>
+
+<!-- Kategori Detay Paneli -->
+<div class="overlay" id="categoryOverlay">
+  <div class="panel">
+    <div class="panel-header">
+      <div>
+        <h3 id="panelTitle">Kategori Adı</h3>
+        <p id="panelDesc">Kategori açıklaması</p>
+      </div>
+      <button class="close-btn" id="closeOverlay">&times;</button>
+    </div>
+    <div class="filter-bar">
+      <input type="text" id="itemSearch" data-i18n-placeholder="itemSearchPlaceholder" placeholder="Bu kategoride ara...">
+      <div class="filter-toggle">
+        <button class="active" data-filter="all" data-i18n="filterAll">Tümü</button>
+        <button data-filter="pending" data-i18n="filterPending">Bekleyen</button>
+        <button data-filter="done" data-i18n="filterDone">Tamamlanan</button>
+      </div>
+    </div>
+    <div class="panel-body">
+      <div id="testList"><!-- JS ile doldurulur --></div>
+    </div>
+  </div>
+</div>
+
+<!-- Tema Seçim Penceresi -->
+<div class="overlay theme-overlay" id="themeOverlay">
+  <div class="panel theme-panel">
+    <div class="panel-header">
+      <div>
+        <h3 data-i18n="themeModalTitle">Tema Seç</h3>
+        <p data-i18n="themeModalDesc">Çalışma alanının görünümünü kişiselleştir. Seçimin otomatik olarak kaydedilir.</p>
+      </div>
+      <button class="close-btn" id="closeThemeOverlay">&times;</button>
+    </div>
+    <div class="panel-body">
+      <div class="theme-grid" id="themeGrid"><!-- JS ile doldurulur --></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/app.js"></script>
+</body>
+</html>

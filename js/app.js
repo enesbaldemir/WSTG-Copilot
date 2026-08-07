@@ -1,0 +1,570 @@
+(function(){
+  "use strict";
+
+  const STORAGE_KEY = "wstg_progress_v1";
+  const LANG_KEY = "wstg_lang_v1";
+  const THEME_KEY = "wstg_theme_v1";
+
+  const DATA_FILES = {
+    tr: "data/wstg-checklist.tr.json",
+    en: "data/wstg-checklist.en.json"
+  };
+
+  const THEMES = [
+    { id: "midnight",   name: "Midnight",        emoji: "🌌", primary: "#6366f1", secondary: "#8b5cf6", desc: { tr: "Klasik indigo karanlık tema", en: "Classic indigo dark theme" } },
+    { id: "cyberpunk",  name: "Cyberpunk",       emoji: "🤖", primary: "#ec4899", secondary: "#22d3ee", desc: { tr: "Neon pembe & elektrik camgöbeği", en: "Neon pink & electric cyan" } },
+    { id: "matrix",     name: "Matrix",          emoji: "💻", primary: "#22c55e", secondary: "#84cc16", desc: { tr: "Yeşil terminal, dijital yağmur", en: "Green terminal, digital rain" } },
+    { id: "crimson",    name: "Crimson",         emoji: "🩸", primary: "#ef4444", secondary: "#f97316", desc: { tr: "Yoğun kırmızı & turuncu ateş", en: "Bold red & fiery orange" } },
+    { id: "ocean",      name: "Ocean",           emoji: "🌊", primary: "#0ea5e9", secondary: "#06b6d4", desc: { tr: "Derin mavi okyanus tonları", en: "Deep blue ocean tones" } },
+    { id: "sunset",     name: "Sunset",          emoji: "🌇", primary: "#f59e0b", secondary: "#ef4444", desc: { tr: "Sıcak gün batımı tonları", en: "Warm sunset gradients" } },
+    { id: "royal",      name: "Royal",           emoji: "👑", primary: "#a855f7", secondary: "#eab308", desc: { tr: "Mor & altın, asil hava", en: "Purple & gold, regal feel" } },
+    { id: "dracula",    name: "Dracula",         emoji: "🧛", primary: "#bd93f9", secondary: "#ff79c6", desc: { tr: "Popüler koyu kod editörü paleti", en: "Popular dark editor palette" } },
+    { id: "nord",       name: "Nord",            emoji: "❄️", primary: "#88c0d0", secondary: "#81a1c1", desc: { tr: "Soğuk, sakin İskandinav tonları", en: "Cool, calm Nordic tones" } },
+    { id: "mono",       name: "Mono",            emoji: "⚫", primary: "#e5e5e5", secondary: "#a3a3a3", desc: { tr: "Siyah-beyaz minimalist görünüm", en: "Black & white minimalist look" } },
+    { id: "arctic",     name: "Arctic Light",    emoji: "☀️", primary: "#2563eb", secondary: "#0891b2", desc: { tr: "Aydınlık, temiz açık tema", en: "Bright, clean light theme" } },
+    { id: "vaporwave",  name: "Vaporwave",       emoji: "🌴", primary: "#ff6ec7", secondary: "#00fff0", desc: { tr: "90'lar estetiği, pembe & turkuaz", en: "90s aesthetic, pink & teal" } },
+    { id: "neontokyo",  name: "Neon Tokyo",      emoji: "🏮", primary: "#ff2d78", secondary: "#00e5ff", desc: { tr: "Gece şehri, parlak neon ışıklar", en: "Night city, blazing neon lights" } },
+    { id: "forest",     name: "Forest",          emoji: "🌲", primary: "#16a34a", secondary: "#65a30d", desc: { tr: "Doğal yeşil orman atmosferi", en: "Natural green forest vibe" } },
+    { id: "bloodmoon",  name: "Blood Moon",      emoji: "🌑", primary: "#dc2626", secondary: "#7f1d1d", desc: { tr: "Karanlık, tehditkar kızıl ay", en: "Dark, ominous crimson eclipse" } },
+    { id: "aurora",     name: "Aurora",          emoji: "🌠", primary: "#2dd4bf", secondary: "#a78bfa", desc: { tr: "Kuzey ışıkları, camgöbeği & mor", en: "Northern lights, teal & violet" } },
+    { id: "solarflare",  name: "Solar Flare",    emoji: "🔥", primary: "#f97316", secondary: "#facc15", desc: { tr: "Yanan turuncu & sarı enerji", en: "Blazing orange & yellow energy" } },
+    { id: "deepspace",  name: "Deep Space",      emoji: "🪐", primary: "#4f46e5", secondary: "#db2777", desc: { tr: "Yıldızlararası indigo & pembe", en: "Interstellar indigo & pink" } },
+    { id: "coralreef",  name: "Coral Reef",      emoji: "🐠", primary: "#fb7185", secondary: "#2dd4bf", desc: { tr: "Mercan pembesi & tropikal camgöbeği", en: "Coral pink & tropical teal" } },
+    { id: "toxic",      name: "Toxic",           emoji: "☣️", primary: "#a3e635", secondary: "#facc15", desc: { tr: "Asit yeşili, radyoaktif his", en: "Acid green, radioactive feel" } },
+    { id: "goldrush",   name: "Gold Rush",       emoji: "🏆", primary: "#d4af37", secondary: "#b8860b", desc: { tr: "Lüks siyah & parlak altın", en: "Luxury black & gleaming gold" } },
+    { id: "synthwave",  name: "Synthwave",       emoji: "🕹️", primary: "#ff2079", secondary: "#00d4ff", desc: { tr: "80'ler retro futurizm", en: "80s retro-futurism grid" } },
+    { id: "rosegold",   name: "Rose Gold",       emoji: "🌹", primary: "#b76e79", secondary: "#d4af8a", desc: { tr: "Zarif açık pembe-altın tema", en: "Elegant light pink-gold theme" } },
+    { id: "sakura",     name: "Sakura",          emoji: "🌸", primary: "#f472b6", secondary: "#fb7185", desc: { tr: "Yumuşak açık kiraz çiçeği teması", en: "Soft light cherry-blossom theme" } },
+    { id: "icefall",    name: "Icefall",         emoji: "🧊", primary: "#0ea5e9", secondary: "#38bdf8", desc: { tr: "Buzul mavisi, ferah açık tema", en: "Glacier blue, crisp light theme" } }
+  ];
+
+  const I18N = {
+    tr: {
+      navWorkspace: "Workspace",
+      navDashboard: "Dashboard",
+      navCategories: "WSTG Kategorileri",
+      exportReport: "Raporu Dışa Aktar",
+      resetProgress: "İlerlemeyi Sıfırla",
+      langLabel: "Dil",
+      themeLabel: "Tema",
+      themeModalTitle: "Tema Seç",
+      themeModalDesc: "Çalışma alanının görünümünü kişiselleştir. Seçimin otomatik olarak kaydedilir.",
+      searchPlaceholder: "WSTG testi, XSS, SQLi, JWT, SSRF ara...",
+      heroTitle: "Web Pentest Workspace",
+      heroDesc: "OWASP Web Security Testing Guide v4.2 tabanlı, tıklanabilir checklist ile her test maddesinin nasıl uygulanacağını adım adım ve örnekli şekilde gösteren pentest çalışma alanı.",
+      startTest: "Teste Başla",
+      openPdf: "WSTG PDF'i Aç",
+      completedLabel: "Tamamlandı",
+      statDoneLabel: "Tamamlanan",
+      statDoneSub: "Bitirilen testler",
+      statPendingLabel: "Bekleyen",
+      statPendingSub: "Kalan testler",
+      statCategoriesLabel: "Kategori",
+      statCategoriesSub: "WSTG modülü",
+      statTotalLabel: "Toplam Test",
+      statTotalSub: "WSTG v4.2 madde sayısı",
+      sectionTitle: "OWASP WSTG Kategorileri",
+      sectionSub: "Başlamak için bir modül seçin",
+      itemSearchPlaceholder: "Bu kategoride ara...",
+      filterAll: "Tümü",
+      filterPending: "Bekleyen",
+      filterDone: "Tamamlanan",
+      descriptionLabel: "Açıklama",
+      howToLabel: "Nasıl Test Edilir",
+      exampleLabel: "Örnek Payload / Komut",
+      toolsLabel: "Önerilen Araçlar",
+      copyBtn: "Kopyala",
+      testEditedTitle: "Test edildi olarak işaretle",
+      copiedToast: "Panoya kopyalandı",
+      markDoneToast: "Test tamamlandı olarak işaretlendi",
+      markPendingToast: "Test beklemede olarak işaretlendi",
+      reportDownloadedToast: "Rapor indirildi",
+      progressResetToast: "İlerleme sıfırlandı",
+      resetConfirm: "Tüm ilerleme sıfırlansın mı? Bu işlem geri alınamaz.",
+      noMatchInCategory: "Bu kategoride eşleşen test bulunamadı.",
+      noSearchResults: q => `"${q}" için sonuç bulunamadı.`,
+      completedTag: "✓ Tamamlandı",
+      dataLoadError: "Veri yüklenemedi. Lütfen sayfayı yenileyin.",
+      reportTitle: "PENTEST WORKSPACE - OWASP WSTG v4.2 RAPORU",
+      reportCreated: "Oluşturulma",
+      reportProgress: "İlerleme",
+      dateLocale: "tr-TR"
+    },
+    en: {
+      navWorkspace: "Workspace",
+      navDashboard: "Dashboard",
+      navCategories: "WSTG Categories",
+      exportReport: "Export Report",
+      resetProgress: "Reset Progress",
+      langLabel: "Language",
+      themeLabel: "Theme",
+      themeModalTitle: "Choose a Theme",
+      themeModalDesc: "Personalize the look of your workspace. Your choice is saved automatically.",
+      searchPlaceholder: "Search WSTG test, XSS, SQLi, JWT, SSRF...",
+      heroTitle: "Web Pentest Workspace",
+      heroDesc: "A pentest workspace built on the OWASP Web Security Testing Guide v4.2, with a clickable checklist that shows step-by-step, with examples, how to carry out every test item.",
+      startTest: "Start Testing",
+      openPdf: "Open WSTG PDF",
+      completedLabel: "Completed",
+      statDoneLabel: "Completed",
+      statDoneSub: "Finished tests",
+      statPendingLabel: "Pending",
+      statPendingSub: "Remaining tests",
+      statCategoriesLabel: "Categories",
+      statCategoriesSub: "WSTG modules",
+      statTotalLabel: "Total Tests",
+      statTotalSub: "WSTG v4.2 item count",
+      sectionTitle: "OWASP WSTG Categories",
+      sectionSub: "Select a module to get started",
+      itemSearchPlaceholder: "Search within this category...",
+      filterAll: "All",
+      filterPending: "Pending",
+      filterDone: "Completed",
+      descriptionLabel: "Description",
+      howToLabel: "How to Test",
+      exampleLabel: "Example Payload / Command",
+      toolsLabel: "Recommended Tools",
+      copyBtn: "Copy",
+      testEditedTitle: "Mark as tested",
+      copiedToast: "Copied to clipboard",
+      markDoneToast: "Test marked as completed",
+      markPendingToast: "Test marked as pending",
+      reportDownloadedToast: "Report downloaded",
+      progressResetToast: "Progress reset",
+      resetConfirm: "Reset all progress? This action cannot be undone.",
+      noMatchInCategory: "No matching test found in this category.",
+      noSearchResults: q => `No results found for "${q}".`,
+      completedTag: "✓ Completed",
+      dataLoadError: "Failed to load data. Please refresh the page.",
+      reportTitle: "PENTEST WORKSPACE - OWASP WSTG v4.2 REPORT",
+      reportCreated: "Created",
+      reportProgress: "Progress",
+      dateLocale: "en-US"
+    }
+  };
+
+  let DATA = null;
+  let progress = loadProgress();
+  let currentCategoryId = null;
+  let currentFilter = "all"; // all | done | pending
+  let currentLang = loadLang();
+  let currentTheme = loadTheme();
+
+  function loadLang(){
+    try{ return localStorage.getItem(LANG_KEY) || "tr"; }catch(e){ return "tr"; }
+  }
+  function saveLang(l){
+    try{ localStorage.setItem(LANG_KEY, l); }catch(e){}
+  }
+  function loadTheme(){
+    try{ return localStorage.getItem(THEME_KEY) || "midnight"; }catch(e){ return "midnight"; }
+  }
+  function saveTheme(t){
+    try{ localStorage.setItem(THEME_KEY, t); }catch(e){}
+  }
+  function t(key){
+    return (I18N[currentLang] && I18N[currentLang][key]) || I18N.tr[key] || key;
+  }
+
+  const iconPaths = {
+    search: '<path d="M21 21l-4.3-4.3M10.8 18a7.2 7.2 0 1 1 0-14.4 7.2 7.2 0 0 1 0 14.4z"/>',
+    settings: '<path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/>',
+    id: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M15 8h4M15 12h4M6 16h12"/>',
+    lock: '<rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/>',
+    shield: '<path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-4z"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>',
+    code: '<path d="M8 4L2 12l6 8M16 4l6 8-6 8"/>',
+    alert: '<path d="M12 2L1 21h22L12 2z"/><path d="M12 9v5M12 17h.01"/>',
+    key: '<circle cx="8" cy="15" r="4"/><path d="M10.5 12.5L20 3M17 6l3 3M14 9l2 2"/>',
+    flow: '<circle cx="5" cy="6" r="2.5"/><circle cx="19" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M7 7l8 9M17 7L9.5 15.5"/>',
+    browser: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M7 6.5h.01M10 6.5h.01"/>',
+    api: '<path d="M4 9h5V4M4 9l6-6M20 15h-5v5M20 15l-6 6"/><circle cx="12" cy="12" r="2.5"/>'
+  };
+
+  function loadProgress(){
+    try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+    catch(e){ return {}; }
+  }
+  function saveProgress(){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); }catch(e){}
+  }
+
+  function allTests(){
+    const arr = [];
+    DATA.categories.forEach(c => c.tests.forEach(t => arr.push({...t, catId:c.id, catCode:c.code, catName:c.name})));
+    return arr;
+  }
+
+  function stats(){
+    const tests = allTests();
+    const total = tests.length;
+    const done = tests.filter(t => progress[t.id]).length;
+    return { total, done, pending: total-done, categories: DATA.categories.length,
+             pct: total ? Math.round((done/total)*100) : 0 };
+  }
+
+  function icon(name, cls){
+    return `<svg class="${cls||''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${iconPaths[name]||iconPaths.code}</svg>`;
+  }
+
+  function applyI18n(){
+    document.documentElement.lang = currentLang;
+    document.querySelectorAll('[data-i18n]').forEach(el=>{
+      const key = el.getAttribute('data-i18n');
+      el.textContent = t(key);
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{
+      const key = el.getAttribute('data-i18n-placeholder');
+      el.setAttribute('placeholder', t(key));
+    });
+    const langSelect = document.getElementById('langSelect');
+    if(langSelect) langSelect.value = currentLang;
+  }
+
+  function applyTheme(){
+    document.documentElement.setAttribute('data-theme', currentTheme);
+    updateThemeTrigger();
+  }
+
+  function currentThemeObj(){
+    return THEMES.find(th => th.id === currentTheme) || THEMES[0];
+  }
+
+  function updateThemeTrigger(){
+    const th = currentThemeObj();
+    const swatch = document.getElementById('themeTriggerSwatch');
+    const name = document.getElementById('themeTriggerName');
+    if(swatch) swatch.style.background = `linear-gradient(135deg,${th.primary},${th.secondary})`;
+    if(name) name.textContent = `${th.emoji||''} ${th.name}`.trim();
+  }
+
+  function renderThemeGrid(){
+    const grid = document.getElementById('themeGrid');
+    if(!grid) return;
+    grid.innerHTML = THEMES.map(th => `
+      <button type="button" class="theme-card ${th.id===currentTheme?'active':''}" data-theme-id="${th.id}">
+        <span class="theme-card-preview" style="background:linear-gradient(135deg,${th.primary},${th.secondary})">
+          <span class="theme-card-emoji">${th.emoji||''}</span>
+          <span class="theme-card-check">✓</span>
+        </span>
+        <span class="theme-card-info">
+          <span class="theme-card-name">${th.name}</span>
+          <span class="theme-card-desc">${(th.desc && th.desc[currentLang]) || ''}</span>
+        </span>
+      </button>
+    `).join('');
+    grid.querySelectorAll('.theme-card').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        currentTheme = btn.dataset.themeId;
+        saveTheme(currentTheme);
+        applyTheme();
+        grid.querySelectorAll('.theme-card').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+  }
+
+  function openThemeModal(){
+    renderThemeGrid();
+    document.getElementById('themeOverlay').classList.add('open');
+  }
+  function closeThemeModal(){
+    document.getElementById('themeOverlay').classList.remove('open');
+  }
+
+  function renderSidebar(){
+    const nav = document.getElementById('categoryNav');
+    nav.innerHTML = DATA.categories.map(c => {
+      const done = c.tests.filter(t => progress[t.id]).length;
+      return `<button class="nav-item" data-cat="${c.id}">
+        <span class="dot"></span>${c.name}
+        <span class="count">${done}/${c.tests.length}</span>
+      </button>`;
+    }).join('');
+    nav.querySelectorAll('.nav-item').forEach(el=>{
+      el.addEventListener('click', ()=> openCategory(el.dataset.cat));
+    });
+  }
+
+  function renderDashboard(){
+    const s = stats();
+    document.getElementById('ringFill').style.background =
+      `conic-gradient(#6366f1 0 ${s.pct}%, rgba(255,255,255,.08) ${s.pct}% 100%)`;
+    document.getElementById('ringPct').textContent = s.pct + '%';
+    document.getElementById('statDone').textContent = s.done;
+    document.getElementById('statPending').textContent = s.pending;
+    document.getElementById('statCategories').textContent = s.categories;
+    document.getElementById('statTotal').textContent = s.total;
+
+    const grid = document.getElementById('categoriesGrid');
+    grid.innerHTML = DATA.categories.map(c => {
+      const done = c.tests.filter(t => progress[t.id]).length;
+      const pct = Math.round((done/c.tests.length)*100);
+      return `<div class="category-card" data-cat="${c.id}">
+        <div class="badge">${c.code}</div>
+        ${icon(c.icon)}
+        <h4>${c.name}</h4>
+        <p>${c.description}</p>
+        <div class="cat-progress-row">
+          <div class="cat-progress-bar"><div class="cat-progress-fill" style="width:${pct}%"></div></div>
+          <div class="cat-progress-text">${done}/${c.tests.length}</div>
+        </div>
+      </div>`;
+    }).join('');
+    grid.querySelectorAll('.category-card').forEach(el=>{
+      el.addEventListener('click', ()=> openCategory(el.dataset.cat));
+    });
+  }
+
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  function renderTestItem(test){
+    const done = !!progress[test.id];
+    return `<div class="test-item ${done?'done':''}" data-id="${test.id}">
+      <div class="test-item-head">
+        <button class="test-check ${done?'checked':''}" data-id="${test.id}" title="${t('testEditedTitle')}">
+          ${icon('code').replace('code','')}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 6"/></svg>
+        </button>
+        <span class="test-item-code">${test.id}</span>
+        <span class="test-item-title">${escapeHtml(test.title)}</span>
+        <svg class="test-item-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="test-item-detail">
+        <div class="test-item-detail-inner">
+          <div class="detail-block">
+            <h5>${t('descriptionLabel')}</h5>
+            <p>${escapeHtml(test.description)}</p>
+          </div>
+          <div class="detail-block">
+            <h5>${t('howToLabel')}</h5>
+            <ol>${test.steps.map(s=>`<li>${escapeHtml(s)}</li>`).join('')}</ol>
+          </div>
+          <div class="detail-block">
+            <h5>${t('exampleLabel')}</h5>
+            <div class="example-box">${escapeHtml(test.example)}<button class="copy-btn" data-copy="${encodeURIComponent(test.example)}">${t('copyBtn')}</button></div>
+          </div>
+          <div class="detail-block" style="margin-bottom:0">
+            <h5>${t('toolsLabel')}</h5>
+            <div class="tools-row">${test.tools.map(tool=>`<span class="tool-chip">${escapeHtml(tool)}</span>`).join('')}</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function openCategory(catId, focusTestId){
+    const cat = DATA.categories.find(c=>c.id===catId);
+    if(!cat) return;
+    currentCategoryId = catId;
+    currentFilter = "all";
+    document.getElementById('panelTitle').textContent = `${cat.code} · ${cat.name}`;
+    document.getElementById('panelDesc').textContent = cat.description;
+    document.getElementById('itemSearch').value = "";
+    renderTestList();
+    document.getElementById('categoryOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    if(focusTestId){
+      setTimeout(()=>{
+        const el = document.querySelector(`.test-item[data-id="${focusTestId}"]`);
+        if(el){ el.classList.add('open'); el.scrollIntoView({behavior:'smooth', block:'center'}); }
+      }, 60);
+    }
+  }
+
+  function closeCategory(){
+    document.getElementById('categoryOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function renderTestList(){
+    const cat = DATA.categories.find(c=>c.id===currentCategoryId);
+    if(!cat) return;
+    const q = document.getElementById('itemSearch').value.trim().toLowerCase();
+    let items = cat.tests;
+    if(currentFilter === 'done') items = items.filter(t=>progress[t.id]);
+    if(currentFilter === 'pending') items = items.filter(t=>!progress[t.id]);
+    if(q) items = items.filter(x => x.title.toLowerCase().includes(q) || x.id.toLowerCase().includes(q) || x.description.toLowerCase().includes(q));
+    const list = document.getElementById('testList');
+    if(!items.length){
+      list.innerHTML = `<div class="search-empty">${t('noMatchInCategory')}</div>`;
+      return;
+    }
+    list.innerHTML = items.map(renderTestItem).join('');
+  }
+
+  function toggleDone(id){
+    progress[id] = !progress[id];
+    saveProgress();
+    renderSidebar();
+    renderDashboard();
+    if(currentCategoryId) renderTestList();
+    showToast(progress[id] ? t('markDoneToast') : t('markPendingToast'));
+  }
+
+  function showToast(msg){
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(el._t);
+    el._t = setTimeout(()=> el.classList.remove('show'), 2200);
+  }
+
+  function doSearch(q){
+    const box = document.getElementById('searchResults');
+    q = q.trim().toLowerCase();
+    if(!q){ box.classList.remove('open'); box.innerHTML=''; return; }
+    const results = allTests().filter(t =>
+      t.title.toLowerCase().includes(q) || t.id.toLowerCase().includes(q) || t.description.toLowerCase().includes(q)
+    ).slice(0, 12);
+    if(!results.length){
+      box.innerHTML = `<div class="search-empty">${escapeHtml(t('noSearchResults')(q))}</div>`;
+    } else {
+      box.innerHTML = results.map(r => `
+        <div class="search-result-item" data-cat="${r.catId}" data-test="${r.id}">
+          <div class="sr-title">${escapeHtml(r.title)}</div>
+          <div class="sr-meta">${r.catCode} · ${r.id} ${progress[r.id]?'· '+t('completedTag'):''}</div>
+        </div>`).join('');
+    }
+    box.classList.add('open');
+  }
+
+  function exportReport(){
+    const s = stats();
+    let out = `${t('reportTitle')}\n`;
+    out += `${t('reportCreated')}: ${new Date().toLocaleString(t('dateLocale'))}\n`;
+    out += `${t('reportProgress')}: ${s.done}/${s.total} (%${s.pct})\n\n`;
+    DATA.categories.forEach(c=>{
+      out += `\n=== ${c.code} · ${c.name} ===\n`;
+      c.tests.forEach(test=>{
+        out += `[${progress[test.id]?'x':' '}] ${test.id} - ${test.title}\n`;
+      });
+    });
+    const blob = new Blob([out], {type:'text/plain;charset=utf-8'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'wstg-pentest-report.txt';
+    a.click();
+    showToast(t('reportDownloadedToast'));
+  }
+
+  function resetProgress(){
+    if(!confirm(t('resetConfirm'))) return;
+    progress = {};
+    saveProgress();
+    renderSidebar();
+    renderDashboard();
+    if(currentCategoryId) renderTestList();
+    showToast(t('progressResetToast'));
+  }
+
+  function copyToClipboard(text){
+    navigator.clipboard?.writeText(text).then(()=> showToast(t('copiedToast'))).catch(()=>{});
+  }
+
+  function bindEvents(){
+    document.getElementById('closeOverlay').addEventListener('click', closeCategory);
+    document.getElementById('categoryOverlay').addEventListener('click', e=>{
+      if(e.target.id === 'categoryOverlay') closeCategory();
+    });
+
+    document.getElementById('themeTrigger').addEventListener('click', openThemeModal);
+    document.getElementById('closeThemeOverlay').addEventListener('click', closeThemeModal);
+    document.getElementById('themeOverlay').addEventListener('click', e=>{
+      if(e.target.id === 'themeOverlay') closeThemeModal();
+    });
+
+    document.addEventListener('keydown', e=>{
+      if(e.key === 'Escape'){ closeCategory(); closeThemeModal(); }
+    });
+
+    document.getElementById('itemSearch').addEventListener('input', renderTestList);
+    document.querySelectorAll('.filter-toggle button').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        document.querySelectorAll('.filter-toggle button').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFilter = btn.dataset.filter;
+        renderTestList();
+      });
+    });
+
+    document.getElementById('testList').addEventListener('click', e=>{
+      const checkBtn = e.target.closest('.test-check');
+      if(checkBtn){ e.stopPropagation(); toggleDone(checkBtn.dataset.id); return; }
+      const copyBtn = e.target.closest('.copy-btn');
+      if(copyBtn){ e.stopPropagation(); copyToClipboard(decodeURIComponent(copyBtn.dataset.copy)); return; }
+      const head = e.target.closest('.test-item-head');
+      if(head){
+        head.closest('.test-item').classList.toggle('open');
+      }
+    });
+
+    const searchInput = document.getElementById('globalSearch');
+    searchInput.addEventListener('input', ()=> doSearch(searchInput.value));
+    searchInput.addEventListener('focus', ()=> { if(searchInput.value.trim()) doSearch(searchInput.value); });
+    document.addEventListener('click', e=>{
+      if(!e.target.closest('.search')) document.getElementById('searchResults').classList.remove('open');
+    });
+    document.getElementById('searchResults').addEventListener('click', e=>{
+      const item = e.target.closest('.search-result-item');
+      if(!item) return;
+      document.getElementById('searchResults').classList.remove('open');
+      searchInput.value = '';
+      openCategory(item.dataset.cat, item.dataset.test);
+    });
+
+    document.getElementById('exportBtn').addEventListener('click', exportReport);
+    document.getElementById('resetBtn').addEventListener('click', resetProgress);
+    document.getElementById('startBtn').addEventListener('click', ()=>{
+      const first = DATA.categories[0];
+      if(first) openCategory(first.id);
+    });
+
+    document.getElementById('langSelect').addEventListener('change', e=>{
+      switchLanguage(e.target.value);
+    });
+  }
+
+  function switchLanguage(lang){
+    if(!DATA_FILES[lang] || lang === currentLang){
+      currentLang = lang in DATA_FILES ? lang : currentLang;
+      applyI18n();
+      return;
+    }
+    const wasOpen = document.getElementById('categoryOverlay').classList.contains('open');
+    const openCatId = currentCategoryId;
+    currentLang = lang;
+    saveLang(currentLang);
+    loadData().then(()=>{
+      applyI18n();
+      renderSidebar();
+      renderDashboard();
+      if(wasOpen && openCatId){
+        openCategory(openCatId);
+      }
+    });
+  }
+
+  function loadData(){
+    return fetch(DATA_FILES[currentLang] || DATA_FILES.tr)
+      .then(r => r.json())
+      .then(data => { DATA = data; })
+      .catch(err => {
+        document.getElementById('categoriesGrid').innerHTML =
+          `<div class="search-empty">${t('dataLoadError')}<br><small>${err}</small></div>`;
+        console.error(err);
+      });
+  }
+
+  applyTheme();
+  applyI18n();
+
+  loadData().then(()=>{
+    if(!DATA) return;
+    renderSidebar();
+    renderDashboard();
+    bindEvents();
+  });
+})();
