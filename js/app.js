@@ -4,6 +4,9 @@
   const STORAGE_KEY = "wstg_progress_v1";
   const LANG_KEY = "wstg_lang_v1";
   const THEME_KEY = "wstg_theme_v1";
+  const SESSION_ID_KEY = "wstg_session_id_v1";
+  const SKIP_SESSION_KEY = "wstg_skip_session_v1";
+  const API_BASE = "http://localhost:5000/api";
 
   const DATA_FILES = {
     tr: "data/wstg-checklist.tr.json",
@@ -88,7 +91,39 @@
       reportTitle: "PENTEST WORKSPACE - OWASP WSTG v4.2 RAPORU",
       reportCreated: "Oluşturulma",
       reportProgress: "İlerleme",
-      dateLocale: "tr-TR"
+      dateLocale: "tr-TR",
+
+      navSessions: "Test Oturumları",
+      sessionGateTitle: "Test Oturumları",
+      sessionGateDesc: "Her pentest sürecini bir isim vererek veritabanına kaydedin, kaldığınız yerden devam edin.",
+      newSession: "+ Yeni Oturum",
+      continueLocal: "Oturumsuz / yerel modda devam et",
+      sessionNameLabel: "Oturum Adı *",
+      sessionNamePlaceholder: "Örn: Login Sayfası Testi - Ağustos",
+      testerNameLabel: "Test Uzmanı",
+      testerNamePlaceholder: "Adınız",
+      targetUrlLabel: "Hedef URL",
+      startSession: "Oturumu Başlat",
+      newSessionTitle: "Yeni Test Oturumu",
+      newSessionDesc: "Bu pentest sürecini tanımlayın. İlerlemeniz bu isimle veritabanına kaydedilecek.",
+      noSessionsYet: "Henüz kayıtlı test oturumu yok. Yeni bir oturum başlatın.",
+      dbOnline: "🟢 Veritabanı bağlı",
+      dbOffline: "🟡 Veritabanı yok — backend/app.py çalıştırın (yerel modda devam edilecek)",
+      sessionCreated: "Oturum oluşturuldu ve DB'ye kaydedildi",
+      sessionDeleted: "Oturum silindi",
+      sessionDeleteConfirm: "Bu oturumu ve tüm test sonuçlarını silmek istiyor musunuz? Bu işlem geri alınamaz.",
+      sessionNameRequired: "Lütfen bir oturum adı girin",
+      sessionResumed: "kaldığı yerden devam ediyor",
+      sessionResetConfirm: "Bu oturumun tüm test sonuçları sıfırlansın mı?",
+      sessionTester: "Uzman",
+      sessionTarget: "Hedef",
+      sessionLocalMode: "Yerel mod (DB yok)",
+      resultSaveError: "Sonuç veritabanına kaydedilemedi, bağlantıyı kontrol edin.",
+      loadingSessions: "Oturumlar yükleniyor...",
+      sessionsLoadError: "Oturumlar yüklenemedi.",
+      markCompleted: "Tamamla",
+      statusActive: "aktif",
+      statusCompleted: "tamamlandı"
     },
     en: {
       navWorkspace: "Workspace",
@@ -139,7 +174,39 @@
       reportTitle: "PENTEST WORKSPACE - OWASP WSTG v4.2 REPORT",
       reportCreated: "Created",
       reportProgress: "Progress",
-      dateLocale: "en-US"
+      dateLocale: "en-US",
+
+      navSessions: "Test Sessions",
+      sessionGateTitle: "Test Sessions",
+      sessionGateDesc: "Save every pentest run to the database under a name, and resume it later.",
+      newSession: "+ New Session",
+      continueLocal: "Continue without a session (local mode)",
+      sessionNameLabel: "Session Name *",
+      sessionNamePlaceholder: "e.g. Login Page Test - August",
+      testerNameLabel: "Tester",
+      testerNamePlaceholder: "Your name",
+      targetUrlLabel: "Target URL",
+      startSession: "Start Session",
+      newSessionTitle: "New Test Session",
+      newSessionDesc: "Describe this pentest run. Your progress will be saved to the database under this name.",
+      noSessionsYet: "No saved test sessions yet. Start a new one.",
+      dbOnline: "🟢 Database connected",
+      dbOffline: "🟡 No database — run backend/app.py (continuing in local mode)",
+      sessionCreated: "Session created and saved to the database",
+      sessionDeleted: "Session deleted",
+      sessionDeleteConfirm: "Delete this session and all its test results? This cannot be undone.",
+      sessionNameRequired: "Please enter a session name",
+      sessionResumed: "resumed",
+      sessionResetConfirm: "Reset all test results for this session?",
+      sessionTester: "Tester",
+      sessionTarget: "Target",
+      sessionLocalMode: "Local mode (no DB)",
+      resultSaveError: "Could not save the result to the database, check the connection.",
+      loadingSessions: "Loading sessions...",
+      sessionsLoadError: "Failed to load sessions.",
+      markCompleted: "Complete",
+      statusActive: "active",
+      statusCompleted: "completed"
     }
   };
 
@@ -149,6 +216,9 @@
   let currentFilter = "all"; // all | done | pending
   let currentLang = loadLang();
   let currentTheme = loadTheme();
+  let dbOnline = false;
+  let currentSession = null;   // {id, name, tester_name, target_url, status, ...}
+  let sessionResults = {};     // test_id -> backend result row (only when a session is active)
 
   function loadLang(){
     try{ return localStorage.getItem(LANG_KEY) || "tr"; }catch(e){ return "tr"; }
@@ -397,7 +467,18 @@
 
   function toggleDone(id){
     progress[id] = !progress[id];
-    saveProgress();
+    const done = progress[id];
+    if(currentSession){
+      persistResult(id, done).catch(err => {
+        // revert on failure
+        progress[id] = !done;
+        renderSidebar(); renderDashboard();
+        if(currentCategoryId) renderTestList();
+        showToast(t('resultSaveError'));
+      });
+    } else {
+      saveProgress();
+    }
     renderSidebar();
     renderDashboard();
     if(currentCategoryId) renderTestList();
@@ -434,6 +515,11 @@
   function exportReport(){
     const s = stats();
     let out = `${t('reportTitle')}\n`;
+    if(currentSession){
+      out += `${t('navSessions')}: ${currentSession.name}\n`;
+      if(currentSession.tester_name) out += `${t('sessionTester')}: ${currentSession.tester_name}\n`;
+      if(currentSession.target_url) out += `${t('sessionTarget')}: ${currentSession.target_url}\n`;
+    }
     out += `${t('reportCreated')}: ${new Date().toLocaleString(t('dateLocale'))}\n`;
     out += `${t('reportProgress')}: ${s.done}/${s.total} (%${s.pct})\n\n`;
     DATA.categories.forEach(c=>{
@@ -451,6 +537,21 @@
   }
 
   function resetProgress(){
+    if(currentSession){
+      if(!confirm(t('sessionResetConfirm'))) return;
+      const ids = Object.keys(sessionResults);
+      Promise.all(ids.map(tid => apiRequest(`/sessions/${currentSession.id}/results/${tid}`, { method: 'DELETE' }).catch(()=>{})))
+        .then(()=>{
+          progress = {};
+          sessionResults = {};
+          renderSidebar();
+          renderDashboard();
+          if(currentCategoryId) renderTestList();
+          updateSessionUI();
+          showToast(t('progressResetToast'));
+        });
+      return;
+    }
     if(!confirm(t('resetConfirm'))) return;
     progress = {};
     saveProgress();
@@ -462,6 +563,197 @@
 
   function copyToClipboard(text){
     navigator.clipboard?.writeText(text).then(()=> showToast(t('copiedToast'))).catch(()=>{});
+  }
+
+  /* ===================== DB / SESSIONS ===================== */
+
+  function apiRequest(path, options){
+    return fetch(API_BASE + path, Object.assign({
+      headers: { 'Content-Type': 'application/json' }
+    }, options || {})).then(async res => {
+      if(!res.ok){
+        let msg = res.statusText;
+        try{ const j = await res.json(); msg = j.error || msg; }catch(e){}
+        throw new Error(msg);
+      }
+      if(res.status === 204) return null;
+      return res.json();
+    });
+  }
+
+  function checkDb(){
+    const ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    const timer = ctrl ? setTimeout(()=>ctrl.abort(), 2500) : null;
+    return fetch(API_BASE + '/sessions', { signal: ctrl ? ctrl.signal : undefined })
+      .then(res => { clearTimeout(timer); return res.ok; })
+      .catch(() => { clearTimeout(timer); return false; });
+  }
+
+  function loadSavedSessionId(){
+    try{ return localStorage.getItem(SESSION_ID_KEY); }catch(e){ return null; }
+  }
+  function saveSessionId(id){
+    try{ id ? localStorage.setItem(SESSION_ID_KEY, id) : localStorage.removeItem(SESSION_ID_KEY); }catch(e){}
+  }
+  function getSkipFlag(){
+    try{ return localStorage.getItem(SKIP_SESSION_KEY) === '1'; }catch(e){ return false; }
+  }
+  function setSkipFlag(v){
+    try{ v ? localStorage.setItem(SKIP_SESSION_KEY, '1') : localStorage.removeItem(SKIP_SESSION_KEY); }catch(e){}
+  }
+
+  function updateSessionUI(){
+    const chip = document.getElementById('sessionChip');
+    const topBtn = document.getElementById('topbarSessionBtn');
+    if(!chip || !topBtn) return;
+    if(currentSession){
+      const done = Object.values(sessionResults).filter(r => r.status && r.status !== 'pending').length;
+      const total = allTests().length;
+      chip.style.display = 'flex';
+      document.getElementById('sessionChipName').textContent = currentSession.name;
+      document.getElementById('sessionChipSub').textContent = `${done}/${total}`;
+      topBtn.style.display = 'inline-flex';
+      topBtn.textContent = `📋 ${currentSession.name}`;
+      topBtn.title = t('navSessions');
+    } else {
+      chip.style.display = 'none';
+      topBtn.style.display = dbOnline ? 'inline-flex' : 'none';
+      topBtn.textContent = `📂 ${t('navSessions')}`;
+    }
+  }
+
+  function progressFromResults(results){
+    const p = {};
+    sessionResults = {};
+    (results || []).forEach(r => {
+      sessionResults[r.test_id] = r;
+      if(r.status && r.status !== 'pending') p[r.test_id] = true;
+    });
+    return p;
+  }
+
+  function openSessionById(id){
+    return Promise.all([ apiRequest(`/sessions/${id}`), apiRequest(`/sessions/${id}/results`) ])
+      .then(([session, results]) => {
+        currentSession = session;
+        progress = progressFromResults(results);
+        saveSessionId(session.id);
+        setSkipFlag(false);
+        renderSidebar(); renderDashboard();
+        if(currentCategoryId) renderTestList();
+        updateSessionUI();
+        closeSessionGate();
+      });
+  }
+
+  function renderSessionList(){
+    const box = document.getElementById('sessionListBody');
+    box.innerHTML = `<div class="search-empty">${escapeHtml(t('loadingSessions'))}</div>`;
+    apiRequest('/sessions').then(sessions => {
+      if(!sessions.length){
+        box.innerHTML = `<div class="search-empty">${escapeHtml(t('noSessionsYet'))}</div>`;
+        return;
+      }
+      box.innerHTML = `<div class="session-list">${sessions.map(s => {
+        const total = allTests().length;
+        const done = s.completed_tests || 0;
+        const pct = total ? Math.round((done/total)*100) : 0;
+        const active = currentSession && currentSession.id === s.id;
+        return `<div class="session-card" data-id="${s.id}">
+          <div class="session-card-top">
+            <div>
+              <div class="session-card-name">${escapeHtml(s.name)}${active ? ' ✅' : ''}</div>
+              <div class="session-card-meta">
+                <span>👤 ${escapeHtml(s.tester_name || '—')}</span>
+                <span>🎯 ${escapeHtml(s.target_url || '—')}</span>
+                <span>📅 ${new Date(s.created_at).toLocaleString(t('dateLocale'))}</span>
+              </div>
+            </div>
+            <span class="session-status-pill ${s.status === 'completed' ? 'completed' : 'active'}">${s.status === 'completed' ? t('statusCompleted') : t('statusActive')}</span>
+          </div>
+          <div class="session-card-progress">
+            <div class="cat-progress-bar" style="flex:1"><div class="cat-progress-fill" style="width:${pct}%"></div></div>
+            <div class="cat-progress-text">${done}/${total}</div>
+          </div>
+          <div class="session-card-actions">
+            <button data-action="open" data-id="${s.id}">${t('startTest')}</button>
+            <button data-action="delete" data-id="${s.id}" class="danger">🗑️</button>
+          </div>
+        </div>`;
+      }).join('')}</div>`;
+    }).catch(err => {
+      box.innerHTML = `<div class="search-empty">${escapeHtml(t('sessionsLoadError'))}<br><small>${escapeHtml(String(err.message||err))}</small></div>`;
+    });
+  }
+
+  function openSessionGate(closable){
+    const overlay = document.getElementById('sessionGateOverlay');
+    document.getElementById('closeSessionGate').style.display = closable ? '' : 'none';
+    document.getElementById('dbStatusLabel').innerHTML = dbOnline
+      ? `<span class="db-status online">${t('dbOnline')}</span>`
+      : `<span class="db-status offline">${t('dbOffline')}</span>`;
+    document.getElementById('newSessionBtn').style.display = dbOnline ? '' : 'none';
+    document.getElementById('skipSessionBtn').style.display = dbOnline ? '' : 'none';
+    if(dbOnline) renderSessionList();
+    else document.getElementById('sessionListBody').innerHTML = '';
+    overlay.classList.add('open');
+  }
+  function closeSessionGate(){
+    document.getElementById('sessionGateOverlay').classList.remove('open');
+  }
+
+  function openNewSessionOverlay(){
+    document.getElementById('sessionNameInput').value = '';
+    document.getElementById('testerNameInput').value = '';
+    document.getElementById('targetUrlInput').value = '';
+    document.getElementById('newSessionOverlay').classList.add('open');
+    setTimeout(()=> document.getElementById('sessionNameInput').focus(), 50);
+  }
+  function closeNewSessionOverlay(){
+    document.getElementById('newSessionOverlay').classList.remove('open');
+  }
+
+  function createSessionSubmit(){
+    const name = document.getElementById('sessionNameInput').value.trim();
+    if(!name){ showToast(t('sessionNameRequired')); return; }
+    const payload = {
+      name,
+      tester_name: document.getElementById('testerNameInput').value.trim(),
+      target_url: document.getElementById('targetUrlInput').value.trim()
+    };
+    apiRequest('/sessions', { method: 'POST', body: JSON.stringify(payload) })
+      .then(session => {
+        closeNewSessionOverlay();
+        return openSessionById(session.id);
+      })
+      .then(()=> showToast(t('sessionCreated')))
+      .catch(err => showToast(err.message || t('resultSaveError')));
+  }
+
+  function deleteSessionUI(id){
+    if(!confirm(t('sessionDeleteConfirm'))) return;
+    apiRequest(`/sessions/${id}`, { method: 'DELETE' }).then(()=>{
+      if(currentSession && currentSession.id === id){
+        currentSession = null;
+        sessionResults = {};
+        saveSessionId(null);
+        progress = loadProgress();
+        renderSidebar(); renderDashboard();
+        updateSessionUI();
+      }
+      renderSessionList();
+      showToast(t('sessionDeleted'));
+    }).catch(err => showToast(err.message || t('resultSaveError')));
+  }
+
+  function persistResult(testId, done){
+    if(!currentSession) return Promise.resolve();
+    const status = done ? 'passed' : 'pending';
+    const existing = sessionResults[testId];
+    const req = existing
+      ? apiRequest(`/sessions/${currentSession.id}/results/${testId}`, { method: 'PUT', body: JSON.stringify({ status }) })
+      : apiRequest(`/sessions/${currentSession.id}/results`, { method: 'POST', body: JSON.stringify({ test_id: testId, status }) });
+    return req.then(result => { sessionResults[testId] = result; updateSessionUI(); });
   }
 
   function bindEvents(){
@@ -476,8 +768,36 @@
       if(e.target.id === 'themeOverlay') closeThemeModal();
     });
 
+    document.getElementById('sessionsNavBtn').addEventListener('click', ()=> openSessionGate(true));
+    document.getElementById('topbarSessionBtn').addEventListener('click', ()=> openSessionGate(true));
+    document.getElementById('closeSessionGate').addEventListener('click', closeSessionGate);
+    document.getElementById('sessionGateOverlay').addEventListener('click', e=>{
+      if(e.target.id === 'sessionGateOverlay' && document.getElementById('closeSessionGate').style.display !== 'none') closeSessionGate();
+    });
+    document.getElementById('newSessionBtn').addEventListener('click', openNewSessionOverlay);
+    document.getElementById('skipSessionBtn').addEventListener('click', ()=>{
+      setSkipFlag(true);
+      closeSessionGate();
+    });
+    document.getElementById('closeNewSessionOverlay').addEventListener('click', closeNewSessionOverlay);
+    document.getElementById('newSessionOverlay').addEventListener('click', e=>{
+      if(e.target.id === 'newSessionOverlay') closeNewSessionOverlay();
+    });
+    document.getElementById('createSessionBtn').addEventListener('click', createSessionSubmit);
+    document.getElementById('newSessionForm').addEventListener('submit', e=> e.preventDefault());
+    document.getElementById('sessionListBody').addEventListener('click', e=>{
+      const btn = e.target.closest('button[data-action]');
+      if(!btn) return;
+      const id = btn.dataset.id;
+      if(btn.dataset.action === 'open') openSessionById(id).catch(err => showToast(err.message || t('resultSaveError')));
+      if(btn.dataset.action === 'delete') deleteSessionUI(id);
+    });
+
     document.addEventListener('keydown', e=>{
-      if(e.key === 'Escape'){ closeCategory(); closeThemeModal(); }
+      if(e.key === 'Escape'){
+        closeCategory(); closeThemeModal(); closeNewSessionOverlay();
+        if(document.getElementById('closeSessionGate').style.display !== 'none') closeSessionGate();
+      }
     });
 
     document.getElementById('itemSearch').addEventListener('input', renderTestList);
@@ -518,6 +838,7 @@
     document.getElementById('exportBtn').addEventListener('click', exportReport);
     document.getElementById('resetBtn').addEventListener('click', resetProgress);
     document.getElementById('startBtn').addEventListener('click', ()=>{
+      if(dbOnline && !currentSession){ openSessionGate(true); return; }
       const first = DATA.categories[0];
       if(first) openCategory(first.id);
     });
@@ -541,6 +862,7 @@
       applyI18n();
       renderSidebar();
       renderDashboard();
+      updateSessionUI();
       if(wasOpen && openCatId){
         openCategory(openCatId);
       }
@@ -566,5 +888,24 @@
     renderSidebar();
     renderDashboard();
     bindEvents();
+    updateSessionUI();
+
+    checkDb().then(online => {
+      dbOnline = online;
+      updateSessionUI();
+      if(!online) return; // no backend -> behave exactly like the original local-only app
+
+      const savedId = loadSavedSessionId();
+      if(savedId){
+        openSessionById(savedId).then(()=>{
+          showToast(`${currentSession.name} ${t('sessionResumed')}`);
+        }).catch(()=>{
+          saveSessionId(null);
+          if(!getSkipFlag()) openSessionGate(false);
+        });
+      } else if(!getSkipFlag()){
+        openSessionGate(false);
+      }
+    });
   });
 })();

@@ -1,7 +1,7 @@
 # 🛡️ Pentest Workspace — OWASP WSTG v4.2
 
 ![Made with HTML/CSS/JS](https://img.shields.io/badge/stack-HTML%20%7C%20CSS%20%7C%20JS-informational)
-![No backend](https://img.shields.io/badge/backend-none-lightgrey)
+![Optional backend](https://img.shields.io/badge/backend-optional%20Flask%20%2B%20SQLite-lightgrey)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 **🇬🇧 [English](#-english)** · **🇹🇷 [Türkçe](#-türkçe)**
@@ -26,6 +26,7 @@ No installation, backend, or build step required — just open `index.html` in a
 - 🎨 **25 built-in themes** — browse and pick from a preview gallery in a popup dialog (Midnight, Cyberpunk, Matrix, Dracula, Nord, Vaporwave, Neon Tokyo, Sakura, and more)
 - 📱 Responsive design — works on both desktop and mobile
 - 📎 One-click access to the original **WSTG v4.2 PDF**
+- 🗄️ **Optional named test sessions saved to a database** — start a session with a name, tester, and target URL before testing; every checkbox is persisted to a Flask + SQLite backend and can be resumed later (falls back to the original `localStorage`-only mode automatically if the backend isn't running)
 
 ### 🖥️ Overview
 
@@ -39,13 +40,52 @@ pentest-workspace/
 ├── css/
 │   └── style.css                  # All styles and theme definitions
 ├── js/
-│   └── app.js                     # App logic (state, rendering, i18n, themes)
+│   └── app.js                     # App logic (state, rendering, i18n, themes, sessions/DB)
 ├── data/
 │   ├── wstg-checklist.tr.json     # Turkish test data
 │   └── wstg-checklist.en.json     # English test data
+├── backend/                        # Optional Flask + SQLite API for named test sessions
+│   ├── app.py                      # REST API (sessions & test results)
+│   ├── models.py                   # SQLAlchemy models
+│   ├── config.py                   # Config (DB path, CORS)
+│   └── requirements.txt
 ├── wstg-v4_2.pdf                  # Original OWASP WSTG v4.2 guide
 └── assets/                        # (optional image assets)
 ```
+
+### 🗄️ Named Test Sessions (Database)
+
+You can now group each pentest run under a **named session** that gets saved to a real database, so you (or your team) can pause, come back, and resume progress later.
+
+**How it works**
+
+1. Start the backend (see below). On page load the app auto-detects it at `http://localhost:5000`.
+2. If the backend is reachable, a **"Test Sessions"** screen appears. Create a new one by giving it a **name** (required), a tester name, and a target URL — or resume/delete a previous session.
+3. Once a session is active, every checkbox you tick is saved to the database against that session (in addition to updating the UI instantly). You can switch sessions anytime from the **"Test Sessions"** sidebar button or the badge in the top bar.
+4. If the backend isn't running, the app **automatically falls back** to the original `localStorage`-only behavior — nothing breaks, you just lose the multi-session/DB persistence until the backend is back up. You can also explicitly choose *"Continue without a session (local mode)"* even when the backend is online.
+
+**Running the backend**
+
+```bash
+cd backend
+python3 -m venv venv
+source venv/bin/activate        # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+python3 app.py
+```
+
+The API runs on `http://localhost:5000` and creates `backend/database/wstg.db` (SQLite) automatically on first run. Then open `index.html` (ideally via a local server, see below) in your browser — it will detect the backend automatically.
+
+**API summary**
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET/POST | `/api/sessions` | List / create sessions |
+| GET/PUT/DELETE | `/api/sessions/<id>` | Read / update / delete a session |
+| GET/POST | `/api/sessions/<id>/results` | List / add test results for a session |
+| PUT/DELETE | `/api/sessions/<id>/results/<test_id>` | Update / delete a single test result |
+| GET | `/api/sessions/<id>/report` | JSON summary report for a session |
+
 
 ### 🚀 Getting Started
 
@@ -91,17 +131,20 @@ The app never sends data to a server. All progress, language, and theme preferen
 
 | Key | Content |
 |---|---|
-| `wstg_progress_v1` | Completed test IDs |
+| `wstg_progress_v1` | Completed test IDs (used only in local/no-session mode) |
 | `wstg_lang_v1` | Selected language |
 | `wstg_theme_v1` | Selected theme |
+| `wstg_session_id_v1` | Currently active database session id (if any) |
+| `wstg_skip_session_v1` | Remembers that you chose to continue without a session |
 
-The "Reset Progress" button clears this data.
+The "Reset Progress" button clears the relevant data (local progress, or all results of the active database session).
 
 ### 🛠️ Tech Stack
 
 - Vanilla **HTML5 / CSS3 / JavaScript** (no framework, no build step)
 - CSS Custom Properties (`--variables`) powering the theme engine
-- `localStorage` for persistence
+- `localStorage` for local-mode persistence
+- Optional **Flask + SQLAlchemy + SQLite** backend for named, database-backed test sessions
 - [Inter](https://fonts.google.com/specimen/Inter) font (Google Fonts)
 
 ### 📖 Source
@@ -136,6 +179,7 @@ Kurulum, backend veya derleme adımı gerektirmez — sadece `index.html` dosyas
 - 🎨 **25 hazır tema** — açılır pencereden seçilebilen, önizlemeli tema galerisi (Midnight, Cyberpunk, Matrix, Dracula, Nord, Vaporwave, Neon Tokyo, Sakura ve daha fazlası)
 - 📱 Duyarlı (responsive) tasarım — mobil ve masaüstünde çalışır
 - 📎 Orijinal **WSTG v4.2 PDF**'ine tek tıkla erişim
+- 🗄️ **Opsiyonel: isim verilerek DB'ye kaydedilen test oturumları** — teste başlamadan önce bir isim, test uzmanı ve hedef URL vererek oturum başlatın; işaretlediğiniz her test Flask + SQLite tabanlı backend'e kaydedilir ve daha sonra kaldığınız yerden devam edebilirsiniz (backend çalışmıyorsa uygulama otomatik olarak eski `localStorage` moduna döner)
 
 ### 🖥️ Ekran Görünümü
 
@@ -149,13 +193,52 @@ pentest-workspace/
 ├── css/
 │   └── style.css                  # Tüm stiller ve tema tanımları
 ├── js/
-│   └── app.js                     # Uygulama mantığı (state, render, i18n, tema)
+│   └── app.js                     # Uygulama mantığı (state, render, i18n, tema, oturum/DB)
 ├── data/
 │   ├── wstg-checklist.tr.json     # Türkçe test verisi
 │   └── wstg-checklist.en.json     # İngilizce test verisi
+├── backend/                        # Opsiyonel Flask + SQLite API (isimli test oturumları için)
+│   ├── app.py                      # REST API (oturumlar & test sonuçları)
+│   ├── models.py                   # SQLAlchemy modelleri
+│   ├── config.py                   # Ayarlar (DB yolu, CORS)
+│   └── requirements.txt
 ├── wstg-v4_2.pdf                  # Orijinal OWASP WSTG v4.2 kılavuzu
 └── assets/                        # (opsiyonel görsel varlıklar)
 ```
+
+### 🗄️ İsimli Test Oturumları (Veritabanı)
+
+Artık her pentest sürecini **isim vererek** bir veritabanına kaydedebilir, kaldığınız yerden devam edebilirsiniz.
+
+**Nasıl çalışır?**
+
+1. Backend'i başlatın (aşağıya bakın). Sayfa açıldığında uygulama `http://localhost:5000` adresindeki backend'i otomatik olarak algılar.
+2. Backend erişilebilirse karşınıza **"Test Oturumları"** ekranı gelir. Bir **isim** (zorunlu), test uzmanı adı ve hedef URL vererek yeni bir oturum başlatın; ya da önceki bir oturuma devam edin/silin.
+3. Bir oturum aktifken işaretlediğiniz her test, arayüzü anında güncellemenin yanında o oturuma bağlı olarak veritabanına da kaydedilir. Sidebar'daki **"Test Oturumları"** butonundan veya üst çubuktaki rozetten istediğiniz zaman oturum değiştirebilirsiniz.
+4. Backend çalışmıyorsa uygulama otomatik olarak eski **sadece `localStorage`** davranışına döner — hiçbir şey bozulmaz, sadece backend tekrar ayağa kalkana kadar çoklu oturum/DB kalıcılığını kaybedersiniz. Backend açık olsa bile isterseniz *"Oturumsuz / yerel modda devam et"* seçeneğiyle DB kullanmadan da devam edebilirsiniz.
+
+**Backend'i çalıştırma**
+
+```bash
+cd backend
+python3 -m venv venv
+source venv/bin/activate        # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+python3 app.py
+```
+
+API `http://localhost:5000` üzerinde çalışır ve ilk çalıştırmada `backend/database/wstg.db` (SQLite) dosyasını otomatik oluşturur. Ardından `index.html`'i (tercihen aşağıdaki gibi yerel bir sunucu ile) tarayıcıda açın — backend'i otomatik algılayacaktır.
+
+**API özeti**
+
+| Metod | Endpoint | Açıklama |
+|---|---|---|
+| GET/POST | `/api/sessions` | Oturumları listele / yeni oturum oluştur |
+| GET/PUT/DELETE | `/api/sessions/<id>` | Oturumu getir / güncelle / sil |
+| GET/POST | `/api/sessions/<id>/results` | Oturuma ait test sonuçlarını listele / ekle |
+| PUT/DELETE | `/api/sessions/<id>/results/<test_id>` | Tek bir test sonucunu güncelle / sil |
+| GET | `/api/sessions/<id>/report` | Oturum için JSON özet raporu |
+
 
 ### 🚀 Kurulum ve Çalıştırma
 
@@ -201,17 +284,20 @@ Uygulama herhangi bir sunucuya veri göndermez. Tüm ilerleme, dil ve tema terci
 
 | Anahtar | İçerik |
 |---|---|
-| `wstg_progress_v1` | Tamamlanan test ID'leri |
+| `wstg_progress_v1` | Tamamlanan test ID'leri (yalnızca oturumsuz/yerel modda kullanılır) |
 | `wstg_lang_v1` | Seçili dil |
 | `wstg_theme_v1` | Seçili tema |
+| `wstg_session_id_v1` | Aktif veritabanı oturumunun ID'si (varsa) |
+| `wstg_skip_session_v1` | Oturumsuz devam etme tercihinizi hatırlar |
 
-"İlerlemeyi Sıfırla" butonu bu verileri temizler.
+"İlerlemeyi Sıfırla" butonu ilgili veriyi temizler (yerel ilerleme ya da aktif DB oturumunun tüm sonuçları).
 
 ### 🛠️ Kullanılan Teknolojiler
 
 - Vanilla **HTML5 / CSS3 / JavaScript** (framework yok, derleme adımı yok)
 - CSS Custom Properties (`--variables`) ile tema motoru
-- `localStorage` ile kalıcı veri saklama
+- Yerel modda `localStorage` ile kalıcı veri saklama
+- İsimli, veritabanı destekli test oturumları için opsiyonel **Flask + SQLAlchemy + SQLite** backend
 - [Inter](https://fonts.google.com/specimen/Inter) yazı tipi (Google Fonts)
 
 ### 📖 Kaynak

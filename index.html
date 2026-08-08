@@ -34,6 +34,14 @@
     </nav>
 
     <div class="sidebar-footer">
+      <div class="session-chip" id="sessionChip" style="display:none">
+        <span class="session-chip-dot"></span>
+        <div class="session-chip-info">
+          <span class="session-chip-name" id="sessionChipName">-</span>
+          <span class="session-chip-sub" id="sessionChipSub">0/0</span>
+        </div>
+      </div>
+      <button class="nav-item" id="sessionsNavBtn"><span class="dot"></span><span data-i18n="navSessions">Test Oturumları</span></button>
       <button class="nav-item" id="exportBtn"><span class="dot"></span><span data-i18n="exportReport">Raporu Dışa Aktar</span></button>
       <button class="nav-item" id="resetBtn"><span class="dot"></span><span data-i18n="resetProgress">İlerlemeyi Sıfırla</span></button>
 
@@ -69,6 +77,7 @@
         <div class="search-results" id="searchResults"></div>
       </div>
       <div class="profile">
+        <button class="topbar-session-btn" id="topbarSessionBtn" style="display:none"></button>
         <div class="avatar">P</div>
       </div>
     </div>
@@ -163,6 +172,55 @@
     </div>
     <div class="panel-body">
       <div class="theme-grid" id="themeGrid"><!-- JS ile doldurulur --></div>
+    </div>
+  </div>
+</div>
+
+<!-- Oturum Yöneticisi (DB destekli) -->
+<div class="overlay" id="sessionGateOverlay">
+  <div class="panel">
+    <div class="panel-header">
+      <div>
+        <h3 data-i18n="sessionGateTitle">Test Oturumları</h3>
+        <p data-i18n="sessionGateDesc">Her pentest sürecini isim vererek veritabanına kaydedin, kaldığınız yerden devam edin.</p>
+      </div>
+      <button class="close-btn" id="closeSessionGate" style="display:none">&times;</button>
+    </div>
+    <div class="filter-bar">
+      <span style="color:var(--muted);font-size:.85rem" id="dbStatusLabel"></span>
+      <button class="btn btn-primary btn-sm" id="newSessionBtn" data-i18n="newSession">+ Yeni Oturum</button>
+    </div>
+    <div class="panel-body">
+      <div id="sessionListBody"><!-- JS ile doldurulur --></div>
+      <div class="session-gate-footer">
+        <button class="nav-item" id="skipSessionBtn" style="width:auto;display:inline-flex" data-i18n="continueLocal">Oturumsuz / yerel modda devam et</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Yeni Oturum Formu -->
+<div class="overlay" id="newSessionOverlay">
+  <div class="panel" style="max-width:520px">
+    <div class="panel-header">
+      <div>
+        <h3 data-i18n="newSessionTitle">Yeni Test Oturumu</h3>
+        <p data-i18n="newSessionDesc">Bu pentest sürecini tanımlayın. İlerlemeniz bu isimle veritabanına kaydedilecek.</p>
+      </div>
+      <button class="close-btn" id="closeNewSessionOverlay">&times;</button>
+    </div>
+    <div class="panel-body">
+      <form id="newSessionForm" class="session-form">
+        <label data-i18n="sessionNameLabel">Oturum Adı *</label>
+        <input type="text" id="sessionNameInput" data-i18n-placeholder="sessionNamePlaceholder" placeholder="Örn: Login Sayfası Testi - Ağustos">
+        <label data-i18n="testerNameLabel">Test Uzmanı</label>
+        <input type="text" id="testerNameInput" data-i18n-placeholder="testerNamePlaceholder" placeholder="Adınız">
+        <label data-i18n="targetUrlLabel">Hedef URL</label>
+        <input type="text" id="targetUrlInput" placeholder="https://example.com">
+        <div class="hero-actions" style="margin-top:8px">
+          <button type="button" class="btn btn-primary" id="createSessionBtn" data-i18n="startSession">Oturumu Başlat</button>
+        </div>
+      </form>
     </div>
   </div>
 </div>
