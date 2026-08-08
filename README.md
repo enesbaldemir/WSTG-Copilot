@@ -27,6 +27,7 @@ No installation, backend, or build step required — just open `index.html` in a
 - 📱 Responsive design — works on both desktop and mobile
 - 📎 One-click access to the original **WSTG v4.2 PDF**
 - 🗄️ **Optional named test sessions saved to a database** — start a session with a name, tester, and target URL before testing; every checkbox is persisted to a Flask + SQLite backend and can be resumed later (falls back to the original `localStorage`-only mode automatically if the backend isn't running)
+- 🛡️ **OWASP Top 10:2025 reference module** — all ten risk categories with a description, how it happens, step-by-step pentest guidance, an example attack scenario/payload, prevention checklist, mapped CWEs, and recommended tools, cross-linked to the matching WSTG test items
 
 ### 🖥️ Overview
 
@@ -43,7 +44,9 @@ pentest-workspace/
 │   └── app.js                     # App logic (state, rendering, i18n, themes, sessions/DB)
 ├── data/
 │   ├── wstg-checklist.tr.json     # Turkish test data
-│   └── wstg-checklist.en.json     # English test data
+│   ├── wstg-checklist.en.json     # English test data
+│   ├── owasp-top10.tr.json        # OWASP Top 10:2025 reference data (Turkish)
+│   └── owasp-top10.en.json        # OWASP Top 10:2025 reference data (English)
 ├── backend/                        # Optional Flask + SQLite API for named test sessions
 │   ├── app.py                      # REST API (sessions & test results)
 │   ├── models.py                   # SQLAlchemy models
@@ -86,6 +89,19 @@ The API runs on `http://localhost:5000` and creates `backend/database/wstg.db` (
 | PUT/DELETE | `/api/sessions/<id>/results/<test_id>` | Update / delete a single test result |
 | GET | `/api/sessions/<id>/report` | JSON summary report for a session |
 
+
+### 🛡️ OWASP Top 10:2025 Module
+
+A dedicated **"OWASP Top 10:2025"** section (from the sidebar's Reference group) lists all ten current risk categories — A01 Broken Access Control through A10 Mishandling of Exceptional Conditions, including 2025's two new categories (Software Supply Chain Failures, Mishandling of Exceptional Conditions). Clicking a card opens a detail view with:
+
+- Description and how the weakness typically arises
+- Step-by-step pentest guidance for that risk
+- A worked example attack scenario plus a copyable example payload/command
+- A prevention checklist
+- The most notable mapped CWEs and recommended tools
+- Clickable links to the matching WSTG checklist items in this workspace, where they exist
+
+This module is purely informational/reference content (no database persistence) and is available in both Turkish and English, generated from the official [OWASP Top 10:2025](https://owasp.org/Top10/2025/).
 
 ### 🚀 Getting Started
 
@@ -180,6 +196,7 @@ Kurulum, backend veya derleme adımı gerektirmez — sadece `index.html` dosyas
 - 📱 Duyarlı (responsive) tasarım — mobil ve masaüstünde çalışır
 - 📎 Orijinal **WSTG v4.2 PDF**'ine tek tıkla erişim
 - 🗄️ **Opsiyonel: isim verilerek DB'ye kaydedilen test oturumları** — teste başlamadan önce bir isim, test uzmanı ve hedef URL vererek oturum başlatın; işaretlediğiniz her test Flask + SQLite tabanlı backend'e kaydedilir ve daha sonra kaldığınız yerden devam edebilirsiniz (backend çalışmıyorsa uygulama otomatik olarak eski `localStorage` moduna döner)
+- 🛡️ **OWASP Top 10:2025 referans modülü** — 10 risk kategorisinin tamamı; açıklama, nasıl oluştuğu, adım adım pentest rehberi, örnek saldırı senaryosu/payload, önlem listesi, ilişkili CWE'ler ve önerilen araçlarla birlikte, ilgili WSTG test maddelerine çapraz bağlantılı olarak
 
 ### 🖥️ Ekran Görünümü
 
@@ -196,7 +213,9 @@ pentest-workspace/
 │   └── app.js                     # Uygulama mantığı (state, render, i18n, tema, oturum/DB)
 ├── data/
 │   ├── wstg-checklist.tr.json     # Türkçe test verisi
-│   └── wstg-checklist.en.json     # İngilizce test verisi
+│   ├── wstg-checklist.en.json     # İngilizce test verisi
+│   ├── owasp-top10.tr.json        # OWASP Top 10:2025 referans verisi (Türkçe)
+│   └── owasp-top10.en.json        # OWASP Top 10:2025 referans verisi (İngilizce)
 ├── backend/                        # Opsiyonel Flask + SQLite API (isimli test oturumları için)
 │   ├── app.py                      # REST API (oturumlar & test sonuçları)
 │   ├── models.py                   # SQLAlchemy modelleri
@@ -239,6 +258,19 @@ API `http://localhost:5000` üzerinde çalışır ve ilk çalıştırmada `backe
 | PUT/DELETE | `/api/sessions/<id>/results/<test_id>` | Tek bir test sonucunu güncelle / sil |
 | GET | `/api/sessions/<id>/report` | Oturum için JSON özet raporu |
 
+
+### 🛡️ OWASP Top 10:2025 Modülü
+
+Sidebar'daki "Referans" grubundan erişilen **"OWASP Top 10:2025"** bölümü, güncel 10 risk kategorisinin tamamını listeler — A01 Bozuk Erişim Kontrolü'nden A10 İstisnai Durumların Hatalı Yönetimi'ne kadar, 2025'in iki yeni kategorisi (Yazılım Tedarik Zinciri Hataları, İstisnai Durumların Hatalı Yönetimi) dahil. Bir karta tıklandığında şu bilgileri içeren bir detay ekranı açılır:
+
+- Açıklama ve zafiyetin genelde nasıl ortaya çıktığı
+- O risk için adım adım pentest rehberi
+- Örnek bir saldırı senaryosu ve kopyalanabilir örnek payload/komut
+- Bir önlem (prevention) kontrol listesi
+- En dikkat çekici ilişkili CWE'ler ve önerilen araçlar
+- Bu çalışma alanındaki eşleşen WSTG checklist maddelerine (varsa) tıklanabilir bağlantılar
+
+Bu modül tamamen bilgilendirme/referans amaçlıdır (veritabanına kayıt yapmaz) ve resmi [OWASP Top 10:2025](https://owasp.org/Top10/2025/) kaynağından üretilmiş olarak hem Türkçe hem İngilizce mevcuttur.
 
 ### 🚀 Kurulum ve Çalıştırma
 

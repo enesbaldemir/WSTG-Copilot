@@ -1,0 +1,577 @@
+{
+  "version": "OWASP Top 10:2025",
+  "source": "https://owasp.org/Top10/2025/",
+  "top10": [
+    {
+      "id": "A01:2025",
+      "rank": 1,
+      "cweCount": 40,
+      "newIn2025": false,
+      "rankChange": "0",
+      "title": "Broken Access Control",
+      "shortDesc": "Users can access data or perform actions outside their intended permissions. SSRF has been folded into this category.",
+      "description": "Access control enforces the policy that users can only act within their granted permissions. When these checks are weak or missing, attackers can view or modify data they shouldn't, or invoke business functions beyond their role. In 2025, Server-Side Request Forgery (SSRF) was rolled into this category, since SSRF is fundamentally about coercing a server into making requests outside its intended scope.",
+      "howItHappens": [
+        "Failure to 'deny by default' — resources that should be private are reachable by anyone",
+        "Bypassing access checks by tampering with URLs, parameters, or hidden fields (force browsing)",
+        "Insecure Direct Object References (IDOR) — swapping an ID to reach another user's record",
+        "APIs with missing authorization checks on POST/PUT/DELETE, not just GET",
+        "Tampering with JWTs, cookies, or hidden fields to elevate privileges",
+        "Misconfigured CORS allowing untrusted origins to call the API",
+        "Access control enforced only in frontend JavaScript, not verified server-side",
+        "Coercing the server into requesting attacker-controlled or internal resources (SSRF)"
+      ],
+      "howToTest": [
+        "Create accounts at different privilege levels (anonymous, regular user, admin) and probe every endpoint with each (vertical & horizontal privilege escalation)",
+        "Swap ID/parameter values (acct, user_id, order_id) for another user's and see whether the response leaks their data (IDOR)",
+        "Force-browse directly to admin URLs with an unprivileged or unauthenticated session",
+        "Check whether POST/PUT/DELETE on REST/GraphQL endpoints enforce the same authorization as GET",
+        "Decode JWTs/cookies (jwt.io, Burp), tamper with role/permission claims, and resend to check if signature validation is actually enforced",
+        "Test CORS headers (Access-Control-Allow-Origin/-Credentials) against different Origin values",
+        "For features that fetch a user-supplied URL/file (webhooks, PDF export, image preview), try internal addresses (169.254.169.254, localhost, internal IP ranges) for SSRF",
+        "Check whether directory listing is enabled or metadata files like .git/.env are reachable"
+      ],
+      "exampleScenario": "An e-commerce order detail page uses a URL like '/order?id=1042'. Changing the id to '1043' returns another customer's address and payment details, because the app never checks whether the requester actually owns that order. Separately, a PDF-invoice feature fetches an image from a URL supplied by the user; an attacker points it at 'http://169.254.169.254/latest/meta-data/iam/security-credentials/' instead, and the server ends up leaking cloud credentials from its own metadata service (SSRF).",
+      "examplePayload": "GET /app/order?id=1043 HTTP/1.1\nHost: target.com\nCookie: session=<your_own_session>\n\n# SSRF attempt:\nPOST /app/pdf-export HTTP/1.1\nContent-Type: application/json\n\n{\"logoUrl\": \"http://169.254.169.254/latest/meta-data/iam/security-credentials/\"}",
+      "prevention": [
+        "Deny by default; only truly public resources should be reachable without authorization",
+        "Implement access control once, centrally, and reuse it — don't reimplement per endpoint",
+        "Model record ownership so users can only act on records they own",
+        "Rate-limit APIs, and log/alert on repeated access-control failures",
+        "Keep JWTs short-lived; invalidate session identifiers server-side on logout",
+        "Minimize CORS usage; only allow explicitly trusted origins",
+        "Allowlist destinations for any server-side URL/file fetch and block internal/metadata addresses",
+        "Disable directory listing; make sure files like .git/.env are never inside the web root"
+      ],
+      "tools": [
+        "Burp Suite (Autorize/AuthMatrix)",
+        "OWASP ZAP",
+        "Postman/Insomnia",
+        "jwt.io / jwt_tool",
+        "SSRFmap",
+        "Autorize"
+      ],
+      "notableCwe": [
+        "CWE-284 Improper Access Control",
+        "CWE-862 Missing Authorization",
+        "CWE-863 Incorrect Authorization",
+        "CWE-918 SSRF",
+        "CWE-352 CSRF",
+        "CWE-639 IDOR (Authorization Bypass Through User-Controlled Key)"
+      ],
+      "wstgRefs": [
+        "WSTG-ATHZ-01",
+        "WSTG-ATHZ-02",
+        "WSTG-ATHZ-04",
+        "WSTG-INPV-19"
+      ]
+    },
+    {
+      "id": "A02:2025",
+      "rank": 2,
+      "cweCount": 16,
+      "newIn2025": false,
+      "rankChange": "+3",
+      "title": "Security Misconfiguration",
+      "shortDesc": "A system, application, or cloud service set up incorrectly from a security perspective. Jumped from #5 (2021) to #2 (2025).",
+      "description": "This category covers systems, applications, or cloud services that are configured insecurely. As more application behavior shifts into configuration, misconfiguration has become more prevalent — moving this category from #5 in 2021 up to #2 in 2025.",
+      "howItHappens": [
+        "Missing security hardening anywhere in the stack, or improperly configured cloud permissions",
+        "Unnecessary features, ports, services, accounts, or test frameworks left enabled",
+        "Default accounts and passwords left unchanged",
+        "Error handling that leaks stack traces or overly detailed messages",
+        "Newer security features disabled or misconfigured after an upgrade",
+        "Server/framework/library/database settings not hardened to secure values",
+        "Security headers (CSP, X-Frame-Options, HSTS, etc.) missing or misconfigured"
+      ],
+      "howToTest": [
+        "Inspect response headers (Server, X-Powered-By, security headers) for version/technology disclosure",
+        "Check whether sample apps, admin consoles, and default credentials (admin/admin) are still reachable",
+        "Look for directory listing and exposed backup/config files (.bak, .old, web.config, .env)",
+        "Send malformed requests (wrong content-type, broken JSON, unexpected params) to see if verbose stack traces come back",
+        "Test cloud storage buckets for public read/write permissions",
+        "Verify CSP, X-Content-Type-Options, X-Frame-Options, and HSTS headers are present and correctly set",
+        "Test XML-processing endpoints for XXE (external entity) injection"
+      ],
+      "exampleScenario": "A leftover sample/demo application wasn't removed before going to production, and its admin console still uses the default password. An attacker logs in with that default credential and takes over the server. In a separate case, directory listing is left enabled, so an attacker downloads compiled class files, decompiles them, and finds a serious access-control flaw in the process.",
+      "examplePayload": "# Directory listing / sensitive file probing\nGET /backup/ HTTP/1.1\nGET /.env HTTP/1.1\nGET /.git/config HTTP/1.1\n\n# Trigger a verbose error\nGET /api/user?id=' HTTP/1.1   (an unexpected character to surface a debug error page)",
+      "prevention": [
+        "Establish a repeatable hardening process; keep dev/QA/prod identically configured with different credentials each",
+        "Remove unused features, frameworks, documentation, and sample applications",
+        "Review configuration as part of the patch process; audit cloud storage permissions",
+        "Segment components/tenants using containers or cloud security groups (ACLs)",
+        "Send security headers (CSP, HSTS, X-Frame-Options, etc.) to clients",
+        "Automate verification of configuration effectiveness; if not automated, verify manually at least annually",
+        "Prefer short-lived credentials or role-based access over static keys/secrets in code or config"
+      ],
+      "tools": [
+        "Nikto",
+        "OWASP ZAP",
+        "Nuclei",
+        "testssl.sh",
+        "S3Scanner / cloud_enum",
+        "SecurityHeaders.com"
+      ],
+      "notableCwe": [
+        "CWE-16 Configuration",
+        "CWE-611 XXE",
+        "CWE-1004 Missing HttpOnly Flag",
+        "CWE-489 Active Debug Code",
+        "CWE-942 Permissive Cross-domain Policy"
+      ],
+      "wstgRefs": [
+        "WSTG-CONF-01",
+        "WSTG-CONF-02",
+        "WSTG-CONF-06",
+        "WSTG-CONF-07",
+        "WSTG-ERRH-01"
+      ]
+    },
+    {
+      "id": "A03:2025",
+      "rank": 3,
+      "cweCount": 6,
+      "newIn2025": true,
+      "rankChange": "YENİ",
+      "title": "Software Supply Chain Failures",
+      "shortDesc": "NEW category for 2025. Vulnerabilities or malicious changes in dependencies, build systems, and distribution infrastructure.",
+      "description": "Software supply chain failures are breakdowns or compromises in how software is built, distributed, or updated — typically triggered by vulnerabilities or malicious changes in third-party code, tools, or dependencies. It expands 2021's 'Vulnerable and Outdated Components' (A06) into this new, broader category that also covers CI/CD pipelines, package sources, and distribution infrastructure.",
+      "howItHappens": [
+        "Not tracking versions of all components used — both direct and transitive dependencies",
+        "Running unsupported or outdated OS/server/DBMS/library versions",
+        "No regular vulnerability scanning or subscription to security bulletins",
+        "No change tracking across the supply chain — CI/CD config, repos, IDE extensions",
+        "Pulling components/packages from untrusted sources",
+        "A CI/CD pipeline that is less secure than the systems it builds and deploys",
+        "Patches stuck behind a monthly/quarterly change-control process, leaving exposure windows open for weeks or months"
+      ],
+      "howToTest": [
+        "Scan dependency manifests (package.json, requirements.txt, pom.xml) with SCA tools (OWASP Dependency-Check, npm audit, pip-audit)",
+        "Fingerprint framework/library/CMS versions in use and cross-reference known CVEs (Wappalyzer, BuiltWith + CVE search)",
+        "Where reachable, review CI/CD configuration for access control and secrets management",
+        "Check whether packages come from signed/verified sources (owner reputation, download counts, unusual publish dates)",
+        "Check whether auto-update/self-update mechanisms verify signatures before applying updates",
+        "Ask whether an SBOM (Software Bill of Materials) is generated and kept current"
+      ],
+      "exampleScenario": "The 2025 'Shai-Hulud' npm worm spread malicious versions of popular packages via a post-install script that harvested sensitive data from developer machines and exfiltrated it to public GitHub repos; it also automatically used any npm tokens it found to push malicious versions of other accessible packages. It infected over 500 package versions before npm shut it down — showing that developer machines are now a direct target for supply chain attacks.",
+      "examplePayload": "# Example dependency scan\n$ npm audit\n$ pip-audit -r requirements.txt\n$ dependency-check.sh --project \"TargetApp\" --scan ./\n\n# Red flags: recently published, low-download packages with a\n# postinstall script or a name similar to a popular package (typosquatting)",
+      "prevention": [
+        "Generate and manage a centralized SBOM (Software Bill of Materials) for your whole software",
+        "Track transitive dependencies, not just direct ones",
+        "Reduce attack surface by removing unused dependencies, features, and files",
+        "Continuously monitor CVE/NVD/OSV feeds; automate with SCA tools",
+        "Only obtain components from trusted, signed sources over secure links",
+        "Enforce MFA and access control on CI/CD, repos, and developer workstations; enforce separation of duty in build pipelines",
+        "Roll out updates in stages (canary deployments) rather than to all systems at once"
+      ],
+      "tools": [
+        "OWASP Dependency-Check",
+        "OWASP Dependency-Track",
+        "npm audit / pip-audit / Snyk",
+        "Trivy",
+        "retire.js",
+        "GitHub Advisory Database"
+      ],
+      "notableCwe": [
+        "CWE-1104 Use of Unmaintained Third Party Components",
+        "CWE-1395 Dependency on Vulnerable Third-Party Component",
+        "CWE-1329 Reliance on Component That is Not Updateable",
+        "CWE-477 Use of Obsolete Function"
+      ],
+      "wstgRefs": [
+        "WSTG-CONF-01"
+      ]
+    },
+    {
+      "id": "A04:2025",
+      "rank": 4,
+      "cweCount": 32,
+      "newIn2025": false,
+      "rankChange": "-2",
+      "title": "Cryptographic Failures",
+      "shortDesc": "Missing or weak encryption, broken algorithms, or leaked keys. Was #2 in 2021, dropped to #4 in 2025.",
+      "description": "Sensitive data (passwords, card numbers, health records, etc.) that is inadequately or never encrypted in transit or at rest, protected with weak/outdated algorithms, or exposed via poor key management falls into this category.",
+      "howItHappens": [
+        "Old or weak cryptographic algorithms/protocols used by default or in legacy code",
+        "Default, weak, or reused encryption keys; no proper key management or rotation",
+        "Cryptographic keys committed to source control",
+        "HTTPS not enforced, or security headers missing",
+        "Server certificate and trust chain not properly validated",
+        "IVs reused or an insecure mode like ECB used",
+        "Broken hash functions like MD5/SHA1 in use",
+        "Passwords used directly as cryptographic keys without a proper key-derivation function"
+      ],
+      "howToTest": [
+        "Scan TLS configuration with testssl.sh/SSL Labs: supported protocol versions, weak cipher suites, certificate validity",
+        "Verify all sensitive traffic is forced onto HTTPS (HSTS); try an HTTP downgrade",
+        "Look for how passwords/hashes are stored (via leaks or error messages) — check for MD5/SHA1/unsalted hashes",
+        "Test whether values requiring randomness (tokens, reset codes, session IDs) are predictable by comparing successive requests",
+        "Check whether sensitive data leaks into browser cache, logs, or URLs in plaintext",
+        "Look for cryptographic side-channel issues such as padding oracles (via differing error responses)"
+      ],
+      "exampleScenario": "A site doesn't enforce HTTPS on every page. An attacker sniffing traffic on an insecure network downgrades the connection to HTTP, steals the session cookie, and replays it to hijack the victim's session. In another case, the password database is stored with unsalted, weak hashes; a file-upload flaw leaks the database, and a rainbow table cracks most of the passwords quickly.",
+      "examplePayload": "# TLS/certificate scan\n$ testssl.sh https://target.com\n\n# HTTPS enforcement / HSTS check\n$ curl -I http://target.com   (does it 302 to https? is Strict-Transport-Security present?)",
+      "prevention": [
+        "Classify which data is sensitive (privacy laws, PCI-DSS scope, etc.)",
+        "Don't retain sensitive data unnecessarily; use tokenization/truncation where possible",
+        "Encrypt all sensitive data at rest; use TLS 1.2+ with forward-secrecy ciphers and enforce HSTS",
+        "Store passwords with salted, adaptive hashing (Argon2, bcrypt, scrypt, PBKDF2)",
+        "Generate IVs with a cryptographically secure RNG; never reuse one with the same key",
+        "Always use authenticated encryption, not encryption alone",
+        "Stop using broken/deprecated algorithms like MD5/SHA1 or ECB mode",
+        "Store your most sensitive keys in a hardware or cloud-based HSM"
+      ],
+      "tools": [
+        "testssl.sh",
+        "SSL Labs (Qualys)",
+        "Hashcat / John the Ripper (authorized testing only)",
+        "Burp Suite",
+        "CyberChef"
+      ],
+      "notableCwe": [
+        "CWE-327 Broken/Risky Cryptographic Algorithm",
+        "CWE-321 Hard-coded Cryptographic Key",
+        "CWE-330 Insufficiently Random Values",
+        "CWE-759 One-Way Hash without Salt",
+        "CWE-916 Insufficient Computational Effort in Password Hash"
+      ],
+      "wstgRefs": [
+        "WSTG-CRYP-01",
+        "WSTG-CRYP-02",
+        "WSTG-CRYP-03",
+        "WSTG-CRYP-04"
+      ]
+    },
+    {
+      "id": "A05:2025",
+      "rank": 5,
+      "cweCount": 37,
+      "newIn2025": false,
+      "rankChange": "-2",
+      "title": "Injection",
+      "shortDesc": "Untrusted user input sent as commands to an interpreter (DB, shell, browser). Was #3 in 2021.",
+      "description": "Injection occurs when untrusted input is passed to an interpreter — SQL, an OS shell, LDAP, an ORM, the browser DOM — without proper validation or escaping, letting the interpreter execute part of that input as a command. SQL Injection, XSS, OS Command Injection, NoSQL Injection, and LDAP Injection are the classic examples.",
+      "howItHappens": [
+        "User input used without validation, filtering, or sanitization",
+        "Dynamic queries/commands built without context-aware escaping",
+        "Unsanitized data used in ORM query parameters",
+        "SQL/command structure concatenated directly with user-controlled data",
+        "String concatenation used instead of parameterized queries"
+      ],
+      "howToTest": [
+        "Send special characters (quotes, `;`, `<script>`) into every input point (form field, URL param, header, cookie, JSON/XML body) and watch for behavior differences",
+        "Try boolean-based (' OR '1'='1), time-based (SLEEP/WAITFOR), and UNION-based SQLi; automate with sqlmap",
+        "Try reflected/stored/DOM XSS payloads like `<script>alert(1)</script>` in different contexts (HTML body, attribute, JS string)",
+        "Try OS command injection with shell metacharacters like `; whoami`, `| id`, `` `id` ``",
+        "Try operator-based NoSQL payloads like `{\"$ne\": null}` in JSON bodies",
+        "Test template engines for SSTI (`{{7*7}}`, `${7*7}`)"
+      ],
+      "exampleScenario": "A login form concatenates the username directly into a SQL query: \"SELECT * FROM accounts WHERE custID='\" + id + \"'\". Sending \"' OR '1'='1\" as the id changes the query's meaning and returns every row in the table. Similarly, a search box echoes user input straight into HTML; an attacker injects a `<script>` tag that runs code in other users' browsers (XSS).",
+      "examplePayload": "# Classic SQL Injection\n' OR '1'='1\n' UNION SELECT username,password FROM users--\n\n# XSS\n<script>alert(document.cookie)</script>\n\n# OS Command Injection\n; whoami\n$(id)",
+      "prevention": [
+        "Use safe APIs that avoid the interpreter entirely, or parameterized queries (prepared statements)",
+        "Even with an ORM, avoid building raw/dynamic query strings",
+        "Apply positive (allowlist) server-side input validation",
+        "For unavoidable dynamic queries, use the interpreter's specific escaping functions",
+        "Apply output encoding per context (HTML, JS, URL, attribute differ) — for XSS",
+        "Integrate SAST/DAST/IAST tools into CI/CD to catch injection flaws early"
+      ],
+      "tools": [
+        "sqlmap",
+        "Burp Suite (Intruder/Repeater)",
+        "OWASP ZAP",
+        "XSStrike",
+        "Commix (OS command injection)",
+        "ffuf/wfuzz"
+      ],
+      "notableCwe": [
+        "CWE-89 SQL Injection",
+        "CWE-79 Cross-site Scripting",
+        "CWE-78 OS Command Injection",
+        "CWE-943 NoSQL/Improper Neutralization in Data Query Logic",
+        "CWE-917 Expression Language Injection"
+      ],
+      "wstgRefs": [
+        "WSTG-INPV-01",
+        "WSTG-INPV-02",
+        "WSTG-INPV-05",
+        "WSTG-INPV-12",
+        "WSTG-INPV-18"
+      ]
+    },
+    {
+      "id": "A06:2025",
+      "rank": 6,
+      "cweCount": 39,
+      "newIn2025": false,
+      "rankChange": "-2",
+      "title": "Insecure Design",
+      "shortDesc": "Missing or ineffective security controls at the architecture/design level, not a coding bug — includes business logic flaws.",
+      "description": "Insecure design is a broad category expressed as 'missing or ineffective control design.' It's distinct from insecure implementation: a secure design can still have implementation bugs, but an insecure design can't be fixed by flawless coding because the needed controls were never designed in the first place. Business logic flaws fall under this category.",
+      "howItHappens": [
+        "No security requirements gathering or threat modeling before development starts",
+        "Untrustworthy recovery mechanisms in authentication, like 'security questions'",
+        "Missing quantity/limit/rate checks in business logic (e.g., unlimited bulk bookings, unlimited coupon attempts)",
+        "Insufficient business-rule validation in critical flows (registration, payment, authorization)",
+        "No anti-bot/anti-automation measures (scalping, stock-drain scenarios)",
+        "Trust boundaries not clearly defined"
+      ],
+      "howToTest": [
+        "Map the app's business workflows (orders, bookings, coupon redemption, transfers) and try breaking the logic with unexpected order or volume of requests",
+        "Send negative, oversized, or decimal/float values into quantity/limit fields",
+        "Test authentication recovery flows (password reset, security questions) for the weakest link",
+        "Check for rate limiting by rapidly repeating the same action (coupon code, promo, vote)",
+        "In multi-step flows, try skipping or reordering steps (e.g., call step 3 without step 1)",
+        "Send the same request concurrently to look for race conditions (e.g., spending the same balance twice)"
+      ],
+      "exampleScenario": "A cinema chain offers group-booking discounts, requiring a deposit past 15 attendees. An attacker threat-models this flow and books 600 seats across every theater in a handful of requests, causing significant revenue loss. In another case, a retailer has no bot protection for high-demand products; scalper bots drain the entire stock within seconds and resell it elsewhere at a markup.",
+      "examplePayload": "# Business logic test examples:\nPOST /booking  {\"seat_count\": 600}   (is there a limit check?)\nPOST /apply-coupon {\"code\": \"SAVE10\"}  x100 rapid repeat (rate limited?)\nPOST /payment/confirm  (calling it directly, skipping step 2)",
+      "prevention": [
+        "Threat-model critical areas: authentication, access control, business logic",
+        "Build and reuse a library of secure design patterns / paved-road components",
+        "Bake security requirements and acceptance criteria into user stories",
+        "Add plausibility checks at every tier, from frontend to backend",
+        "Write unit/integration tests validating critical flows against the threat model (use-cases and misuse-cases)",
+        "Segregate tiers and tenants at the network/system level"
+      ],
+      "tools": [
+        "Manual business-logic testing (Burp Repeater)",
+        "OWASP Threat Dragon (threat modeling)",
+        "OWASP ASVS checklist",
+        "Burp Turbo Intruder (race-condition testing)"
+      ],
+      "notableCwe": [
+        "CWE-841 Improper Enforcement of Behavioral Workflow",
+        "CWE-799 Improper Control of Interaction Frequency",
+        "CWE-434 Unrestricted File Upload",
+        "CWE-602 Client-Side Enforcement of Server-Side Security",
+        "CWE-362 Race Condition"
+      ],
+      "wstgRefs": [
+        "WSTG-BUSL-01",
+        "WSTG-BUSL-02",
+        "WSTG-BUSL-03",
+        "WSTG-BUSL-06",
+        "WSTG-BUSL-09"
+      ]
+    },
+    {
+      "id": "A07:2025",
+      "rank": 7,
+      "cweCount": 36,
+      "newIn2025": false,
+      "rankChange": "0",
+      "title": "Authentication Failures",
+      "shortDesc": "The system is tricked into treating an invalid or wrong user as legitimate. Renamed from 'Identification and Authentication Failures'.",
+      "description": "This category covers the ways an attacker can trick a system into recognizing an invalid or incorrect user as legitimate. The name was slightly changed to more accurately reflect the 36 CWEs it maps to (previously 'Identification and Authentication Failures').",
+      "howItHappens": [
+        "No defense against credential stuffing or hybrid password-spray attacks (e.g., trying Winter2025 -> Winter2026 variants)",
+        "Brute-force or scripted attacks not quickly blocked",
+        "Default, weak, or well-known passwords allowed (\"Password1\", \"admin\")",
+        "New accounts allowed to be created with already-breached credentials",
+        "Weak recovery flows like 'security questions'",
+        "Missing or ineffective multi-factor authentication",
+        "Session identifiers exposed in the URL, a hidden field, or another insecure location",
+        "The same session ID reused after successful login (session fixation)",
+        "Sessions/tokens not properly invalidated after logout or inactivity"
+      ],
+      "howToTest": [
+        "Attempt repeated failed logins (carefully, in an authorized test environment) to check for rate limiting/lockout",
+        "Test password policy strength (length, complexity, checks against known-weak lists)",
+        "Check whether the session ID changes before and after login (session fixation test)",
+        "After logout, resend the old session token/cookie to see if it's still accepted",
+        "Review the password-reset flow: is the token guessable, does it expire, can email verification be bypassed?",
+        "Confirm login, registration, and password-reset all return the same message to prevent username enumeration",
+        "If MFA exists, test for bypass routes (fallback mechanisms, race conditions, response tampering)"
+      ],
+      "exampleScenario": "An attacker automates a list of username/password pairs leaked from another breach against the target system (credential stuffing); with no rate limiting, some accounts are compromised. In another scenario, a user on a shared computer closes the tab instead of clicking 'logout'; because one of the SSO-connected apps doesn't properly support single logout, whoever uses that browser next can still access the still-authenticated session.",
+      "examplePayload": "# Credential stuffing attempt (authorized test environment only!)\nPOST /login {\"user\":\"test@example.com\",\"pass\":\"Winter2025!\"}\nPOST /login {\"user\":\"test@example.com\",\"pass\":\"Winter2026!\"}\n\n# Session fixation check\n# 1) Note the session cookie before login\n# 2) Check whether the same cookie is still valid after login",
+      "prevention": [
+        "Enforce multi-factor authentication wherever possible",
+        "Encourage/support password manager usage",
+        "Never ship with default credentials, especially for admin accounts",
+        "Test new/changed passwords against the top 10,000 worst-passwords list and breach databases (haveibeenpwned)",
+        "Follow NIST 800-63b for password length/complexity/rotation; don't force periodic rotation absent a suspected breach",
+        "Harden registration/recovery flows against enumeration — return the same message for every outcome",
+        "Rate-limit/delay failed logins without creating a DoS; log and alert on suspected attacks",
+        "Generate a new, high-entropy session ID after login; keep session identifiers out of the URL, in a secure cookie, and invalidate on logout/timeout"
+      ],
+      "tools": [
+        "Burp Suite (Intruder for brute-force/credential-stuffing simulation)",
+        "Hydra (authorized testing)",
+        "jwt_tool",
+        "OWASP ZAP"
+      ],
+      "notableCwe": [
+        "CWE-287 Improper Authentication",
+        "CWE-384 Session Fixation",
+        "CWE-798 Use of Hard-coded Credentials",
+        "CWE-307 Improper Restriction of Excessive Authentication Attempts",
+        "CWE-640 Weak Password Recovery Mechanism"
+      ],
+      "wstgRefs": [
+        "WSTG-ATHN-01",
+        "WSTG-ATHN-02",
+        "WSTG-ATHN-03",
+        "WSTG-ATHN-06",
+        "WSTG-SESS-01",
+        "WSTG-SESS-02"
+      ]
+    },
+    {
+      "id": "A08:2025",
+      "rank": 8,
+      "cweCount": 14,
+      "newIn2025": false,
+      "rankChange": "0",
+      "title": "Software or Data Integrity Failures",
+      "shortDesc": "Untrusted code/data treated as trusted without integrity verification (e.g., insecure deserialization, unsigned updates).",
+      "description": "This category covers code and infrastructure that fails to verify the integrity of code or data before trusting it — for example, plugins from untrusted sources, a CI/CD pipeline that doesn't verify what it pulls, unsigned auto-updates, or objects deserialized from a structure an attacker can see and modify. Unlike A03 (Software Supply Chain Failures), the focus here is on integrity verification at the level of an individual component or data artifact.",
+      "howItHappens": [
+        "Plugins/libraries/modules pulled from untrusted repositories or CDNs",
+        "CI/CD pipeline not verifying the integrity (e.g., signatures) of what it pulls",
+        "Auto-update features downloading and applying updates without sufficient integrity verification",
+        "Insecure deserialization of objects/data an attacker can see and tamper with",
+        "A subdomain pointed at a third-party support/integration service, leaking cookies from the parent domain"
+      ],
+      "howToTest": [
+        "Identify the serialization format in use (Java, PHP, .NET, Python pickle) — e.g., a base64 'rO0' signature — and test for deserialization flaws",
+        "Check whether auto-update/plugin-download endpoints verify a signature or checksum",
+        "Check whether Subresource Integrity (SRI) is used for JS loaded from a CDN or third-party source",
+        "Check whether third-party support/integration subdomain routing breaks cookie/domain isolation",
+        "If CI/CD config is reachable, verify that build/deploy steps use signed artifacts"
+      ],
+      "exampleScenario": "A React app serializes user state and passes it back and forth with each request. An attacker spots the 'rO0' Java-object signature in the base64 data and, using a deserialization scanning tool, achieves remote code execution on the server. In another case, an IoT device ships firmware updates without signing them; an attacker injects malicious firmware into the update channel and takes over devices in the field.",
+      "examplePayload": "# Look for a Java deserialization signature\n# A base64-decoded value starting with 'rO0' is suspicious in a cookie/parameter\n\n# SRI check (in HTML source):\n<script src=\"https://cdn.example.com/lib.js\" integrity=\"sha384-...\" crossorigin=\"anonymous\"></script>\n# missing 'integrity' attribute means the CDN's content isn't integrity-checked",
+      "prevention": [
+        "Verify software/data with digital signatures or an equivalent mechanism (source + unaltered)",
+        "Only pull libraries/dependencies from trusted repositories; consider an internal vetted repo for higher-risk profiles",
+        "Require a review process for code/configuration changes",
+        "Enforce separation of duties, configuration, and access control in the CI/CD pipeline",
+        "Never process unsigned/unencrypted serialized data from untrusted clients without an integrity check"
+      ],
+      "tools": [
+        "ysoserial (Java deserialization testing, authorized use only)",
+        "Java Deserialization Scanner (Burp extension)",
+        "SRI Hash Generator",
+        "CI/CD pipeline audit tools"
+      ],
+      "notableCwe": [
+        "CWE-502 Deserialization of Untrusted Data",
+        "CWE-829 Inclusion of Functionality from Untrusted Control Sphere",
+        "CWE-494 Download of Code Without Integrity Check",
+        "CWE-830 Inclusion of Web Functionality from an Untrusted Source"
+      ],
+      "wstgRefs": [
+        "WSTG-BUSL-08",
+        "WSTG-CLNT-05"
+      ]
+    },
+    {
+      "id": "A09:2025",
+      "rank": 9,
+      "cweCount": 5,
+      "newIn2025": false,
+      "rankChange": "0",
+      "title": "Security Logging & Alerting Failures",
+      "shortDesc": "Attacks go undetected due to insufficient logging/monitoring/alerting. Renamed to emphasize 'Alerting' over 'Monitoring'.",
+      "description": "Without logging and monitoring, attacks and breaches can't be detected, and without alerting, it's very hard to respond quickly to a security incident. The name changed from 'Security Logging and Monitoring Failures' to 'Security Logging & Alerting Failures' to stress that good logging with no alerting provides little value for actually catching an incident.",
+      "howItHappens": [
+        "Auditable events (logins, failed logins, high-value transactions) not logged, or logged inconsistently (e.g., only successes, not failures)",
+        "Warnings/errors producing insufficient or unclear log messages",
+        "Log integrity not protected against tampering",
+        "Application/API logs not monitored for suspicious activity",
+        "Logs stored only locally, without backup",
+        "No proper alert thresholds/escalation process, or alerts not reviewed in a reasonable time",
+        "Logged data itself containing sensitive information (PII/PHI), or the logging pipeline being vulnerable to injection"
+      ],
+      "howToTest": [
+        "Assess (where logs/dashboards are accessible) whether events like failed logins or unauthorized access attempts would actually be noticed by an incident-response team",
+        "Check whether error pages/logs leak sensitive data (stack traces, DB connection strings, internal IPs)",
+        "Test for log injection by sending CRLF (`%0d%0a`) or control characters and checking if the log format breaks",
+        "During a DAST scan (Burp/ZAP), confirm with the target team whether any alert was actually triggered (authorized testing only)",
+        "Ask whether critical actions (password change, privilege change, deletion) have an audit trail"
+      ],
+      "exampleScenario": "A children's health-plan provider is breached and thousands of sensitive health records are altered; with no logging or monitoring in place, the breach isn't even noticed until an external party reports it — a later review finds it may have been ongoing for over seven years. This is a real-world example of how a lack of logging and alerting can leave a breach undetected for years.",
+      "examplePayload": "# Log injection attempt (authorized test environment)\nGET /login?user=admin%0d%0aFAKE_LOG_ENTRY:admin_login_success HTTP/1.1\n# Goal: see whether a fake line can be injected into the log file",
+      "prevention": [
+        "Log login, access-control, and server-side validation failures with enough user context, retained long enough for forensic analysis",
+        "Log every part of the app that has a security control, whether it succeeds or fails",
+        "Encode log data correctly to prevent injection",
+        "Keep a tamper-resistant (append-only) audit trail of every transaction",
+        "Alert on suspicious behavior; build playbooks for the SOC team",
+        "Add honeytokens as traps so any access is flagged with nearly zero false positives",
+        "Adopt an incident-response and recovery plan such as NIST 800-61"
+      ],
+      "tools": [
+        "ELK Stack (Elasticsearch, Logstash, Kibana)",
+        "Wazuh",
+        "Burp Suite (log injection testing)",
+        "Splunk"
+      ],
+      "notableCwe": [
+        "CWE-778 Insufficient Logging",
+        "CWE-117 Improper Output Neutralization for Logs",
+        "CWE-532 Insertion of Sensitive Information into Log File"
+      ],
+      "wstgRefs": [
+        "WSTG-ERRH-01",
+        "WSTG-ERRH-02"
+      ]
+    },
+    {
+      "id": "A10:2025",
+      "rank": 10,
+      "cweCount": 24,
+      "newIn2025": true,
+      "rankChange": "YENİ",
+      "title": "Mishandling of Exceptional Conditions",
+      "shortDesc": "NEW category for 2025. Poor error handling, logic errors, and 'fail open' behavior around unexpected conditions.",
+      "description": "This category covers software that fails to prevent, detect, or properly respond to unusual and unpredictable situations — leading to crashes, unstable behavior, and sometimes direct security holes. These issues were previously lumped under general 'code quality,' and were split into their own category in 2025 to give clearer guidance.",
+      "howItHappens": [
+        "Missing/weak input validation, or error handling done far too late instead of where the problem actually occurs",
+        "Unexpected environmental states (memory, privileges, network issues) not handled correctly",
+        "Inconsistent or missing exception handling, letting the system fall into an unknown state",
+        "A multi-step transaction not fully rolled back when a mid-flow error occurs",
+        "'Fail open' behavior — a security control disabled and the request processed anyway when an error occurs",
+        "Error messages leaking excessive detail (stack traces, DB errors)"
+      ],
+      "howToTest": [
+        "Send 'abnormal' inputs — missing parameters, wrong data types, extreme values, malformed JSON/XML — and observe how the app errors out",
+        "Test whether an error leaves the app on the safe side (fail closed) or the unsafe side (fail open) — e.g., if the authorization service times out, is the request denied or let through?",
+        "Interrupt a multi-step transaction (payment, transfer) mid-flow (drop the connection, force a timeout) and check whether the data stays consistent",
+        "Trigger repeated failures in resource-heavy operations like file upload to see if resources (handles, memory, connections) leak (resource exhaustion/DoS)",
+        "Check whether error pages/JSON responses leak stack traces, internal paths, or DB error details",
+        "Run edge-case tests with null, empty, or extremely long values"
+      ],
+      "exampleScenario": "A file-upload feature catches errors during upload but doesn't properly release resources afterward; an attacker repeatedly triggers upload failures, exhausting server resources and taking the service down (DoS). In another case, a multi-step money transfer (debit account -> credit destination -> log) is interrupted mid-flow by a network drop; because the transaction isn't rolled back properly (fail closed), an attacker can exploit this to drain a balance or complete the same transfer multiple times.",
+      "examplePayload": "# Abnormal-input test examples\nPOST /api/product {}                      (missing required field)\nPOST /api/product {\"price\": -999999999}    (extreme/negative value)\nPOST /api/product  Content-Type: application/json\nBroken-JSON-body-here                       (trigger a parse error)\n\n# Expected: a meaningful, non-leaking error + logging. If it leaks,\n# you'll see a stack trace or internal file path in the response.",
+      "prevention": [
+        "Catch every possible error right where it occurs and handle it meaningfully (clear message to the user, logging, alert if warranted)",
+        "Use a centralized/global exception handler instead of ad-hoc handling scattered per function",
+        "If a transaction is interrupted, roll back the whole thing (fail closed) — trying to 'rescue' a partial transaction usually causes worse damage",
+        "Add rate limiting, resource quotas, and throttling wherever possible",
+        "Pair strict input validation with centralized error handling/logging/alerting (see A09)",
+        "Run stress, performance, and penetration testing on critical flows; threat-model during design"
+      ],
+      "tools": [
+        "Burp Suite (Intruder for fuzzing)",
+        "OWASP ZAP",
+        "ffuf/wfuzz (edge-case fuzzing)",
+        "Postman (malformed request testing)"
+      ],
+      "notableCwe": [
+        "CWE-755 Improper Handling of Exceptional Conditions",
+        "CWE-636 Not Failing Securely ('Failing Open')",
+        "CWE-209 Error Message Containing Sensitive Information",
+        "CWE-703 Improper Check/Handling of Exceptional Conditions",
+        "CWE-476 NULL Pointer Dereference"
+      ],
+      "wstgRefs": [
+        "WSTG-ERRH-01",
+        "WSTG-ERRH-02",
+        "WSTG-BUSL-07"
+      ]
+    }
+  ]
+}

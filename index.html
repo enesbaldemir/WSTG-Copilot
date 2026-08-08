@@ -31,6 +31,11 @@
 
       <div class="nav-title" data-i18n="navCategories">WSTG Kategorileri</div>
       <div id="categoryNav"><!-- JS ile doldurulur --></div>
+
+      <div class="nav-title" data-i18n="navReference">Referans</div>
+      <button class="nav-item" id="top10NavBtn">
+        <span class="dot"></span><span data-i18n="navTop10">OWASP Top 10:2025</span>
+      </button>
     </nav>
 
     <div class="sidebar-footer">
@@ -132,8 +137,32 @@
       </div>
       <div class="categories" id="categoriesGrid"><!-- JS ile doldurulur --></div>
     </section>
+
+    <!-- OWASP Top 10:2025 -->
+    <section id="top10Section">
+      <div class="section-header">
+        <h3 data-i18n="top10SectionTitle">OWASP Top 10:2025 — En Kritik Web Uygulaması Riskleri</h3>
+        <a href="https://owasp.org/Top10/2025/" target="_blank" style="color:var(--muted);font-size:.9rem;text-decoration:none" data-i18n="top10SectionSub">owasp.org/Top10/2025 kaynağına dayanır ↗</a>
+      </div>
+      <div class="categories" id="top10Grid"><!-- JS ile doldurulur --></div>
+    </section>
   </main>
 
+</div>
+
+<!-- OWASP Top 10 Detay Paneli -->
+<div class="overlay" id="top10Overlay">
+  <div class="panel">
+    <div class="panel-header">
+      <div>
+        <span class="badge top10-rank-badge" id="top10PanelRank">#1</span>
+        <h3 id="top10PanelTitle" style="margin-top:10px">Risk Adı</h3>
+        <p id="top10PanelShortDesc">Kısa açıklama</p>
+      </div>
+      <button class="close-btn" id="closeTop10Overlay">&times;</button>
+    </div>
+    <div class="panel-body" id="top10PanelBody"><!-- JS ile doldurulur --></div>
+  </div>
 </div>
 
 <!-- Kategori Detay Paneli -->

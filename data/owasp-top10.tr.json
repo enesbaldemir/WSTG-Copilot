@@ -1,0 +1,577 @@
+{
+  "version": "OWASP Top 10:2025",
+  "source": "https://owasp.org/Top10/2025/",
+  "top10": [
+    {
+      "id": "A01:2025",
+      "rank": 1,
+      "cweCount": 40,
+      "newIn2025": false,
+      "rankChange": "0",
+      "title": "Bozuk Erişim Kontrolü (Broken Access Control)",
+      "shortDesc": "Kullanıcıların yetkileri dışında veriye erişebilmesi veya işlem yapabilmesi. SSRF de bu kategoriye dahil edildi.",
+      "description": "Erişim kontrolü, kullanıcıların yalnızca kendilerine tanınan yetkiler dahilinde hareket etmesini sağlayan politikadır. Bu kontroller zayıf ya da eksikse, yetkisiz veri ifşası, verinin değiştirilmesi/silinmesi ya da kullanıcının yetkisi dışında bir iş fonksiyonunu çalıştırması mümkün olur. 2025 listesinde SSRF (Server-Side Request Forgery) de bu kategoriye dahil edilmiştir, çünkü SSRF temelde sunucunun kendi yetkisi dışında istek yapmaya zorlanmasıyla ilgili bir erişim kontrolü sorunudur.",
+      "howItHappens": [
+        "'Deny by default' ilkesinin uygulanmaması; herkese açık olmaması gereken kaynaklara varsayılan olarak erişim verilmesi",
+        "URL, parametre veya gizli alanların değiştirilmesiyle (parameter tampering/force browsing) erişim kontrolünün atlatılması",
+        "Insecure Direct Object Reference (IDOR) — bir kaydın ID'sini değiştirerek başka bir kullanıcının verisine erişilmesi",
+        "POST/PUT/DELETE gibi durumlar için erişim kontrolü uygulanmayan API uçları",
+        "JWT, cookie veya gizli alanların değiştirilerek (metadata manipulation) yetki yükseltilmesi",
+        "Yanlış yapılandırılmış CORS politikası ile güvenilmeyen kaynaklardan API erişimine izin verilmesi",
+        "Erişim kontrolünün yalnızca ön yüzde (frontend/JavaScript) uygulanıp sunucu tarafında doğrulanmaması",
+        "Sunucunun, saldırgan kontrolündeki bir URL/adrese istek yapmaya zorlanması (SSRF)"
+      ],
+      "howToTest": [
+        "Farklı yetki seviyelerinde (anonim, standart kullanıcı, admin) hesaplar oluşturup her uç noktayı bu hesaplarla test edin (yatay & dikey yetki yükseltme testleri)",
+        "İstek içindeki ID/parametre değerlerini (acct, user_id, order_id vb.) başka bir kullanıcıya ait değerlerle değiştirip yanıtı gözlemleyin (IDOR)",
+        "Admin sayfalarına giden URL'leri doğrudan (force browsing) yetkisiz bir oturumla deneyin",
+        "REST/GraphQL API uçlarında GET dışında POST/PUT/DELETE metodlarının da yetki kontrolüne tabi olup olmadığını kontrol edin",
+        "JWT/cookie içeriğini decode edip (jwt.io, Burp) rol/izin alanlarını değiştirerek tekrar gönderin, imza doğrulamasının atlanıp atlanmadığını test edin",
+        "CORS başlıklarını (Access-Control-Allow-Origin, -Credentials) farklı Origin değerleriyle test edin",
+        "Kullanıcı girdisi alan URL/dosya çekme özelliklerinde (webhook, PDF export, resim önizleme vb.) iç ağ adresleri (169.254.169.254, localhost, 127.0.0.1, dahili IP aralıkları) ile SSRF deneyin",
+        "Dizin listeleme (directory listing) açık mı, .git/.env gibi meta dosyalar erişilebilir mi kontrol edin"
+      ],
+      "exampleScenario": "Bir e-ticaret uygulamasında sipariş detay sayfası '/siparis?id=1042' gibi bir URL kullanıyor. Kullanıcı ID değerini '1043' olarak değiştirdiğinde, uygulama sipariş sahibinin kendisi olup olmadığını kontrol etmediği için başka bir müşterinin adres ve ödeme bilgilerini görüntüleyebiliyor. Benzer şekilde bir PDF-fatura oluşturma özelliği, kullanıcının verdiği bir URL'den görsel çekiyor; saldırgan bu URL yerine 'http://169.254.169.254/latest/meta-data/' gibi bulut sağlayıcının iç metadata servisini vererek sunucu üzerinden hassas kimlik bilgilerine ulaşabiliyor (SSRF).",
+      "examplePayload": "GET /app/siparis?id=1043 HTTP/1.1\nHost: hedef.com\nCookie: session=<baska_kullaniciya_ait_olmayan_kendi_oturumunuz>\n\n# SSRF denemesi:\nPOST /app/pdf-export HTTP/1.1\nContent-Type: application/json\n\n{\"logoUrl\": \"http://169.254.169.254/latest/meta-data/iam/security-credentials/\"}",
+      "prevention": [
+        "Varsayılan olarak erişimi reddedin (deny by default), yalnızca gerekli olan kaynaklar herkese açık olsun",
+        "Erişim kontrolünü uygulama genelinde tek bir merkezi mekanizmada uygulayın, her uç noktada tekrar yazmayın",
+        "Kayıt sahipliğini (ownership) modelleyin: kullanıcı yalnızca kendi kaydını okuyabilsin/değiştirebilsin",
+        "API'lerde rate limiting uygulayın, tekrarlayan başarısız erişim denemelerini loglayıp uyarı üretin",
+        "JWT'leri kısa ömürlü tutun, oturum kimliklerini logout sonrası sunucu tarafında geçersiz kılın",
+        "CORS'u minimumda tutun, sadece güvenilen origin'lere izin verin",
+        "Sunucu taraflı URL/dosya çekme işlemlerinde izin verilen adresleri allowlist ile sınırlayın, iç ağ/metadata adreslerini engelleyin",
+        "Dizin listelemeyi kapatın, .git/.env gibi dosyaların web root altında bulunmadığından emin olun"
+      ],
+      "tools": [
+        "Burp Suite (Autorize/AuthMatrix eklentileri)",
+        "OWASP ZAP",
+        "Postman/Insomnia",
+        "jwt.io / jwt_tool",
+        "SSRFmap",
+        "Autorize"
+      ],
+      "notableCwe": [
+        "CWE-284 Improper Access Control",
+        "CWE-862 Missing Authorization",
+        "CWE-863 Incorrect Authorization",
+        "CWE-918 SSRF",
+        "CWE-352 CSRF",
+        "CWE-639 IDOR (Authorization Bypass Through User-Controlled Key)"
+      ],
+      "wstgRefs": [
+        "WSTG-ATHZ-01",
+        "WSTG-ATHZ-02",
+        "WSTG-ATHZ-04",
+        "WSTG-INPV-19"
+      ]
+    },
+    {
+      "id": "A02:2025",
+      "rank": 2,
+      "cweCount": 16,
+      "newIn2025": false,
+      "rankChange": "+3",
+      "title": "Güvenlik Yanlış Yapılandırması (Security Misconfiguration)",
+      "shortDesc": "Sistem, uygulama veya bulut servisinin güvenlik açısından hatalı kurulması. 2021'de 5. sıradaydı, 2025'te 2. sıraya yükseldi.",
+      "description": "Bir sistem, uygulama veya bulut servisi güvenlik açısından yanlış yapılandırıldığında ortaya çıkan zafiyet kategorisidir. Uygulamaların giderek daha fazla davranışının konfigürasyona bağlı hale gelmesiyle bu kategori 2021'deki 5. sıradan 2025'te 2. sıraya yükselmiştir.",
+      "howItHappens": [
+        "Uygulama yığınının herhangi bir katmanında eksik güvenlik sıkılaştırması (hardening) veya yanlış bulut izinleri",
+        "Gereksiz özelliklerin/portların/servislerin/hesapların/test frameworklerinin aktif bırakılması",
+        "Varsayılan hesap ve parolaların değiştirilmeden bırakılması",
+        "Hata mesajlarının stack trace gibi aşırı detaylı bilgi sızdırması",
+        "Güncellenen sistemlerde yeni güvenlik özelliklerinin devre dışı/yanlış yapılandırılmış olması",
+        "Sunucu/framework/kütüphane/veritabanı güvenlik ayarlarının güvenli değerlere çekilmemiş olması",
+        "Güvenlik başlıklarının (CSP, X-Frame-Options, HSTS vb.) hiç gönderilmemesi ya da hatalı ayarlanması"
+      ],
+      "howToTest": [
+        "HTTP yanıt başlıklarını (Server, X-Powered-By, güvenlik başlıkları) inceleyerek versiyon/teknoloji bilgisi sızıntısı olup olmadığına bakın",
+        "Varsayılan/örnek uygulamaların, admin panellerinin ve varsayılan kimlik bilgilerinin (admin/admin gibi) hâlâ erişilebilir olup olmadığını kontrol edin",
+        "Dizin listelemeyi, açık backup/config dosyalarını (.bak, .old, web.config, .env) taramayla arayın",
+        "Kasıtlı olarak hatalı istekler göndererek (yanlış content-type, bozuk JSON, beklenmeyen parametre) detaylı hata/stack trace dönüp dönmediğini kontrol edin",
+        "Bulut depolama izinlerini (S3 bucket, blob storage) herkese açık okuma/yazma için test edin",
+        "CSP, X-Content-Type-Options, X-Frame-Options, Strict-Transport-Security başlıklarının varlığını ve doğru ayarlandığını doğrulayın",
+        "XML işleyen uçlarda XXE (harici entity) enjeksiyonunu test edin"
+      ],
+      "exampleScenario": "Uygulama sunucusunda üretime taşınırken silinmemiş bir örnek/demo uygulama bulunuyor ve bu uygulamanın admin konsolunda varsayılan parola hâlâ aktif. Saldırgan bu varsayılan hesapla giriş yaparak sunucunun tamamını ele geçiriyor. Ayrı bir örnekte, sunucuda dizin listeleme kapatılmadığı için saldırgan derlenmiş sınıf dosyalarını indirip ters mühendislikle inceliyor ve ciddi bir erişim kontrolü açığı buluyor.",
+      "examplePayload": "# Dizin listeleme / hassas dosya kontrolü\nGET /backup/ HTTP/1.1\nGET /.env HTTP/1.1\nGET /.git/config HTTP/1.1\n\n# Detaylı hata mesajı tetikleme\nGET /api/user?id=' HTTP/1.1   (beklenmeyen karakterle hata sayfasını tetiklemeyi deneyin)",
+      "prevention": [
+        "Tekrarlanabilir bir sıkılaştırma (hardening) süreci kurun; dev/QA/prod ortamlarını aynı şekilde yapılandırıp farklı kimlik bilgileri kullanın",
+        "Kullanılmayan özellik, framework, dokümantasyon ve örnek uygulamaları kaldırın",
+        "Yama/güncelleme sürecinin bir parçası olarak konfigürasyonları düzenli gözden geçirin; bulut depolama izinlerini denetleyin",
+        "Bileşenler/kiracılar arasında segmentasyon (container, güvenlik grupları/ACL) uygulayın",
+        "Güvenlik başlıklarını (CSP, HSTS, X-Frame-Options vb.) istemciye gönderin",
+        "Konfigürasyonların etkinliğini doğrulayan otomatik bir süreç kurun; otomasyon yoksa en az yılda bir manuel doğrulama yapın",
+        "Statik anahtarlar/sırlar yerine kısa ömürlü kimlik bilgileri veya rol tabanlı erişim mekanizmalarını tercih edin"
+      ],
+      "tools": [
+        "Nikto",
+        "OWASP ZAP",
+        "Nuclei",
+        "testssl.sh",
+        "S3Scanner / cloud_enum",
+        "SecurityHeaders.com"
+      ],
+      "notableCwe": [
+        "CWE-16 Configuration",
+        "CWE-611 XXE",
+        "CWE-1004 Missing HttpOnly Flag",
+        "CWE-489 Active Debug Code",
+        "CWE-942 Permissive Cross-domain Policy"
+      ],
+      "wstgRefs": [
+        "WSTG-CONF-01",
+        "WSTG-CONF-02",
+        "WSTG-CONF-06",
+        "WSTG-CONF-07",
+        "WSTG-ERRH-01"
+      ]
+    },
+    {
+      "id": "A03:2025",
+      "rank": 3,
+      "cweCount": 6,
+      "newIn2025": true,
+      "rankChange": "YENİ",
+      "title": "Yazılım Tedarik Zinciri Hataları (Software Supply Chain Failures)",
+      "shortDesc": "2025'te YENİ kategori. Bağımlılıklar, build sistemleri ve dağıtım altyapısındaki güvenlik zafiyetleri/kötü amaçlı değişiklikler.",
+      "description": "Yazılım tedarik zinciri hataları, yazılımın inşa edilme, dağıtılma veya güncellenme sürecindeki aksaklık ya da tehlikeye atılmalardır. Genellikle üçüncü taraf kod, araç veya bağımlılıklardaki zafiyet ya da kötü amaçlı değişikliklerden kaynaklanır. 2021'deki 'Bilinen Zafiyetli Bileşenler' (A06) kategorisinin kapsamı genişletilerek CI/CD hattı, paket kaynakları ve dağıtım altyapısını da içerecek şekilde bu yeni kategoriye dönüştürülmüştür.",
+      "howItHappens": [
+        "Kullanılan tüm bileşenlerin (doğrudan + geçişli/transitive bağımlılıklar) versiyonlarının takip edilmemesi",
+        "Desteklenmeyen, güncel olmayan işletim sistemi/sunucu/DBMS/kütüphane kullanımı",
+        "Düzenli zafiyet taraması yapılmaması, güvenlik bültenlerine abone olunmaması",
+        "CI/CD hattı, kod deposu, IDE eklentileri gibi tedarik zinciri bileşenlerinde değişiklik takibinin olmaması",
+        "Güvenilmeyen kaynaklardan bileşen/paket indirilmesi",
+        "CI/CD hattının, inşa ettiği/dağıttığı sistemlerden daha zayıf güvenliğe sahip olması",
+        "Yamaların aylık/üç aylık bir 'change control' sürecine bağlı olması nedeniyle günlerce/aylarca yama uygulanmadan beklenmesi"
+      ],
+      "howToTest": [
+        "package.json/requirements.txt/pom.xml gibi bağımlılık dosyalarını SCA araçlarıyla (OWASP Dependency-Check, npm audit, pip-audit) tarayın",
+        "Kullanılan framework/kütüphane/CMS sürümlerini tespit edip bilinen CVE'lerle eşleştirin (Wappalyzer, BuiltWith + CVE arama)",
+        "CI/CD yapılandırma dosyalarına (varsa erişilebiliyorsa) erişim kontrolü ve secrets yönetimini inceleyin",
+        "Paketlerin imzalı/doğrulanmış kaynaklardan gelip gelmediğini (npm/PyPI paket sahibi, indirme sayısı, yayın tarihi anomalileri) kontrol edin",
+        "Otomatik güncelleme/self-update mekanizmalarının imza doğrulaması yapıp yapmadığını inceleyin",
+        "SBOM (Software Bill of Materials) üretilip üretilmediğini ve güncel tutulup tutulmadığını sorun"
+      ],
+      "exampleScenario": "2025'te ortaya çıkan 'Shai-Hulud' npm solucanı, popüler npm paketlerinin kötü amaçlı sürümlerini yayarak kurulum sonrası çalışan bir script ile geliştirici makinelerinden hassas verileri toplayıp herkese açık GitHub depolarına sızdırıyordu; ayrıca ele geçirdiği npm token'larını kullanarak erişebildiği diğer paketlere de otomatik olarak kötü amaçlı sürümler yayıyordu. 500'den fazla paket sürümüne bulaştıktan sonra npm tarafından durduruldu. Bu olay, geliştirici makinelerinin artık tedarik zinciri saldırılarının doğrudan hedefi haline geldiğini gösterdi.",
+      "examplePayload": "# Bağımlılık taraması (örnek)\n$ npm audit\n$ pip-audit -r requirements.txt\n$ dependency-check.sh --project \"HedefUygulama\" --scan ./\n\n# Şüpheli paket işaretleri: yakın zamanda yayınlanmış, az indirilmiş,\n# postinstall script içeren, typosquatting'e benzeyen isimli paketler",
+      "prevention": [
+        "Tüm yazılımınız için merkezi bir SBOM (Software Bill of Materials) üretin ve yönetin",
+        "Doğrudan bağımlılıkların yanı sıra geçişli (transitive) bağımlılıkları da takip edin",
+        "Kullanılmayan bağımlılık/özellik/dosyaları kaldırarak saldırı yüzeyini azaltın",
+        "CVE/NVD/OSV gibi kaynakları sürekli izleyin; SCA araçlarıyla otomatikleştirin",
+        "Bileşenleri yalnızca güvenilir/imzalı kaynaklardan, güvenli bağlantılar üzerinden alın",
+        "CI/CD, kod deposu, geliştirici iş istasyonları için MFA + erişim kontrolü uygulayın; yapı süreçlerinde görev ayrılığı (separation of duty) sağlayın",
+        "Güncellemeleri tüm sistemlere aynı anda değil, aşamalı (staged/canary) dağıtın"
+      ],
+      "tools": [
+        "OWASP Dependency-Check",
+        "OWASP Dependency-Track",
+        "npm audit / pip-audit / Snyk",
+        "Trivy",
+        "retire.js",
+        "GitHub Advisory Database"
+      ],
+      "notableCwe": [
+        "CWE-1104 Use of Unmaintained Third Party Components",
+        "CWE-1395 Dependency on Vulnerable Third-Party Component",
+        "CWE-1329 Reliance on Component That is Not Updateable",
+        "CWE-477 Use of Obsolete Function"
+      ],
+      "wstgRefs": [
+        "WSTG-CONF-01"
+      ]
+    },
+    {
+      "id": "A04:2025",
+      "rank": 4,
+      "cweCount": 32,
+      "newIn2025": false,
+      "rankChange": "-2",
+      "title": "Kriptografik Hatalar (Cryptographic Failures)",
+      "shortDesc": "Şifreleme eksikliği, zayıf algoritma kullanımı veya anahtar sızıntısı. 2021'de 2. sıradaydı, 2025'te 4. sıraya geriledi.",
+      "description": "Aktarım halindeki (transit) ve durağan (rest) hassas verinin (parola, kart bilgisi, sağlık kaydı vb.) yetersiz veya hiç şifrelenmemesi, zayıf/eski algoritmaların kullanılması, anahtar yönetiminin kötü yapılması sonucu ortaya çıkan zafiyetlerdir.",
+      "howItHappens": [
+        "Eski/zayıf kriptografik algoritma veya protokollerin varsayılan olarak kullanılması",
+        "Varsayılan/zayıf/tekrar kullanılan şifreleme anahtarları, uygun anahtar yönetimi ve rotasyonun olmaması",
+        "Şifreleme anahtarlarının kaynak kod deposuna commit edilmesi",
+        "HTTPS zorunlu kılınmaması veya güvenlik başlıklarının eksik olması",
+        "Sunucu sertifikası ve güven zincirinin doğru doğrulanmaması",
+        "IV'lerin (initialization vector) yeniden kullanılması veya ECB gibi güvensiz mod kullanımı",
+        "MD5/SHA1 gibi kriptografik olarak kırık hash fonksiyonlarının kullanılması",
+        "Parolaların uygun bir key-derivation fonksiyonu olmadan doğrudan kriptografik anahtar olarak kullanılması"
+      ],
+      "howToTest": [
+        "TLS yapılandırmasını testssl.sh/SSL Labs ile tarayın: desteklenen protokol sürümleri, zayıf cipher suite'ler, sertifika geçerliliği",
+        "Hassas veri içeren tüm bağlantıların HTTPS'e zorlandığını (HSTS) doğrulayın, HTTP->HTTPS downgrade denemesi yapın",
+        "Parola/hash saklama biçimini (varsa sızıntı/hata mesajından) inceleyin — MD5/SHA1/salt'sız hash arayın",
+        "Rastgelelik gerektiren yerlerde (token, reset kodu, session ID) üretilen değerlerin tahmin edilebilir olup olmadığını test edin (ardışık istekler karşılaştırılarak)",
+        "Hassas verilerin tarayıcı önbelleğinde, loglarda veya URL'de düz metin olarak kalıp kalmadığını kontrol edin",
+        "Padding oracle gibi kriptografik yan kanal hatalarını arayın (hata mesajı farklarına bakarak)"
+      ],
+      "exampleScenario": "Bir uygulama tüm sayfalarda HTTPS'i zorunlu kılmıyor. Saldırgan güvensiz bir kablosuz ağda trafiği dinleyip bağlantıyı HTTP'ye düşürerek oturum çerezini ele geçiriyor ve bu çerezi tekrar oynatarak (replay) kurbanın oturumunu ele geçiriyor. Başka bir örnekte, parola veritabanı salt'sız/basit hash ile saklanıyor; bir dosya yükleme açığıyla veritabanı sızdırılıyor ve rainbow table ile parolaların büyük kısmı kısa sürede kırılıyor.",
+      "examplePayload": "# TLS/sertifika taraması\n$ testssl.sh https://hedef.com\n\n# HSTS/HTTPS zorlaması kontrolü\n$ curl -I http://hedef.com   (302 ile https'e mi yönleniyor, Strict-Transport-Security başlığı var mı?)",
+      "prevention": [
+        "Hangi verinin hassas olduğunu (KVKK/GDPR/PCI-DSS kapsamı) sınıflandırın",
+        "Gerekmedikçe hassas veriyi saklamayın; mümkünse tokenization/truncation kullanın",
+        "Tüm hassas veriyi durağan halde şifreleyin; TLS 1.2+ ile forward secrecy destekleyen cipher'lar kullanın, HSTS zorunlu kılın",
+        "Parolaları Argon2/bcrypt/scrypt/PBKDF2 gibi salted, adaptif hash fonksiyonlarıyla saklayın",
+        "IV'leri kriptografik olarak güvenli rastgelelik ile üretin, asla aynı anahtarla tekrar kullanmayın",
+        "Her zaman authenticated encryption kullanın (yalnızca şifreleme değil)",
+        "MD5/SHA1, ECB modu gibi kırık/deprecated algoritmaları kullanmayı bırakın",
+        "En hassas anahtarları donanım/bulut tabanlı HSM'de saklayın"
+      ],
+      "tools": [
+        "testssl.sh",
+        "SSL Labs (Qualys)",
+        "Hashcat / John the Ripper (yalnızca yetkili testte)",
+        "Burp Suite",
+        "CyberChef"
+      ],
+      "notableCwe": [
+        "CWE-327 Broken/Risky Cryptographic Algorithm",
+        "CWE-321 Hard-coded Cryptographic Key",
+        "CWE-330 Insufficiently Random Values",
+        "CWE-759 One-Way Hash without Salt",
+        "CWE-916 Insufficient Computational Effort in Password Hash"
+      ],
+      "wstgRefs": [
+        "WSTG-CRYP-01",
+        "WSTG-CRYP-02",
+        "WSTG-CRYP-03",
+        "WSTG-CRYP-04"
+      ]
+    },
+    {
+      "id": "A05:2025",
+      "rank": 5,
+      "cweCount": 37,
+      "newIn2025": false,
+      "rankChange": "-2",
+      "title": "Enjeksiyon (Injection)",
+      "shortDesc": "Güvenilmeyen kullanıcı girdisinin bir yorumlayıcıya (DB, komut satırı, tarayıcı) komut olarak gönderilmesi. 2021'de 3. sıradaydı.",
+      "description": "Kullanıcıdan gelen güvenilmeyen verinin doğrulanmadan/temizlenmeden bir yorumlayıcıya (SQL, işletim sistemi kabuğu, LDAP, ORM, tarayıcı DOM'u vb.) gönderilmesi ve bu verinin kısmen komut olarak yorumlanmasıdır. SQL Injection, XSS, OS Command Injection, NoSQL Injection, LDAP Injection bu kategorinin başlıca örnekleridir.",
+      "howItHappens": [
+        "Kullanıcı girdisinin doğrulanmadan/filtrelenmeden/temizlenmeden kullanılması",
+        "Bağlam-farkında (context-aware) escaping yapılmadan dinamik sorgu/komut oluşturulması",
+        "ORM sorgu parametrelerinde temizlenmemiş verinin kullanılması",
+        "SQL/komutun yapısı ile kullanıcı verisinin doğrudan string birleştirmeyle karıştırılması",
+        "Parametreli sorgular yerine string concatenation kullanılması"
+      ],
+      "howToTest": [
+        "Tüm giriş noktalarına (form alanı, URL parametresi, header, cookie, JSON/XML gövdesi) tek/çift tırnak, `;`, `<script>` gibi özel karakterler göndererek hata/davranış farkını gözlemleyin",
+        "SQLi için boolean-based (' OR '1'='1), time-based (SLEEP/WAITFOR) ve UNION-based teknikleri deneyin; sqlmap ile otomatikleştirin",
+        "Reflected/Stored/DOM XSS için `<script>alert(1)</script>` benzeri test payload'larını farklı bağlamlarda (attribute, JS string, HTML body) deneyin",
+        "OS command injection için `; whoami`, `| id`, `` `id` `` gibi shell metakarakterlerini deneyin",
+        "NoSQL enjeksiyonu için `{\"$ne\": null}` gibi operatör tabanlı payload'ları JSON gövdesinde deneyin",
+        "Template motorları için SSTI (`{{7*7}}`, `${7*7}`) payload'larını test edin"
+      ],
+      "exampleScenario": "Bir giriş formu, kullanıcı adını doğrudan SQL sorgusuna ekliyor: \"SELECT * FROM accounts WHERE custID='\" + id + \"'\". Saldırgan id alanına \"' OR '1'='1\" gönderdiğinde sorgunun anlamı değişip tablodaki tüm kayıtlar dönüyor. Benzer şekilde bir arama kutusu kullanıcı girdisini HTML'e doğrudan basıyor; saldırgan bir `<script>` etiketiyle diğer kullanıcıların tarayıcısında kod çalıştırabiliyor (XSS).",
+      "examplePayload": "# SQL Injection (klasik)\n' OR '1'='1\n' UNION SELECT username,password FROM users--\n\n# XSS\n<script>alert(document.cookie)</script>\n\n# OS Command Injection\n; whoami\n$(id)",
+      "prevention": [
+        "Yorumlayıcıyı tamamen devre dışı bırakan güvenli API'ler veya parametreli sorgular (prepared statements) kullanın",
+        "ORM kullanıyorsanız bile ham/dinamik sorgu birleştirmeden kaçının",
+        "Pozitif (allowlist) sunucu taraflı girdi doğrulaması uygulayın",
+        "Kaçınılmaz dinamik sorgularda, ilgili yorumlayıcıya özgü escaping fonksiyonlarını kullanın",
+        "Çıktı encoding'ini bağlama göre uygulayın (HTML, JS, URL, attribute context farklıdır) — XSS için",
+        "SAST/DAST/IAST araçlarını CI/CD hattına entegre ederek enjeksiyon açıklarını erken yakalayın"
+      ],
+      "tools": [
+        "sqlmap",
+        "Burp Suite (Intruder/Repeater)",
+        "OWASP ZAP",
+        "XSStrike",
+        "Commix (OS command injection)",
+        "ffuf/wfuzz"
+      ],
+      "notableCwe": [
+        "CWE-89 SQL Injection",
+        "CWE-79 Cross-site Scripting",
+        "CWE-78 OS Command Injection",
+        "CWE-943 NoSQL/Improper Neutralization in Data Query Logic",
+        "CWE-917 Expression Language Injection"
+      ],
+      "wstgRefs": [
+        "WSTG-INPV-01",
+        "WSTG-INPV-02",
+        "WSTG-INPV-05",
+        "WSTG-INPV-12",
+        "WSTG-INPV-18"
+      ]
+    },
+    {
+      "id": "A06:2025",
+      "rank": 6,
+      "cweCount": 39,
+      "newIn2025": false,
+      "rankChange": "-2",
+      "title": "Güvensiz Tasarım (Insecure Design)",
+      "shortDesc": "Kod hatası değil, mimari/tasarım seviyesinde eksik veya etkisiz güvenlik kontrolleri (iş mantığı zafiyetleri dahil).",
+      "description": "Güvensiz tasarım, 'eksik veya etkisiz kontrol tasarımı' olarak ifade edilen geniş bir kategoridir. Güvensiz tasarım ile güvensiz implementasyon (kodlama hatası) farklı şeylerdir: güvenli bir tasarım hâlâ implementasyon hatalarıyla açık barındırabilir, ancak güvensiz bir tasarım mükemmel bir kodlamayla da düzeltilemez çünkü gerekli kontroller baştan hiç tasarlanmamıştır. İş mantığı (business logic) zafiyetleri de bu kategoriye girer.",
+      "howItHappens": [
+        "Güvenlik gereksinimlerinin/tehdit modellemesinin geliştirme başlamadan önce hiç yapılmaması",
+        "Kimlik doğrulamada 'güvenlik sorusu' gibi güvenilir olmayan kurtarma mekanizmalarının kullanılması",
+        "İş mantığında miktar/limit/oran kontrollerinin eksik olması (ör. toplu rezervasyon, sınırsız indirim kodu deneme)",
+        "Kritik akışlarda (kayıt, ödeme, yetkilendirme) yeterli iş kuralı doğrulamasının olmaması",
+        "Bot/otomasyon karşıtı önlemlerin olmaması (stok tükenmesi/scalping senaryoları)",
+        "Güven sınırlarının (trust boundary) net tanımlanmamış olması"
+      ],
+      "howToTest": [
+        "Uygulamanın iş akışlarını (sipariş, rezervasyon, kupon kullanma, para transferi) haritalayıp beklenmeyen sırada/miktarda istek göndererek iş mantığını kırmaya çalışın",
+        "Limit/miktar alanlarına negatif değerler, aşırı büyük değerler veya ondalık/float değerler gönderin",
+        "Kimlik doğrulama kurtarma akışlarını (parola sıfırlama, güvenlik sorusu) zayıf halka için test edin",
+        "Rate limiting olup olmadığını, aynı işlemi hızlıca tekrarlayarak (kupon kodu, promosyon, oy verme) kontrol edin",
+        "Çok adımlı işlemlerde adımları atlayarak veya sırayı değiştirerek (adım 3'ü adım 1 olmadan çağırma) iş akışını test edin",
+        "Race condition için aynı isteği eş zamanlı (concurrent) olarak gönderip (ör. aynı bakiyeyi iki kez harcama) sonucu gözlemleyin"
+      ],
+      "exampleScenario": "Bir sinema zinciri grup rezervasyonlarında indirim sunuyor ve 15 kişiden sonra depozito isteniyor. Bir saldırgan bu akışı tehdit modelleyerek birkaç istekte 600 koltuk ve tüm salonları rezerve edip şirkete ciddi gelir kaybı yaşatabiliyor. Başka bir örnekte, bir e-ticaret sitesi yüksek talep gören ürünler için bot koruması içermiyor; scalper botlar saniyeler içinde tüm stoğu tüketip başka platformlarda yüksek fiyata satıyor.",
+      "examplePayload": "# İş mantığı testi örnekleri:\nPOST /rezervasyon  {\"koltuk_sayisi\": 600}   (limit kontrolü var mı?)\nPOST /kupon-uygula {\"kod\": \"INDIRIM10\"}  x100  hızlı tekrar (rate limit var mı?)\nPOST /odeme/onayla  (adım 2'yi atlayıp doğrudan çağırma)",
+      "prevention": [
+        "Kimlik doğrulama, erişim kontrolü, iş mantığı gibi kritik alanlar için tehdit modelleme yapın",
+        "Güvenli tasarım desenleri/paved-road bileşenlerinden oluşan bir kütüphane oluşturup kullanın",
+        "Kullanıcı hikayelerine (user story) güvenlik gereksinimlerini ve kabul kriterlerini entegre edin",
+        "Her katmanda (frontend'den backend'e) mantıksal tutarlılık/plausibility kontrolleri ekleyin",
+        "Kritik akışların tehdit modeline dayanıklı olduğunu doğrulayan unit/integration testleri yazın (use-case + misuse-case)",
+        "Katmanları (tier) ve kiracıları (tenant) ağ/sistem seviyesinde ayırın"
+      ],
+      "tools": [
+        "Manuel iş mantığı testi (Burp Repeater ile)",
+        "Threat Dragon (tehdit modelleme)",
+        "OWASP ASVS kontrol listesi",
+        "Burp Turbo Intruder (race condition testi)"
+      ],
+      "notableCwe": [
+        "CWE-841 Improper Enforcement of Behavioral Workflow",
+        "CWE-799 Improper Control of Interaction Frequency",
+        "CWE-434 Unrestricted File Upload",
+        "CWE-602 Client-Side Enforcement of Server-Side Security",
+        "CWE-362 Race Condition"
+      ],
+      "wstgRefs": [
+        "WSTG-BUSL-01",
+        "WSTG-BUSL-02",
+        "WSTG-BUSL-03",
+        "WSTG-BUSL-06",
+        "WSTG-BUSL-09"
+      ]
+    },
+    {
+      "id": "A07:2025",
+      "rank": 7,
+      "cweCount": 36,
+      "newIn2025": false,
+      "rankChange": "0",
+      "title": "Kimlik Doğrulama Hataları (Authentication Failures)",
+      "shortDesc": "Bir sistemin geçersiz/hatalı bir kullanıcıyı meşru olarak kabul etmesi. 2021'de 'Identification and Authentication Failures' idi.",
+      "description": "Bir saldırganın sistemi geçersiz ya da yanlış bir kullanıcıyı meşru olarak tanımaya kandırabildiği durumlarda ortaya çıkan zafiyet kategorisidir. İsim, 36 CWE'yi daha doğru yansıtacak şekilde hafifçe değiştirilmiştir (önceki adı: Identification and Authentication Failures).",
+      "howItHappens": [
+        "Credential stuffing / hibrit parola saldırılarına (Winter2025 -> Winter2026 gibi varyasyon denemeleri) karşı koruma olmaması",
+        "Brute force veya otomatik/scriptli saldırıların hızlıca engellenmemesi",
+        "Varsayılan, zayıf veya çok bilinen parolalara izin verilmesi (\"Password1\", \"admin\")",
+        "Bilinen şekilde sızdırılmış kimlik bilgileriyle yeni hesap oluşturmaya izin verilmesi",
+        "\"Güvenlik sorusu\" gibi güvenli olmayan parola kurtarma süreçleri",
+        "Çok faktörlü kimlik doğrulamanın eksik veya etkisiz olması",
+        "Oturum kimliğinin URL'de, gizli alanda ya da başka güvensiz bir yerde açığa çıkması",
+        "Başarılı girişten sonra aynı oturum kimliğinin yeniden kullanılması (session fixation)",
+        "Logout/inaktivite sonrası oturum/token'ların doğru geçersiz kılınmaması"
+      ],
+      "howToTest": [
+        "Rate limiting/hesap kilitleme olup olmadığını görmek için art arda hatalı giriş denemesi yapın (yetkili test ortamında, dikkatli bir hızda)",
+        "Parola politika gücünü (uzunluk, karmaşıklık, bilinen zayıf parola listesine karşı kontrol) test edin",
+        "Giriş öncesi ve sonrası oturum kimliğinin (session ID) değişip değişmediğini kontrol edin (session fixation testi)",
+        "Logout sonrası eski oturum tokenının/cookie'nin hâlâ geçerli olup olmadığını (eski token ile istek göndererek) test edin",
+        "Parola sıfırlama akışını inceleyin: token tahmin edilebilir mi, token süresiz mi, e-posta doğrulaması atlanabilir mi?",
+        "Kullanıcı adı enumeration'a karşı hem giriş hem kayıt hem parola sıfırlama uçlarında aynı hata mesajının döndüğünü doğrulayın",
+        "MFA varsa, MFA'yı atlatan bir yol (fallback mekanizması, race condition, response manipülasyonu) olup olmadığını test edin"
+      ],
+      "exampleScenario": "Bir saldırgan, daha önce başka bir sızıntıdan elde edilen kullanıcı adı/parola listelerini hedef sisteme otomatik olarak deniyor (credential stuffing); sistem bu denemeleri hız sınırlamadığı için bazı hesaplara erişim sağlıyor. Ayrı bir senaryoda, bir kullanıcı ortak bir bilgisayarda oturumunu 'logout' yerine sekmeyi kapatarak bırakıyor; SSO (tek oturum açma) kullanan uygulamalardan biri düzgün 'single logout' desteklemediği için, aynı tarayıcıyı sonradan kullanan biri hâlâ kimliği doğrulanmış oturuma erişebiliyor.",
+      "examplePayload": "# Credential stuffing denemesi (yalnızca yetkili test ortamında!)\nPOST /login {\"user\":\"test@ornek.com\",\"pass\":\"Winter2025!\"}\nPOST /login {\"user\":\"test@ornek.com\",\"pass\":\"Winter2026!\"}\n\n# Session fixation kontrolü\n# 1) Login öncesi session cookie'yi not edin\n# 2) Login sonrası aynı cookie hâlâ geçerli mi kontrol edin",
+      "prevention": [
+        "Mümkün olan yerde çok faktörlü kimlik doğrulamayı zorunlu kılın",
+        "Parola yöneticisi kullanımını teşvik edin/destekleyin",
+        "Varsayılan kimlik bilgileriyle (özellikle admin için) hiç dağıtım yapmayın",
+        "Yeni/değiştirilen parolaları bilinen en kötü 10.000 parola listesine karşı test edin ve sızıntı veritabanlarına (haveibeenpwned) karşı kontrol edin",
+        "NIST 800-63b'ye uygun parola uzunluk/karmaşıklık/rotasyon politikaları uygulayın; şüpheli sızıntı olmadıkça zorunlu periyodik parola değişimi istemeyin",
+        "Kayıt/kurtarma akışlarını enumeration'a karşı sertleştirin — tüm sonuçlar için aynı mesajı kullanın",
+        "Başarısız girişleri sınırlayın/geciktirin, DoS yaratmadan; şüpheli saldırıları loglayıp uyarı üretin",
+        "Login sonrası yüksek entropili yeni bir session ID üretin; oturum kimliklerini URL'de değil güvenli cookie'de tutun, logout/timeout'ta geçersiz kılın"
+      ],
+      "tools": [
+        "Burp Suite (Intruder ile brute-force/credential stuffing simülasyonu)",
+        "Hydra (yetkili test)",
+        "jwt_tool",
+        "OWASP ZAP"
+      ],
+      "notableCwe": [
+        "CWE-287 Improper Authentication",
+        "CWE-384 Session Fixation",
+        "CWE-798 Use of Hard-coded Credentials",
+        "CWE-307 Improper Restriction of Excessive Authentication Attempts",
+        "CWE-640 Weak Password Recovery Mechanism"
+      ],
+      "wstgRefs": [
+        "WSTG-ATHN-01",
+        "WSTG-ATHN-02",
+        "WSTG-ATHN-03",
+        "WSTG-ATHN-06",
+        "WSTG-SESS-01",
+        "WSTG-SESS-02"
+      ]
+    },
+    {
+      "id": "A08:2025",
+      "rank": 8,
+      "cweCount": 14,
+      "newIn2025": false,
+      "rankChange": "0",
+      "title": "Yazılım veya Veri Bütünlüğü Hataları (Software or Data Integrity Failures)",
+      "shortDesc": "Güvenilmeyen kod/verinin bütünlüğü doğrulanmadan güvenilir kabul edilmesi (ör. güvensiz deserialization, imzasız güncelleme).",
+      "description": "Kod ve altyapının, geçersiz veya güvenilmeyen kod ya da veriyi doğrulama yapmadan güvenilir/geçerli kabul etmesi durumunda ortaya çıkan zafiyettir. Güvensiz bir CI/CD hattı, imzasız otomatik güncellemeler ve saldırganın değiştirebileceği serileştirilmiş (serialized) nesneler bu kategorinin tipik örnekleridir. A03 (Tedarik Zinciri Hataları) kategorisinden farkı, burada odak daha çok bireysel bileşen/veri bütünlüğü doğrulamasıdır.",
+      "howItHappens": [
+        "Güvenilmeyen kaynaklardan (repo, CDN) plugin/kütüphane/modül kullanılması",
+        "CI/CD hattının, çektiği kod/artifact'ların bütünlüğünü (imza vb.) doğrulamaması",
+        "Otomatik güncelleme özelliklerinin, güncellemenin bütünlüğünü yeterince doğrulamadan indirip uygulaması",
+        "Saldırganın görüp değiştirebileceği bir yapıya serileştirilmiş nesne/verinin güvensiz şekilde deserialize edilmesi",
+        "Üçüncü taraf destek/entegrasyon servisi için ana domaine subdomain yönlendirmesi yapılması (cookie sızıntısı riski)"
+      ],
+      "howToTest": [
+        "Uygulamanın kullandığı serileştirme formatını (Java, PHP, .NET, Python pickle) tespit edip (ör. base64 'rO0' imzası) deserialization açığı olup olmadığını test edin",
+        "Otomatik güncelleme/eklenti indirme uçlarının imza/checksum doğrulaması yapıp yapmadığını inceleyin",
+        "CDN'den veya üçüncü taraf script kaynağından yüklenen JS dosyalarında Subresource Integrity (SRI) kullanılıp kullanılmadığını kontrol edin",
+        "Üçüncü taraf destek/entegrasyon subdomain yönlendirmelerinin cookie/domain izolasyonunu bozup bozmadığını inceleyin",
+        "CI/CD pipeline yapılandırmasına erişebiliyorsanız, build/deploy adımlarının imzalı artifact kullanıp kullanmadığını doğrulayın"
+      ],
+      "exampleScenario": "Bir React uygulaması, kullanıcı durumunu (state) serileştirip her istekte istemciyle sunucu arasında taşıyor. Saldırgan, base64 kodlu veride Java nesne imzası olan \"rO0\" dizisini fark ediyor ve bir deserialization tarayıcı aracıyla sunucu üzerinde uzaktan kod çalıştırmayı başarıyor. Ayrı bir örnekte, bir IoT cihazının firmware güncellemeleri imzalanmadan dağıtılıyor; saldırgan kendi kötü amaçlı firmware'ini güncelleme kanalına enjekte edip cihazları ele geçiriyor.",
+      "examplePayload": "# Java deserialization imzası arama\n# Base64 çözüldüğünde 'rO0' ile başlayan cookie/parametre değerleri şüphelidir\n\n# SRI kontrolü (HTML kaynağında arayın):\n<script src=\"https://cdn.example.com/lib.js\" integrity=\"sha384-...\" crossorigin=\"anonymous\"></script>\n# integrity özniteliği yoksa CDN bütünlük doğrulaması yapılmıyor demektir",
+      "prevention": [
+        "Yazılım/veriyi dijital imza veya benzer bir mekanizma ile doğrulayın (kaynak + değiştirilmemişlik)",
+        "Kütüphane/bağımlılıkları yalnızca güvenilir depolardan alın; yüksek risk profilinde iç/vetted bir repo barındırmayı düşünün",
+        "Kod/konfigürasyon değişiklikleri için bir inceleme (review) süreci uygulayın",
+        "CI/CD hattında görev ayrılığı, yapılandırma ve erişim kontrolü sağlayın",
+        "Güvenilmeyen istemcilerden gelen imzasız/şifrelenmemiş serileştirilmiş veriyi bütünlük kontrolü olmadan işlemeyin"
+      ],
+      "tools": [
+        "ysoserial (Java deserialization test, yalnızca yetkili test)",
+        "Java Deserialization Scanner (Burp eklentisi)",
+        "SRI Hash Generator",
+        "CI/CD pipeline denetim araçları"
+      ],
+      "notableCwe": [
+        "CWE-502 Deserialization of Untrusted Data",
+        "CWE-829 Inclusion of Functionality from Untrusted Control Sphere",
+        "CWE-494 Download of Code Without Integrity Check",
+        "CWE-830 Inclusion of Web Functionality from an Untrusted Source"
+      ],
+      "wstgRefs": [
+        "WSTG-BUSL-08",
+        "WSTG-CLNT-05"
+      ]
+    },
+    {
+      "id": "A09:2025",
+      "rank": 9,
+      "cweCount": 5,
+      "newIn2025": false,
+      "rankChange": "0",
+      "title": "Güvenlik Loglama ve Uyarı Hataları (Security Logging & Alerting Failures)",
+      "shortDesc": "Yetersiz loglama/izleme/uyarı üretimi nedeniyle saldırıların fark edilememesi. İsim değişikliği: 'Monitoring' yerine 'Alerting' vurgusu.",
+      "description": "Loglama ve izleme olmadan saldırılar ve ihlaller tespit edilemez; uyarı (alerting) mekanizması olmadan da bir güvenlik olayına hızlı ve etkili yanıt vermek çok zordur. Bu kategori, iyi loglama yapılsa bile uyarı üretilmezse bunun olay tespiti için çok az değeri olduğunu vurgulamak amacıyla 'Security Logging and Monitoring Failures' isminden 'Security Logging & Alerting Failures'a değiştirilmiştir.",
+      "howItHappens": [
+        "Login, başarısız login, yüksek değerli işlemler gibi denetlenebilir olayların hiç ya da tutarsız loglanması (yalnızca başarılıların loglanıp başarısızların loglanmaması gibi)",
+        "Hata/uyarıların yetersiz veya belirsiz log mesajı üretmesi",
+        "Log bütünlüğünün kurcalamaya (tampering) karşı korunmaması",
+        "Uygulama/API loglarının şüpheli aktivite için izlenmemesi",
+        "Logların yalnızca yerelde tutulup yedeklenmemesi",
+        "Uygun uyarı eşiği/eskalasyon sürecinin olmaması ya da uyarıların makul sürede incelenmemesi",
+        "Sızdırılan/loglanan verinin hassas bilgi (PII, PHI) içermesi ya da loglama sisteminin kendisinin enjeksiyona açık olması"
+      ],
+      "howToTest": [
+        "Başarısız giriş denemeleri, yetkisiz erişim denemeleri gibi olayların bir güvenlik olay yanıt ekibi tarafından fark edilip edilemeyeceğini (varsa erişilebilir loglar/panel üzerinden) değerlendirin",
+        "Uygulamanın hata sayfalarının/loglarının hassas veri (stack trace, DB bağlantı bilgisi, iç IP) sızdırıp sızdırmadığını kontrol edin",
+        "Log enjeksiyonu için CRLF (`%0d%0a`) veya kontrol karakterleri içeren girdiler göndererek log formatının bozulup bozulmadığını test edin",
+        "DAST taraması (Burp/ZAP) sırasında herhangi bir uyarı/alarm tetiklenip tetiklenmediğini hedef ekiple birlikte doğrulayın (yetkili testlerde)",
+        "Kritik işlemlerin (parola değişikliği, yetki değişikliği, silme) denetim izinin (audit trail) olup olmadığını sorgulayın"
+      ],
+      "exampleScenario": "Bir sağlık sigortası sağlayıcısının sistemine sızılıyor ve milyonlarca çocuğa ait hassas sağlık kaydı değiştiriliyor; sistemde hiç loglama/izleme olmadığı için ihlalin ne zaman başladığı bile tespit edilemiyor — sonradan yapılan incelemede sızıntının yedi yıldan uzun süredir devam ediyor olabileceği ortaya çıkıyor. Bu, loglama ve uyarı eksikliğinin bir ihlali yıllarca fark edilmez kılabileceğini gösteren gerçek bir örnek.",
+      "examplePayload": "# Log enjeksiyonu denemesi (yetkili test ortamında)\nGET /login?user=admin%0d%0aFAKE_LOG_ENTRY:admin_login_success HTTP/1.1\n# Amaç: log dosyasına sahte satır enjekte edilip edilemediğini görmek",
+      "prevention": [
+        "Giriş, erişim kontrolü ve sunucu taraflı girdi doğrulama hatalarını, adli analiz için yeterli süre saklanacak şekilde kullanıcı bağlamıyla loglayın",
+        "Güvenlik kontrolü içeren her parçayı (başarı/başarısızlık fark etmeksizin) loglayın",
+        "Log verisini enjeksiyona karşı doğru şekilde encode edin",
+        "Tüm işlemler için, kurcalamaya karşı korumalı (append-only) bir denetim izi (audit trail) tutun",
+        "Şüpheli davranışta uyarı üretin; SOC ekibi için playbook'lar hazırlayın",
+        "Honeytoken gibi tuzaklar ekleyerek erişimlerin neredeyse sıfır yanlış pozitifle tespit edilmesini sağlayın",
+        "NIST 800-61 gibi bir olay müdahale ve kurtarma planı benimseyin"
+      ],
+      "tools": [
+        "ELK Stack (Elasticsearch, Logstash, Kibana)",
+        "Wazuh",
+        "Burp Suite (log injection testi)",
+        "Splunk"
+      ],
+      "notableCwe": [
+        "CWE-778 Insufficient Logging",
+        "CWE-117 Improper Output Neutralization for Logs",
+        "CWE-532 Insertion of Sensitive Information into Log File"
+      ],
+      "wstgRefs": [
+        "WSTG-ERRH-01",
+        "WSTG-ERRH-02"
+      ]
+    },
+    {
+      "id": "A10:2025",
+      "rank": 10,
+      "cweCount": 24,
+      "newIn2025": true,
+      "rankChange": "YENİ",
+      "title": "İstisnai Durumların Hatalı Yönetimi (Mishandling of Exceptional Conditions)",
+      "shortDesc": "2025'te YENİ kategori. Kötü hata yönetimi, mantık hataları, 'fail open' davranışı gibi beklenmedik durum yönetimi hataları.",
+      "description": "Bir yazılımın beklenmedik/anormal durumları önleyememesi, tespit edememesi veya bunlara doğru yanıt verememesi sonucu ortaya çıkan zafiyettir; çökmelere, kararsız davranışlara ve bazen doğrudan güvenlik açıklarına yol açar. Önceden 'kod kalitesi' gibi genel bir başlık altında değerlendirilen bu sorunlar, 2025'te daha net rehberlik sağlamak için ayrı bir kategoriye taşınmıştır.",
+      "howItHappens": [
+        "Eksik/zayıf girdi doğrulaması ya da hata yönetiminin oluştuğu yerde değil, çok daha üst/geç bir seviyede yapılması",
+        "Beklenmeyen ortam durumları (bellek, yetki, ağ sorunları) doğru ele alınmaması",
+        "Tutarsız veya hiç yapılmamış exception handling — sistemin bilinmeyen/öngörülemeyen bir duruma düşmesi",
+        "Çok adımlı işlemlerde bir hata oluştuğunda transaction'ın tam olarak geri alınmaması (rollback edilmemesi)",
+        "'Fail open' davranışı — bir hata durumunda güvenlik kontrolünün devre dışı kalıp isteğin yine de işlenmesi",
+        "Hata mesajlarının aşırı detay (stack trace, DB hatası) sızdırması"
+      ],
+      "howToTest": [
+        "Uygulamaya eksik parametre, beklenmeyen veri tipi, aşırı büyük/küçük değer, bozuk JSON/XML gibi 'anormal' girdiler göndererek nasıl hata verdiğini gözlemleyin",
+        "Bir hata oluştuğunda uygulamanın güvenli tarafta mı (fail closed) yoksa güvensiz tarafta mı (fail open) kaldığını test edin — ör. yetkilendirme servisi zaman aşımına uğradığında istek reddediliyor mu, yoksa geçiriliyor mu?",
+        "Çok adımlı bir işlemi (ödeme, transfer) ortasında kesintiye uğratıp (bağlantıyı koparma, timeout) verinin tutarlı kalıp kalmadığını kontrol edin",
+        "Dosya yükleme gibi kaynak tüketen işlemlerde art arda hata tetikleyerek kaynakların (dosya tanıtıcı, bellek, bağlantı) serbest bırakılıp bırakılmadığını (resource exhaustion/DoS) test edin",
+        "Hata sayfalarının/JSON yanıtlarının stack trace, dahili yol, DB hata mesajı gibi bilgiler sızdırıp sızdırmadığını kontrol edin",
+        "Null/boş/aşırı uzun değerlerle sınır (edge-case) testleri yapın"
+      ],
+      "exampleScenario": "Bir dosya yükleme özelliği, yükleme sırasında oluşan hataları yakalıyor ama sonrasında kaynakları düzgün serbest bırakmıyor; saldırgan art arda hatalı yüklemeler tetikleyerek sunucunun kaynaklarını tüketip hizmeti kullanılamaz hale getiriyor (DoS). Başka bir örnekte, çok adımlı bir para transferi işleminde (hesaptan düş -> hedefe ekle -> logla) ağ kesintisi transferin ortasında oluşuyor; işlem doğru şekilde geri alınmadığı (fail closed) için saldırgan bu durumu tetikleyip bakiyeyi tüketebiliyor ya da aynı transferi birden çok kez tamamlatabiliyor.",
+      "examplePayload": "# Anormal girdi testi örnekleri\nPOST /api/urun {}                      (zorunlu alan eksik)\nPOST /api/urun {\"fiyat\": -999999999}    (aşırı/negatif değer)\nPOST /api/urun  Content-Type: application/json\nBozuk-JSON-govde-buraya                 (parse hatası tetikleme)\n\n# Beklenen: anlamlı, sızdırmayan bir hata + loglama. Sızıntı varsa\n# stack trace / dahili dosya yolu gibi bilgiler yanıtta görünür.",
+      "prevention": [
+        "Her olası hatayı, oluştuğu yerde 'yakalayıp' anlamlı şekilde ele alın (kullanıcıya anlaşılır hata, loglama, gerekirse uyarı)",
+        "Merkezi/global bir exception handler bulundurun; her fonksiyonda ayrı ayrı hata yönetimi kurgulamayın",
+        "Bir işlem yarıda kesilirse tamamını geri alın (fail closed) — kısmi bir transaction'ı 'kurtarmaya' çalışmak genellikle daha büyük hatalara yol açar",
+        "Rate limiting, kaynak kotası, throttling gibi sınırları mümkün olan her yere ekleyin",
+        "Sıkı girdi doğrulama + merkezi hata yönetimi/loglama/uyarı ile birlikte çalışın (bkz. A09)",
+        "Kritik akışlar için stres, performans ve sızma testleri yürütün; tasarım aşamasında tehdit modelleme yapın"
+      ],
+      "tools": [
+        "Burp Suite (Intruder ile fuzzing)",
+        "OWASP ZAP",
+        "ffuf/wfuzz (edge-case fuzzing)",
+        "Postman (malformed request testleri)"
+      ],
+      "notableCwe": [
+        "CWE-755 Improper Handling of Exceptional Conditions",
+        "CWE-636 Not Failing Securely ('Failing Open')",
+        "CWE-209 Error Message Containing Sensitive Information",
+        "CWE-703 Improper Check/Handling of Exceptional Conditions",
+        "CWE-476 NULL Pointer Dereference"
+      ],
+      "wstgRefs": [
+        "WSTG-ERRH-01",
+        "WSTG-ERRH-02",
+        "WSTG-BUSL-07"
+      ]
+    }
+  ]
+}

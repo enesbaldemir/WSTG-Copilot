@@ -2,6 +2,7 @@
   "use strict";
 
   const STORAGE_KEY = "wstg_progress_v1";
+  const FINDINGS_KEY = "wstg_findings_v1";
   const LANG_KEY = "wstg_lang_v1";
   const THEME_KEY = "wstg_theme_v1";
   const SESSION_ID_KEY = "wstg_session_id_v1";
@@ -12,6 +13,13 @@
     tr: "data/wstg-checklist.tr.json",
     en: "data/wstg-checklist.en.json"
   };
+
+  const TOP10_FILES = {
+    tr: "data/owasp-top10.tr.json",
+    en: "data/owasp-top10.en.json"
+  };
+
+  const SEVERITIES = ["info", "low", "medium", "high", "critical"];
 
   const THEMES = [
     { id: "midnight",   name: "Midnight",        emoji: "🌌", primary: "#6366f1", secondary: "#8b5cf6", desc: { tr: "Klasik indigo karanlık tema", en: "Classic indigo dark theme" } },
@@ -123,7 +131,37 @@
       sessionsLoadError: "Oturumlar yüklenemedi.",
       markCompleted: "Tamamla",
       statusActive: "aktif",
-      statusCompleted: "tamamlandı"
+      statusCompleted: "tamamlandı",
+
+      navReference: "Referans",
+      navTop10: "OWASP Top 10:2025",
+      top10SectionTitle: "OWASP Top 10:2025 — En Kritik Web Uygulaması Riskleri",
+      top10SectionSub: "owasp.org/Top10/2025 kaynağına dayanır ↗",
+      top10NewBadge: "YENİ",
+      top10CweCount: n => `${n} CWE`,
+      top10DescLabel: "Açıklama",
+      top10HowItHappensLabel: "Nasıl Oluşur",
+      top10HowToTestLabel: "Nasıl Test Edilir (Pentest Adımları)",
+      top10ScenarioLabel: "Örnek Saldırı Senaryosu",
+      top10PayloadLabel: "Örnek Payload / Komut",
+      top10PreventionLabel: "Nasıl Önlenir",
+      top10CweLabel: "İlgili CWE'ler",
+      top10ToolsLabel: "Önerilen Araçlar",
+      top10WstgLabel: "İlgili WSTG Testleri",
+      findingsLabel: "Bulgular / Notlar",
+      findingsPlaceholder: "Bu test maddesiyle ilgili bulgularınızı, notlarınızı veya kanıtlarınızı buraya yazın...",
+      severityLabel: "Önem Derecesi",
+      severity_info: "Bilgi",
+      severity_low: "Düşük",
+      severity_medium: "Orta",
+      severity_high: "Yüksek",
+      severity_critical: "Kritik",
+      findingSavedToast: "Kaydedildi ✓",
+      findingSaveError: "Bulgu kaydedilemedi",
+
+      top10PrevBtn: "‹ Önceki",
+      top10NextBtn: "Sonraki ›",
+      top10SourceNote: "Kaynak: OWASP Top 10:2025 (owasp.org/Top10/2025), pentest çalışma alanı için Türkçe/İngilizce olarak özetlenmiştir."
     },
     en: {
       navWorkspace: "Workspace",
@@ -206,12 +244,46 @@
       sessionsLoadError: "Failed to load sessions.",
       markCompleted: "Complete",
       statusActive: "active",
-      statusCompleted: "completed"
+      statusCompleted: "completed",
+
+      navReference: "Reference",
+      navTop10: "OWASP Top 10:2025",
+      top10SectionTitle: "OWASP Top 10:2025 — Most Critical Web Application Risks",
+      top10SectionSub: "Based on owasp.org/Top10/2025 ↗",
+      top10NewBadge: "NEW",
+      top10CweCount: n => `${n} CWEs`,
+      top10DescLabel: "Description",
+      top10HowItHappensLabel: "How It Happens",
+      top10HowToTestLabel: "How to Test (Pentest Steps)",
+      top10ScenarioLabel: "Example Attack Scenario",
+      top10PayloadLabel: "Example Payload / Command",
+      top10PreventionLabel: "How to Prevent",
+      top10CweLabel: "Related CWEs",
+      top10ToolsLabel: "Recommended Tools",
+      top10WstgLabel: "Related WSTG Tests",
+      findingsLabel: "Findings / Notes",
+      findingsPlaceholder: "Write your findings, notes, or evidence for this test item here...",
+      severityLabel: "Severity",
+      severity_info: "Info",
+      severity_low: "Low",
+      severity_medium: "Medium",
+      severity_high: "High",
+      severity_critical: "Critical",
+      findingSavedToast: "Saved ✓",
+      findingSaveError: "Could not save finding",
+
+      top10PrevBtn: "‹ Previous",
+      top10NextBtn: "Next ›",
+      top10SourceNote: "Source: OWASP Top 10:2025 (owasp.org/Top10/2025), summarized in Turkish/English for this pentest workspace."
     }
   };
 
   let DATA = null;
+  let TOP10 = null;
+  let top10Index = 0;
   let progress = loadProgress();
+  let findings = loadFindings();
+  let saveTimers = {};
   let currentCategoryId = null;
   let currentFilter = "all"; // all | done | pending
   let currentLang = loadLang();
@@ -257,6 +329,102 @@
   }
   function saveProgress(){
     try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); }catch(e){}
+  }
+
+  function loadFindings(){
+    try{ return JSON.parse(localStorage.getItem(FINDINGS_KEY)) || {}; }
+    catch(e){ return {}; }
+  }
+  function saveFindings(){
+    try{ localStorage.setItem(FINDINGS_KEY, JSON.stringify(findings)); }catch(e){}
+  }
+
+  // Returns the current finding {text, severity} for a test item, reading
+  // from the active DB session's results when one is open, otherwise from
+  // the local-only findings store.
+  function getFindingData(testId){
+    if(currentSession){
+      const r = sessionResults[testId];
+      return { text: (r && r.finding) || "", severity: (r && r.severity) || "info" };
+    }
+    const f = findings[testId];
+    return { text: (f && f.text) || "", severity: (f && f.severity) || "info" };
+  }
+
+  function scheduleFindingSave(testId){
+    clearTimeout(saveTimers[testId]);
+    saveTimers[testId] = setTimeout(()=> saveFinding(testId), 700);
+  }
+
+  function readFindingInputs(testId){
+    const safeId = CSS && CSS.escape ? CSS.escape(testId) : testId;
+    const ta = document.querySelector(`.finding-textarea[data-id="${safeId}"]`);
+    const sel = document.querySelector(`.severity-select[data-id="${safeId}"]`);
+    return { text: ta ? ta.value : "", severity: sel ? sel.value : "info" };
+  }
+
+  function setFindingStatus(testId, msg, isError){
+    const safeId = CSS && CSS.escape ? CSS.escape(testId) : testId;
+    const el = document.querySelector(`.finding-status[data-id="${safeId}"]`);
+    if(!el) return;
+    el.textContent = msg;
+    el.classList.toggle('error', !!isError);
+    if(msg){
+      clearTimeout(el._clearTimer);
+      el._clearTimer = setTimeout(()=>{ el.textContent = ""; }, 2200);
+    }
+  }
+
+  function refreshFindingBadge(testId){
+    const safeId = CSS && CSS.escape ? CSS.escape(testId) : testId;
+    const head = document.querySelector(`.test-item[data-id="${safeId}"] .test-item-head`);
+    if(!head) return;
+    let badge = head.querySelector('.severity-badge');
+    const fd = getFindingData(testId);
+    if(fd.text && fd.text.trim()){
+      if(!badge){
+        badge = document.createElement('span');
+        badge.className = 'severity-badge';
+        const title = head.querySelector('.test-item-title');
+        if(title) title.insertAdjacentElement('afterend', badge);
+      }
+      badge.className = `severity-badge sev-${fd.severity || 'info'}`;
+      badge.textContent = t('severity_' + (fd.severity || 'info'));
+    } else if(badge){
+      badge.remove();
+    }
+  }
+
+  function saveFinding(testId){
+    const { text, severity } = readFindingInputs(testId);
+    if(currentSession){
+      persistFinding(testId, text, severity);
+      return;
+    }
+    if(!text.trim() && severity === 'info'){
+      delete findings[testId];
+    } else {
+      findings[testId] = { text, severity, updatedAt: new Date().toISOString() };
+    }
+    saveFindings();
+    refreshFindingBadge(testId);
+    setFindingStatus(testId, t('findingSavedToast'), false);
+  }
+
+  function persistFinding(testId, text, severity){
+    if(!currentSession) return Promise.resolve();
+    const payload = { finding: text, severity };
+    const existing = sessionResults[testId];
+    const req = existing
+      ? apiRequest(`/sessions/${currentSession.id}/results/${testId}`, { method: 'PUT', body: JSON.stringify(payload) })
+      : apiRequest(`/sessions/${currentSession.id}/results`, { method: 'POST', body: JSON.stringify(Object.assign({ test_id: testId, status: 'pending' }, payload)) });
+    return req.then(result => {
+      sessionResults[testId] = result;
+      refreshFindingBadge(testId);
+      setFindingStatus(testId, t('findingSavedToast'), false);
+    }).catch(err => {
+      setFindingStatus(testId, err.message || t('findingSaveError'), true);
+    });
   }
 
   function allTests(){
@@ -392,6 +560,8 @@
 
   function renderTestItem(test){
     const done = !!progress[test.id];
+    const fd = getFindingData(test.id);
+    const hasFinding = fd.text && fd.text.trim();
     return `<div class="test-item ${done?'done':''}" data-id="${test.id}">
       <div class="test-item-head">
         <button class="test-check ${done?'checked':''}" data-id="${test.id}" title="${t('testEditedTitle')}">
@@ -400,6 +570,7 @@
         </button>
         <span class="test-item-code">${test.id}</span>
         <span class="test-item-title">${escapeHtml(test.title)}</span>
+        ${hasFinding ? `<span class="severity-badge sev-${fd.severity}">${t('severity_'+fd.severity)}</span>` : ''}
         <svg class="test-item-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
       </div>
       <div class="test-item-detail">
@@ -416,9 +587,19 @@
             <h5>${t('exampleLabel')}</h5>
             <div class="example-box">${escapeHtml(test.example)}<button class="copy-btn" data-copy="${encodeURIComponent(test.example)}">${t('copyBtn')}</button></div>
           </div>
-          <div class="detail-block" style="margin-bottom:0">
+          <div class="detail-block">
             <h5>${t('toolsLabel')}</h5>
             <div class="tools-row">${test.tools.map(tool=>`<span class="tool-chip">${escapeHtml(tool)}</span>`).join('')}</div>
+          </div>
+          <div class="detail-block finding-block" style="margin-bottom:0">
+            <div class="finding-head">
+              <h5 style="margin:0">${t('findingsLabel')}</h5>
+              <select class="severity-select" data-id="${test.id}" title="${t('severityLabel')}">
+                ${SEVERITIES.map(s=>`<option value="${s}" ${fd.severity===s?'selected':''}>${t('severity_'+s)}</option>`).join('')}
+              </select>
+            </div>
+            <textarea class="finding-textarea" data-id="${test.id}" placeholder="${t('findingsPlaceholder')}">${escapeHtml(fd.text)}</textarea>
+            <div class="finding-status" data-id="${test.id}"></div>
           </div>
         </div>
       </div>
@@ -526,6 +707,11 @@
       out += `\n=== ${c.code} · ${c.name} ===\n`;
       c.tests.forEach(test=>{
         out += `[${progress[test.id]?'x':' '}] ${test.id} - ${test.title}\n`;
+        const fd = getFindingData(test.id);
+        if(fd.text && fd.text.trim()){
+          out += `    ${t('severityLabel')}: ${t('severity_'+fd.severity)}\n`;
+          out += `    ${t('findingsLabel')}: ${fd.text.trim().replace(/\n/g, '\n    ')}\n`;
+        }
       });
     });
     const blob = new Blob([out], {type:'text/plain;charset=utf-8'});
@@ -554,7 +740,9 @@
     }
     if(!confirm(t('resetConfirm'))) return;
     progress = {};
+    findings = {};
     saveProgress();
+    saveFindings();
     renderSidebar();
     renderDashboard();
     if(currentCategoryId) renderTestList();
@@ -563,6 +751,141 @@
 
   function copyToClipboard(text){
     navigator.clipboard?.writeText(text).then(()=> showToast(t('copiedToast'))).catch(()=>{});
+  }
+
+  /* ===================== OWASP TOP 10:2025 ===================== */
+
+  function loadTop10Data(){
+    return fetch(TOP10_FILES[currentLang] || TOP10_FILES.tr)
+      .then(r => r.json())
+      .then(data => { TOP10 = data; })
+      .catch(err => { console.error(err); });
+  }
+
+  function renderTop10Grid(){
+    const grid = document.getElementById('top10Grid');
+    if(!grid) return;
+    if(!TOP10){ grid.innerHTML = ''; return; }
+    grid.innerHTML = TOP10.top10.map((r, idx) => `
+      <div class="category-card top10-card" data-idx="${idx}">
+        <div class="top10-card-top">
+          <span class="top10-rank-num">#${r.rank}</span>
+          <div class="top10-badges">
+            ${r.newIn2025 ? `<span class="top10-new-pill">${t('top10NewBadge')}</span>` : ''}
+            <span class="top10-cwe-pill">${t('top10CweCount')(r.cweCount)}</span>
+          </div>
+        </div>
+        <h4>${escapeHtml(r.id)} · ${escapeHtml(r.title)}</h4>
+        <p>${escapeHtml(r.shortDesc)}</p>
+      </div>
+    `).join('');
+    grid.querySelectorAll('.top10-card').forEach(el=>{
+      el.addEventListener('click', ()=> openTop10Detail(parseInt(el.dataset.idx, 10)));
+    });
+  }
+
+  function findWstgLocation(testId){
+    if(!DATA) return null;
+    for(const c of DATA.categories){
+      const found = c.tests.find(x => x.id === testId);
+      if(found) return { catId: c.id, testId: found.id };
+    }
+    return null;
+  }
+
+  function renderTop10Detail(){
+    if(!TOP10) return;
+    const r = TOP10.top10[top10Index];
+    document.getElementById('top10PanelRank').textContent = `#${r.rank} · ${r.id}`;
+    document.getElementById('top10PanelTitle').textContent = r.title;
+    document.getElementById('top10PanelShortDesc').textContent = r.shortDesc;
+
+    const wstgChips = (r.wstgRefs || []).map(id => {
+      const loc = findWstgLocation(id);
+      return loc
+        ? `<button class="wstg-ref-chip" data-cat="${loc.catId}" data-test="${loc.testId}">${escapeHtml(id)}</button>`
+        : `<span class="wstg-ref-chip" style="cursor:default;opacity:.6">${escapeHtml(id)}</span>`;
+    }).join('');
+
+    const dots = TOP10.top10.map((item, i) =>
+      `<span class="top10-nav-dot ${i===top10Index?'active':''}" data-idx="${i}" title="${escapeHtml(item.id)}"></span>`
+    ).join('');
+
+    const body = document.getElementById('top10PanelBody');
+    body.innerHTML = `
+      <div class="detail-block">
+        <h5>${t('top10DescLabel')}</h5>
+        <p>${escapeHtml(r.description)}</p>
+      </div>
+      <div class="detail-block">
+        <h5>${t('top10HowItHappensLabel')}</h5>
+        <ul>${r.howItHappens.map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul>
+      </div>
+      <div class="detail-block">
+        <h5>${t('top10HowToTestLabel')}</h5>
+        <ol>${r.howToTest.map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ol>
+      </div>
+      <div class="detail-block">
+        <h5>${t('top10ScenarioLabel')}</h5>
+        <p>${escapeHtml(r.exampleScenario)}</p>
+      </div>
+      <div class="detail-block">
+        <h5>${t('top10PayloadLabel')}</h5>
+        <div class="example-box">${escapeHtml(r.examplePayload)}<button class="copy-btn" data-copy="${encodeURIComponent(r.examplePayload)}">${t('copyBtn')}</button></div>
+      </div>
+      <div class="detail-block">
+        <h5>${t('top10PreventionLabel')}</h5>
+        <ul>${r.prevention.map(x=>`<li>${escapeHtml(x)}</li>`).join('')}</ul>
+      </div>
+      <div class="detail-block">
+        <h5>${t('top10CweLabel')}</h5>
+        <div class="tools-row">${r.notableCwe.map(c=>`<span class="tool-chip">${escapeHtml(c)}</span>`).join('')}</div>
+      </div>
+      <div class="detail-block">
+        <h5>${t('top10ToolsLabel')}</h5>
+        <div class="tools-row">${r.tools.map(x=>`<span class="tool-chip">${escapeHtml(x)}</span>`).join('')}</div>
+      </div>
+      ${r.wstgRefs && r.wstgRefs.length ? `
+      <div class="detail-block" style="margin-bottom:0">
+        <h5>${t('top10WstgLabel')}</h5>
+        <div class="tools-row">${wstgChips}</div>
+      </div>` : ''}
+      <div class="top10-nav-footer">
+        <button class="top10-nav-btn" id="top10PrevBtn" ${top10Index===0?'disabled':''}>${t('top10PrevBtn')}</button>
+        <div class="top10-nav-dots">${dots}</div>
+        <button class="top10-nav-btn" id="top10NextBtn" ${top10Index===TOP10.top10.length-1?'disabled':''}>${t('top10NextBtn')}</button>
+      </div>
+    `;
+
+    body.querySelectorAll('.wstg-ref-chip[data-cat]').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        closeTop10Detail();
+        openCategory(el.dataset.cat, el.dataset.test);
+      });
+    });
+    const prevBtn = document.getElementById('top10PrevBtn');
+    const nextBtn = document.getElementById('top10NextBtn');
+    if(prevBtn) prevBtn.addEventListener('click', ()=>{
+      if(top10Index > 0){ top10Index--; renderTop10Detail(); document.getElementById('top10Overlay').scrollTop = 0; }
+    });
+    if(nextBtn) nextBtn.addEventListener('click', ()=>{
+      if(top10Index < TOP10.top10.length-1){ top10Index++; renderTop10Detail(); document.getElementById('top10Overlay').scrollTop = 0; }
+    });
+    body.querySelectorAll('.top10-nav-dot').forEach(el=>{
+      el.addEventListener('click', ()=>{ top10Index = parseInt(el.dataset.idx, 10); renderTop10Detail(); });
+    });
+    body.querySelectorAll('.copy-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=> copyToClipboard(decodeURIComponent(btn.dataset.copy)));
+    });
+  }
+
+  function openTop10Detail(idx){
+    top10Index = idx;
+    renderTop10Detail();
+    document.getElementById('top10Overlay').classList.add('open');
+  }
+  function closeTop10Detail(){
+    document.getElementById('top10Overlay').classList.remove('open');
   }
 
   /* ===================== DB / SESSIONS ===================== */
@@ -762,6 +1085,17 @@
       if(e.target.id === 'categoryOverlay') closeCategory();
     });
 
+    document.getElementById('dashboardNav').addEventListener('click', ()=>{
+      window.scrollTo({top:0, behavior:'smooth'});
+    });
+    document.getElementById('top10NavBtn').addEventListener('click', ()=>{
+      document.getElementById('top10Section')?.scrollIntoView({behavior:'smooth', block:'start'});
+    });
+    document.getElementById('closeTop10Overlay').addEventListener('click', closeTop10Detail);
+    document.getElementById('top10Overlay').addEventListener('click', e=>{
+      if(e.target.id === 'top10Overlay') closeTop10Detail();
+    });
+
     document.getElementById('themeTrigger').addEventListener('click', openThemeModal);
     document.getElementById('closeThemeOverlay').addEventListener('click', closeThemeModal);
     document.getElementById('themeOverlay').addEventListener('click', e=>{
@@ -795,7 +1129,7 @@
 
     document.addEventListener('keydown', e=>{
       if(e.key === 'Escape'){
-        closeCategory(); closeThemeModal(); closeNewSessionOverlay();
+        closeCategory(); closeThemeModal(); closeNewSessionOverlay(); closeTop10Detail();
         if(document.getElementById('closeSessionGate').style.display !== 'none') closeSessionGate();
       }
     });
@@ -815,10 +1149,19 @@
       if(checkBtn){ e.stopPropagation(); toggleDone(checkBtn.dataset.id); return; }
       const copyBtn = e.target.closest('.copy-btn');
       if(copyBtn){ e.stopPropagation(); copyToClipboard(decodeURIComponent(copyBtn.dataset.copy)); return; }
+      if(e.target.closest('.finding-block')){ e.stopPropagation(); return; }
       const head = e.target.closest('.test-item-head');
       if(head){
         head.closest('.test-item').classList.toggle('open');
       }
+    });
+    document.getElementById('testList').addEventListener('input', e=>{
+      const ta = e.target.closest('.finding-textarea');
+      if(ta){ scheduleFindingSave(ta.dataset.id); }
+    });
+    document.getElementById('testList').addEventListener('change', e=>{
+      const sel = e.target.closest('.severity-select');
+      if(sel){ saveFinding(sel.dataset.id); }
     });
 
     const searchInput = document.getElementById('globalSearch');
@@ -856,15 +1199,20 @@
     }
     const wasOpen = document.getElementById('categoryOverlay').classList.contains('open');
     const openCatId = currentCategoryId;
+    const top10WasOpen = document.getElementById('top10Overlay').classList.contains('open');
     currentLang = lang;
     saveLang(currentLang);
-    loadData().then(()=>{
+    Promise.all([loadData(), loadTop10Data()]).then(()=>{
       applyI18n();
       renderSidebar();
       renderDashboard();
+      renderTop10Grid();
       updateSessionUI();
       if(wasOpen && openCatId){
         openCategory(openCatId);
+      }
+      if(top10WasOpen){
+        renderTop10Detail();
       }
     });
   }
@@ -883,10 +1231,11 @@
   applyTheme();
   applyI18n();
 
-  loadData().then(()=>{
+  Promise.all([loadData(), loadTop10Data()]).then(()=>{
     if(!DATA) return;
     renderSidebar();
     renderDashboard();
+    renderTop10Grid();
     bindEvents();
     updateSessionUI();
 
