@@ -1,6 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import uuid
+import json
 
 db = SQLAlchemy()
 
@@ -22,6 +23,7 @@ class Session(db.Model):
     status = db.Column(db.String(20), default='active')
     
     results = db.relationship('TestResult', backref='session', lazy=True, cascade='all, delete-orphan')
+    notes = db.relationship('Note', backref='session', lazy=True, cascade='all, delete-orphan')
     
     def to_dict(self):
         return {
@@ -37,7 +39,8 @@ class Session(db.Model):
             'completed_at': self.completed_at.isoformat() if self.completed_at else None,
             'status': self.status,
             'total_tests': len(self.results) if self.results else 0,
-            'completed_tests': len([r for r in self.results if r.status != 'pending']) if self.results else 0
+            'completed_tests': len([r for r in self.results if r.status != 'pending']) if self.results else 0,
+            'total_notes': len(self.notes) if self.notes else 0
         }
 
 class TestResult(db.Model):
@@ -75,6 +78,49 @@ class TestResult(db.Model):
             'started_at': self.started_at.isoformat() if self.started_at else None,
             'completed_at': self.completed_at.isoformat() if self.completed_at else None,
             'progress': self.progress,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+
+class Note(db.Model):
+    """
+    Serbest formatlı not defteri kaydı. TestResult'taki alan (her checklist
+    maddesinin kendi 'notes/finding' kutusu) ile karışmasın diye ayrı bir
+    tablo: burası oturuma (siteye) bağlı, dilenirse belirli bir WSTG test
+    maddesine de bağlanabilen, görsel/kanıt ekli genel bir not defteridir.
+    test_id NULL ise bu genel bir nottur (belirli bir test maddesiyle
+    ilişkilendirilmemiştir).
+    """
+    __tablename__ = 'notes'
+
+    id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(db.String(36), db.ForeignKey('sessions.id'), nullable=False)
+    test_id = db.Column(db.String(50), nullable=True)
+    category_id = db.Column(db.String(50), nullable=True)
+
+    title = db.Column(db.String(200))
+    content = db.Column(db.Text)
+    severity = db.Column(db.String(20), default='info')
+    # JSON-encoded list of {"name": str, "data": "data:image/...;base64,..."}
+    images = db.Column(db.Text)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        try:
+            images = json.loads(self.images) if self.images else []
+        except (TypeError, ValueError):
+            images = []
+        return {
+            'id': self.id,
+            'session_id': self.session_id,
+            'test_id': self.test_id,
+            'category_id': self.category_id,
+            'title': self.title,
+            'content': self.content,
+            'severity': self.severity,
+            'images': images,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }

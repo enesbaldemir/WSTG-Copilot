@@ -47,6 +47,8 @@
         </div>
       </div>
       <button class="nav-item" id="sessionsNavBtn"><span class="dot"></span><span data-i18n="navSessions">Test Oturumları</span></button>
+      <button class="nav-item" id="notebookNavBtn"><span class="dot"></span><span data-i18n="navNotebook">Not Defteri</span></button>
+      <button class="nav-item" id="importNavBtn"><span class="dot"></span><span data-i18n="navImport">Bulgu İçe Aktar</span></button>
       <button class="nav-item" id="exportBtn"><span class="dot"></span><span data-i18n="exportReport">Raporu Dışa Aktar</span></button>
       <button class="nav-item" id="resetBtn"><span class="dot"></span><span data-i18n="resetProgress">İlerlemeyi Sıfırla</span></button>
 
@@ -254,8 +256,121 @@
   </div>
 </div>
 
+<!-- Dış Araç İçe Aktarma (Nmap / Nikto / WPScan) -->
+<div class="overlay" id="importOverlay">
+  <div class="panel" style="max-width:720px">
+    <div class="panel-header">
+      <div>
+        <h3 data-i18n="importModalTitle">Bulgu İçe Aktar</h3>
+        <p data-i18n="importModalDesc">Nmap, Nikto veya WPScan çıktısını (XML/JSON) yükleyin; eşleşen bulgular ilgili WSTG maddelerine not olarak eklenir.</p>
+      </div>
+      <button class="close-btn" id="closeImportOverlay">&times;</button>
+    </div>
+    <div class="panel-body">
+      <div class="import-form">
+        <label data-i18n="importToolLabel">Araç</label>
+        <select id="importToolSelect">
+          <option value="auto" data-i18n="importToolAuto">Otomatik algıla</option>
+          <option value="nmap">Nmap (XML)</option>
+          <option value="nikto-xml">Nikto (XML)</option>
+          <option value="nikto-json">Nikto (JSON)</option>
+          <option value="wpscan-json">WPScan (JSON)</option>
+        </select>
+        <label data-i18n="importFileLabel">Dosya</label>
+        <input type="file" id="importFileInput" accept=".xml,.json,.txt">
+        <div class="hero-actions" style="margin-top:8px">
+          <button type="button" class="btn btn-primary" id="importAnalyzeBtn" data-i18n="importAnalyzeBtn">Analiz Et</button>
+        </div>
+        <div class="import-status" id="importStatus"></div>
+      </div>
+      <div id="importPreviewWrap" style="display:none">
+        <div class="filter-bar" style="padding:16px 0">
+          <span style="color:var(--muted);font-size:.85rem" id="importPreviewCount"></span>
+          <button type="button" class="btn btn-primary btn-sm" id="importApplyBtn" data-i18n="importApplyBtn">Seçilenleri Uygula</button>
+        </div>
+        <div id="importPreviewList" class="import-preview-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Not Defteri -->
+<div class="overlay" id="notebookOverlay">
+  <div class="panel" style="max-width:920px">
+    <div class="panel-header">
+      <div>
+        <h3 data-i18n="notebookTitle">Not Defteri</h3>
+        <p id="notebookDesc" data-i18n="notebookDesc">Bu hedef için serbest notlarınızı ve zafiyet bulgularınızı, dilerseniz ilgili test maddesiyle ilişkilendirerek buraya kaydedin.</p>
+      </div>
+      <button class="close-btn" id="closeNotebookOverlay">&times;</button>
+    </div>
+    <div class="filter-bar">
+      <select id="notebookTestFilter" style="min-width:220px">
+        <option value="" data-i18n="notebookFilterAll">Tüm notlar</option>
+      </select>
+      <span style="flex:1"></span>
+      <button class="btn btn-primary btn-sm" id="newNoteBtn" data-i18n="newNote">+ Yeni Not</button>
+    </div>
+    <div class="panel-body">
+      <div id="notebookList" class="notebook-grid"><!-- JS ile doldurulur --></div>
+    </div>
+  </div>
+</div>
+
+<!-- Not Editörü -->
+<div class="overlay" id="noteEditorOverlay">
+  <div class="panel" style="max-width:640px">
+    <div class="panel-header">
+      <div>
+        <h3 id="noteEditorTitle" data-i18n="newNote">+ Yeni Not</h3>
+        <p data-i18n="noteEditorDesc">Bulgunuzu açık ve net biçimde yazın; isterseniz kanıt olarak ekran görüntüsü ekleyin.</p>
+      </div>
+      <button class="close-btn" id="closeNoteEditorOverlay">&times;</button>
+    </div>
+    <div class="panel-body">
+      <form id="noteEditorForm" class="session-form">
+        <input type="hidden" id="noteEditId" value="">
+        <label data-i18n="noteTitleLabel">Başlık</label>
+        <input type="text" id="noteTitleInput" data-i18n-placeholder="noteTitlePlaceholder" placeholder="Örn: Login formunda SQL Injection">
+        <label data-i18n="noteLinkedTestLabel">İlgili Test Maddesi (opsiyonel)</label>
+        <select id="noteTestSelect">
+          <option value="" data-i18n="noteGeneralOption">— Genel not (belirli bir maddeye bağlı değil) —</option>
+        </select>
+        <label data-i18n="severityLabel">Önem Derecesi</label>
+        <select id="noteSeveritySelect">
+          <option value="info" data-i18n="severity_info">Bilgi</option>
+          <option value="low" data-i18n="severity_low">Düşük</option>
+          <option value="medium" data-i18n="severity_medium">Orta</option>
+          <option value="high" data-i18n="severity_high">Yüksek</option>
+          <option value="critical" data-i18n="severity_critical">Kritik</option>
+        </select>
+        <label data-i18n="noteContentLabel">Not / Bulgu</label>
+        <textarea id="noteContentInput" class="finding-textarea" style="min-height:120px" data-i18n-placeholder="noteContentPlaceholder" placeholder="Zafiyeti, adımları ve etkisini buraya yazın..."></textarea>
+        <label data-i18n="noteImagesLabel">Kanıt Görselleri</label>
+        <div class="note-image-drop" id="noteImageDrop">
+          <span data-i18n="noteImageDropText">Görselleri buraya sürükleyin, yapıştırın (Ctrl+V) ya da seçin</span>
+          <input type="file" id="noteImageInput" accept="image/*" multiple>
+        </div>
+        <div class="note-image-thumbs" id="noteImageThumbs"></div>
+        <div class="hero-actions" style="margin-top:8px">
+          <button type="button" class="btn btn-primary" id="saveNoteBtn" data-i18n="saveNote">Notu Kaydet</button>
+          <button type="button" class="btn btn-secondary" id="deleteNoteBtn" style="display:none" data-i18n="deleteNote">Notu Sil</button>
+        </div>
+        <div class="import-status" id="noteEditorStatus"></div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Görsel Büyütme (Lightbox) -->
+<div class="overlay" id="imageLightbox">
+  <img id="lightboxImg" src="" alt="" />
+  <button class="close-btn" id="closeLightbox" style="position:fixed;top:24px;right:28px">&times;</button>
+</div>
+
 <div class="toast" id="toast"></div>
 
+<script src="js/import-parsers.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

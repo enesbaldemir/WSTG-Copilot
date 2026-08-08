@@ -3,6 +3,7 @@
 
   const STORAGE_KEY = "wstg_progress_v1";
   const FINDINGS_KEY = "wstg_findings_v1";
+  const NOTEBOOK_KEY = "wstg_notebook_v1";
   const LANG_KEY = "wstg_lang_v1";
   const THEME_KEY = "wstg_theme_v1";
   const SESSION_ID_KEY = "wstg_session_id_v1";
@@ -161,7 +162,55 @@
 
       top10PrevBtn: "‹ Önceki",
       top10NextBtn: "Sonraki ›",
-      top10SourceNote: "Kaynak: OWASP Top 10:2025 (owasp.org/Top10/2025), pentest çalışma alanı için Türkçe/İngilizce olarak özetlenmiştir."
+      top10SourceNote: "Kaynak: OWASP Top 10:2025 (owasp.org/Top10/2025), pentest çalışma alanı için Türkçe/İngilizce olarak özetlenmiştir.",
+
+      navImport: "Bulgu İçe Aktar",
+      importModalTitle: "Bulgu İçe Aktar",
+      importModalDesc: "Nmap, Nikto veya WPScan çıktısını (XML/JSON) yükleyin; eşleşen bulgular ilgili WSTG maddelerine not olarak eklenir.",
+      importToolLabel: "Araç",
+      importToolAuto: "Otomatik algıla",
+      importFileLabel: "Dosya",
+      importAnalyzeBtn: "Analiz Et",
+      importApplyBtn: "Seçilenleri Uygula",
+      importNoFile: "Lütfen bir dosya seçin.",
+      importParseError: "Dosya ayrıştırılamadı",
+      importNoFindings: "Bu dosyada eşleşen bir bulgu bulunamadı.",
+      importPreviewCount: n => `${n} bulgu bulundu — uygulamadan önce gözden geçirin.`,
+      importAppliedToast: n => `${n} bulgu checklist'e işlendi`,
+      importUnmatchedTag: "Kategori önerisi yok",
+      importAnalyzing: "Analiz ediliyor...",
+
+      navNotebook: "Not Defteri",
+      notebookTitle: "Not Defteri",
+      notebookDesc: "Bu hedef için serbest notlarınızı ve zafiyet bulgularınızı, dilerseniz ilgili test maddesiyle ilişkilendirerek buraya kaydedin.",
+      notebookDescLocal: "Yerel modda çalışıyorsunuz — notlar bu tarayıcıda saklanır. Oturum açarsanız notlar veritabanına kaydedilir.",
+      notebookFilterAll: "Tüm notlar",
+      notebookFilterGeneral: "Sadece genel notlar",
+      newNote: "+ Yeni Not",
+      editNote: "Notu Düzenle",
+      noteEditorDesc: "Bulgunuzu açık ve net biçimde yazın; isterseniz kanıt olarak ekran görüntüsü ekleyin.",
+      noteTitleLabel: "Başlık",
+      noteTitlePlaceholder: "Örn: Login formunda SQL Injection",
+      noteLinkedTestLabel: "İlgili Test Maddesi (opsiyonel)",
+      noteGeneralOption: "— Genel not (belirli bir maddeye bağlı değil) —",
+      noteContentLabel: "Not / Bulgu",
+      noteContentPlaceholder: "Zafiyeti, adımları ve etkisini buraya yazın...",
+      noteImagesLabel: "Kanıt Görselleri",
+      noteImageDropText: "Görselleri buraya sürükleyin, yapıştırın (Ctrl+V) ya da seçin",
+      saveNote: "Notu Kaydet",
+      deleteNote: "Notu Sil",
+      noteEmptyList: "Henüz not eklenmedi. İlk notunuzu ekleyin.",
+      noteContentRequired: "Lütfen bir not yazın veya en az bir görsel ekleyin.",
+      noteSaved: "Not kaydedildi ✓",
+      noteDeleted: "Not silindi",
+      noteDeleteConfirm: "Bu notu silmek istiyor musunuz?",
+      noteSaveError: "Not kaydedilemedi",
+      noteTooManyImages: n => `En fazla ${n} görsel ekleyebilirsiniz`,
+      noteImageTooBig: "Görsel çok büyük (maks. ~4MB)",
+      noteGeneralBadge: "Genel not",
+      noteUntitled: "(Başlıksız not)",
+      addNoteFromTest: "🗒️ Not defterine ekle",
+      noteJustNow: "az önce"
     },
     en: {
       navWorkspace: "Workspace",
@@ -274,7 +323,54 @@
 
       top10PrevBtn: "‹ Previous",
       top10NextBtn: "Next ›",
-      top10SourceNote: "Source: OWASP Top 10:2025 (owasp.org/Top10/2025), summarized in Turkish/English for this pentest workspace."
+      top10SourceNote: "Source: OWASP Top 10:2025 (owasp.org/Top10/2025), summarized in Turkish/English for this pentest workspace.",
+
+      navImport: "Import Findings",
+      importModalTitle: "Import Findings",
+      importModalDesc: "Upload Nmap, Nikto, or WPScan output (XML/JSON); matching findings are attached as notes to the relevant WSTG items.",
+      importToolLabel: "Tool",
+      importToolAuto: "Auto-detect",
+      importFileLabel: "File",
+      importAnalyzeBtn: "Analyze",
+      importApplyBtn: "Apply Selected",
+      importNoFile: "Please choose a file.",
+      importParseError: "Could not parse the file",
+      importNoFindings: "No matching findings were found in this file.",
+      importPreviewCount: n => `${n} findings detected — review before applying.`,
+      importAppliedToast: n => `${n} findings applied to the checklist`,
+      importUnmatchedTag: "No category suggestion",
+      importAnalyzing: "Analyzing...",
+
+      navNotebook: "Notebook",
+      notebookTitle: "Notebook",
+      notebookDesc: "Keep free-form notes and vulnerability findings for this target here, optionally linked to a specific test item.",
+      notebookDescLocal: "You're in local mode — notes are stored in this browser. Open a session to save notes to the database.",
+      notebookFilterAll: "All notes",
+      notebookFilterGeneral: "General notes only",
+      newNote: "+ New Note",
+      editNote: "Edit Note",
+      noteEditorDesc: "Write your finding clearly, and optionally attach a screenshot as evidence.",
+      noteTitleLabel: "Title",
+      noteTitlePlaceholder: "e.g. SQL Injection in login form",
+      noteLinkedTestLabel: "Related Test Item (optional)",
+      noteGeneralOption: "— General note (not linked to a specific item) —",
+      noteContentLabel: "Note / Finding",
+      noteContentPlaceholder: "Describe the vulnerability, the steps, and its impact...",
+      noteImagesLabel: "Evidence Images",
+      noteImageDropText: "Drag images here, paste (Ctrl+V), or click to select",
+      saveNote: "Save Note",
+      deleteNote: "Delete Note",
+      noteEmptyList: "No notes yet. Add your first one.",
+      noteContentRequired: "Please write a note or attach at least one image.",
+      noteSaved: "Note saved ✓",
+      noteDeleted: "Note deleted",
+      noteDeleteConfirm: "Delete this note?",
+      noteSaveError: "Could not save the note",
+      noteTooManyImages: n => `You can attach up to ${n} images`,
+      noteImageTooBig: "Image is too large (max ~4MB)",
+      noteGeneralBadge: "General note",
+      addNoteFromTest: "🗒️ Add to notebook",
+      noteJustNow: "just now"
     }
   };
 
@@ -283,6 +379,10 @@
   let top10Index = 0;
   let progress = loadProgress();
   let findings = loadFindings();
+  let notebook = loadNotebook(); // local-mode notebook: array of note objects
+  let sessionNotes = [];         // DB-mode notebook cache for currentSession
+  let notebookFilterTestId = "";
+  let noteEditorImages = [];     // {name, data} being edited in the note editor
   let saveTimers = {};
   let currentCategoryId = null;
   let currentFilter = "all"; // all | done | pending
@@ -337,6 +437,17 @@
   }
   function saveFindings(){
     try{ localStorage.setItem(FINDINGS_KEY, JSON.stringify(findings)); }catch(e){}
+  }
+
+  // Not Defteri (yerel mod) — DB oturumu açık değilken notlar burada saklanır.
+  function loadNotebook(){
+    try{
+      const arr = JSON.parse(localStorage.getItem(NOTEBOOK_KEY));
+      return Array.isArray(arr) ? arr : [];
+    }catch(e){ return []; }
+  }
+  function saveNotebook(){
+    try{ localStorage.setItem(NOTEBOOK_KEY, JSON.stringify(notebook)); }catch(e){}
   }
 
   // Returns the current finding {text, severity} for a test item, reading
@@ -600,6 +711,7 @@
             </div>
             <textarea class="finding-textarea" data-id="${test.id}" placeholder="${t('findingsPlaceholder')}">${escapeHtml(fd.text)}</textarea>
             <div class="finding-status" data-id="${test.id}"></div>
+            <button type="button" class="copy-btn add-note-btn" data-test-id="${test.id}" style="margin-top:10px">${t('addNoteFromTest')}</button>
           </div>
         </div>
       </div>
@@ -960,6 +1072,7 @@
       .then(([session, results]) => {
         currentSession = session;
         progress = progressFromResults(results);
+        sessionNotes = [];
         saveSessionId(session.id);
         setSkipFlag(false);
         renderSidebar(); renderDashboard();
@@ -1059,6 +1172,7 @@
       if(currentSession && currentSession.id === id){
         currentSession = null;
         sessionResults = {};
+        sessionNotes = [];
         saveSessionId(null);
         progress = loadProgress();
         renderSidebar(); renderDashboard();
@@ -1077,6 +1191,391 @@
       ? apiRequest(`/sessions/${currentSession.id}/results/${testId}`, { method: 'PUT', body: JSON.stringify({ status }) })
       : apiRequest(`/sessions/${currentSession.id}/results`, { method: 'POST', body: JSON.stringify({ test_id: testId, status }) });
     return req.then(result => { sessionResults[testId] = result; updateSessionUI(); });
+  }
+
+  // ========================
+  // Dış Araç İçe Aktarma (Nmap / Nikto / WPScan)
+  // ========================
+
+  let lastImportFindings = [];
+
+  function testInfoById(id){
+    if(!DATA) return null;
+    for(const c of DATA.categories){
+      for(const tItem of c.tests){
+        if(tItem.id === id) return { title: tItem.title, catCode: c.code, catId: c.id };
+      }
+    }
+    return null;
+  }
+
+  function maxSeverityLocal(a, b){
+    const order = (window.WSTGImport && window.WSTGImport.SEVERITIES) || ["info","low","medium","high","critical"];
+    return order.indexOf(b) > order.indexOf(a) ? b : a;
+  }
+
+  function openImportModal(){
+    document.getElementById('importPreviewWrap').style.display = 'none';
+    document.getElementById('importFileInput').value = '';
+    const status = document.getElementById('importStatus');
+    status.textContent = '';
+    status.classList.remove('error');
+    lastImportFindings = [];
+    document.getElementById('importOverlay').classList.add('open');
+  }
+  function closeImportModal(){
+    document.getElementById('importOverlay').classList.remove('open');
+  }
+
+  function analyzeImportFile(){
+    const fileInput = document.getElementById('importFileInput');
+    const statusEl = document.getElementById('importStatus');
+    const file = fileInput.files && fileInput.files[0];
+    statusEl.classList.remove('error');
+    if(!file){
+      statusEl.textContent = t('importNoFile');
+      statusEl.classList.add('error');
+      return;
+    }
+    if(!window.WSTGImport){
+      statusEl.textContent = t('importParseError');
+      statusEl.classList.add('error');
+      return;
+    }
+    statusEl.textContent = t('importAnalyzing');
+    const toolHint = document.getElementById('importToolSelect').value;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try{
+        const result = window.WSTGImport.parse(String(reader.result), toolHint, file.name);
+        lastImportFindings = (result.findings || []).map((f, i) => Object.assign({ _rowId: 'imp' + i, _checked: true }, f));
+        renderImportPreview();
+        statusEl.textContent = lastImportFindings.length ? '' : t('importNoFindings');
+      }catch(err){
+        document.getElementById('importPreviewWrap').style.display = 'none';
+        statusEl.textContent = t('importParseError') + ': ' + (err && err.message ? err.message : String(err));
+        statusEl.classList.add('error');
+      }
+    };
+    reader.onerror = () => {
+      statusEl.textContent = t('importParseError');
+      statusEl.classList.add('error');
+    };
+    reader.readAsText(file);
+  }
+
+  function renderImportPreview(){
+    const wrap = document.getElementById('importPreviewWrap');
+    const list = document.getElementById('importPreviewList');
+    const countEl = document.getElementById('importPreviewCount');
+    if(!lastImportFindings.length){ wrap.style.display = 'none'; return; }
+    wrap.style.display = '';
+    countEl.textContent = t('importPreviewCount')(lastImportFindings.length);
+    list.innerHTML = lastImportFindings.map(f => {
+      const idsHtml = (f.testIds || []).map(id => {
+        const meta = testInfoById(id);
+        return `<span class="import-preview-ids">${escapeHtml(id)}${meta ? ' · ' + escapeHtml(meta.title) : ''}</span>`;
+      }).join(' ');
+      return `<div class="import-preview-item ${f.unmatched ? 'unmatched' : ''}">
+        <input type="checkbox" class="import-check" data-row="${f._rowId}" ${f._checked ? 'checked' : ''}>
+        <div class="import-preview-body">
+          <div class="import-preview-top">
+            <span class="import-preview-title">${escapeHtml(f.title || '')}</span>
+            <span class="severity-badge sev-${f.severity || 'info'}">${t('severity_' + (f.severity || 'info'))}</span>
+            ${f.unmatched ? `<span class="severity-badge sev-info">${t('importUnmatchedTag')}</span>` : ''}
+          </div>
+          <div>${idsHtml}</div>
+          ${f.detail ? `<div class="import-preview-detail">${escapeHtml(f.detail)}</div>` : ''}
+          <div class="import-preview-source">${escapeHtml(f.source || '')}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function applyImportSelected(){
+    const checked = lastImportFindings.filter(f => f._checked);
+    if(!checked.length) return;
+    checked.forEach(f => {
+      (f.testIds || []).forEach(testId => {
+        if(!testInfoById(testId)) return;
+        const noteLine = `[${f.source || f.tool}] ${f.title}${f.detail ? '\n' + f.detail : ''}`;
+        progress[testId] = true;
+        if(currentSession){
+          const existing = sessionResults[testId];
+          const prevText = existing && existing.finding ? existing.finding + '\n\n' : '';
+          const prevSeverity = existing && existing.severity ? existing.severity : 'info';
+          persistFinding(testId, prevText + noteLine, maxSeverityLocal(prevSeverity, f.severity));
+          persistResult(testId, true).catch(()=>{});
+        } else {
+          const existing = findings[testId];
+          const prevText = existing && existing.text ? existing.text + '\n\n' : '';
+          const prevSeverity = existing && existing.severity ? existing.severity : 'info';
+          findings[testId] = { text: prevText + noteLine, severity: maxSeverityLocal(prevSeverity, f.severity), updatedAt: new Date().toISOString() };
+        }
+      });
+    });
+    if(!currentSession){ saveProgress(); saveFindings(); }
+    renderSidebar();
+    renderDashboard();
+    if(currentCategoryId) renderTestList();
+    showToast(t('importAppliedToast')(checked.length));
+    closeImportModal();
+  }
+
+  // ========================
+  // Not Defteri (Notebook)
+  // ========================
+  const MAX_NOTE_IMAGES = 8;
+  const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
+
+  // Şu an aktif not listesini döner: DB oturumu açıksa backend cache'i,
+  // değilse yerel (localStorage) not defterini.
+  function activeNotes(){
+    return currentSession ? sessionNotes : notebook;
+  }
+
+  function notebookTestOptionsHtml(selectedId){
+    let html = `<option value="">${escapeHtml(t('noteGeneralOption'))}</option>`;
+    DATA.categories.forEach(c=>{
+      html += `<optgroup label="${escapeHtml(c.code + ' · ' + c.name)}">`;
+      c.tests.forEach(test=>{
+        html += `<option value="${test.id}" data-cat="${c.id}" ${selectedId===test.id?'selected':''}>${test.id} — ${escapeHtml(test.title)}</option>`;
+      });
+      html += `</optgroup>`;
+    });
+    return html;
+  }
+
+  function populateNotebookFilter(){
+    const sel = document.getElementById('notebookTestFilter');
+    if(!sel) return;
+    const keepVal = notebookFilterTestId;
+    sel.innerHTML = `<option value="">${escapeHtml(t('notebookFilterAll'))}</option><option value="__general__">${escapeHtml(t('notebookFilterGeneral'))}</option>` +
+      DATA.categories.map(c => `<optgroup label="${escapeHtml(c.code + ' · ' + c.name)}">` +
+        c.tests.map(test => `<option value="${test.id}">${test.id} — ${escapeHtml(test.title)}</option>`).join('') +
+        `</optgroup>`).join('');
+    sel.value = keepVal || "";
+  }
+
+  function formatNoteDate(iso){
+    if(!iso) return t('noteJustNow');
+    try{ return new Date(iso).toLocaleString(t('dateLocale')); }catch(e){ return iso; }
+  }
+
+  function renderNotebookList(){
+    const list = document.getElementById('notebookList');
+    if(!list) return;
+    let notes = activeNotes().slice();
+    if(notebookFilterTestId === '__general__') notes = notes.filter(n => !n.test_id);
+    else if(notebookFilterTestId) notes = notes.filter(n => n.test_id === notebookFilterTestId);
+    notes.sort((a,b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0));
+
+    if(!notes.length){
+      list.innerHTML = `<div class="notebook-empty">${escapeHtml(t('noteEmptyList'))}</div>`;
+      return;
+    }
+
+    list.innerHTML = notes.map(n=>{
+      const info = n.test_id ? testInfoById(n.test_id) : null;
+      const chip = info
+        ? `<span class="note-card-test-chip">${escapeHtml(info.catCode)} · ${escapeHtml(n.test_id)}</span>`
+        : `<span class="note-card-general-chip">${escapeHtml(t('noteGeneralBadge'))}</span>`;
+      const images = Array.isArray(n.images) ? n.images : [];
+      const thumbs = images.slice(0, 3).map(img => `<img src="${img.data}" alt="${escapeHtml(img.name||'')}" data-full="${img.data}">`).join('');
+      const more = images.length > 3 ? `<span class="note-more-chip">+${images.length-3}</span>` : '';
+      return `<div class="note-card" data-note-id="${n.id}">
+        <div class="note-card-top">
+          <div class="note-card-title">${escapeHtml(n.title && n.title.trim() ? n.title : t('noteEditorDesc'))}</div>
+          <span class="severity-badge sev-${n.severity||'info'}">${t('severity_'+(n.severity||'info'))}</span>
+        </div>
+        ${chip}
+        ${n.content ? `<div class="note-card-content">${escapeHtml(n.content)}</div>` : ''}
+        ${images.length ? `<div class="note-card-images">${thumbs}${more}</div>` : ''}
+        <div class="note-card-meta"><span>${formatNoteDate(n.updated_at || n.created_at)}</span></div>
+      </div>`;
+    }).join('');
+  }
+
+  function refreshNotebookUI(){
+    populateNotebookFilter();
+    renderNotebookList();
+    const desc = document.getElementById('notebookDesc');
+    if(desc) desc.textContent = currentSession ? t('notebookDesc') : t('notebookDescLocal');
+  }
+
+  function loadSessionNotes(){
+    if(!currentSession) return Promise.resolve();
+    return apiRequest(`/sessions/${currentSession.id}/notes`).then(notes=>{
+      sessionNotes = notes || [];
+    }).catch(()=>{ sessionNotes = []; });
+  }
+
+  function openNotebook(){
+    notebookFilterTestId = "";
+    const doOpen = ()=>{
+      refreshNotebookUI();
+      document.getElementById('notebookOverlay').classList.add('open');
+    };
+    if(currentSession){
+      loadSessionNotes().then(doOpen);
+    } else {
+      doOpen();
+    }
+  }
+  function closeNotebook(){
+    document.getElementById('notebookOverlay').classList.remove('open');
+  }
+
+  function resetNoteImageInputsUI(){
+    noteEditorImages = [];
+    renderNoteImageThumbs();
+    const fileInput = document.getElementById('noteImageInput');
+    if(fileInput) fileInput.value = '';
+  }
+
+  function renderNoteImageThumbs(){
+    const wrap = document.getElementById('noteImageThumbs');
+    if(!wrap) return;
+    wrap.innerHTML = noteEditorImages.map((img, idx) => `
+      <div class="note-image-thumb" data-idx="${idx}">
+        <img src="${img.data}" alt="${escapeHtml(img.name||'')}">
+        <button type="button" class="remove-img" data-idx="${idx}" title="${escapeHtml(t('deleteNote'))}">&times;</button>
+      </div>`).join('');
+  }
+
+  function setNoteEditorStatus(msg, isError){
+    const el = document.getElementById('noteEditorStatus');
+    if(!el) return;
+    el.textContent = msg || '';
+    el.classList.toggle('error', !!isError);
+  }
+
+  function fileToDataUrl(file){
+    return new Promise((resolve, reject)=>{
+      if(!file.type || file.type.indexOf('image/') !== 0){ reject(new Error('not-image')); return; }
+      if(file.size > MAX_IMAGE_BYTES){ reject(new Error('too-big')); return; }
+      const reader = new FileReader();
+      reader.onload = () => resolve({ name: file.name || 'kanit', data: reader.result });
+      reader.onerror = () => reject(new Error('read-error'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function addImagesToEditor(files){
+    const arr = Array.from(files || []);
+    if(!arr.length) return;
+    const remaining = MAX_NOTE_IMAGES - noteEditorImages.length;
+    if(remaining <= 0){
+      setNoteEditorStatus(t('noteTooManyImages')(MAX_NOTE_IMAGES), true);
+      return;
+    }
+    const toAdd = arr.slice(0, remaining);
+    Promise.all(toAdd.map(f => fileToDataUrl(f).catch(err => ({ __error: err.message }))))
+      .then(results => {
+        let hadError = false;
+        results.forEach(r => {
+          if(r && r.__error){ hadError = true; }
+          else if(r) noteEditorImages.push(r);
+        });
+        renderNoteImageThumbs();
+        if(hadError) setNoteEditorStatus(t('noteImageTooBig'), true);
+        else if(arr.length > toAdd.length) setNoteEditorStatus(t('noteTooManyImages')(MAX_NOTE_IMAGES), true);
+        else setNoteEditorStatus('', false);
+      });
+  }
+
+  function openNoteEditor(existingNote, prefillTestId){
+    const form = document.getElementById('noteEditorForm');
+    form.reset();
+    setNoteEditorStatus('', false);
+    document.getElementById('noteEditId').value = existingNote ? existingNote.id : '';
+    document.getElementById('noteEditorTitle').textContent = existingNote ? t('editNote') : t('newNote');
+    document.getElementById('noteTitleInput').value = existingNote ? (existingNote.title || '') : '';
+    document.getElementById('noteContentInput').value = existingNote ? (existingNote.content || '') : '';
+    document.getElementById('noteSeveritySelect').value = existingNote ? (existingNote.severity || 'info') : 'info';
+    document.getElementById('noteTestSelect').innerHTML = notebookTestOptionsHtml(existingNote ? existingNote.test_id : (prefillTestId || ''));
+    if(!existingNote && prefillTestId) document.getElementById('noteTestSelect').value = prefillTestId;
+    noteEditorImages = existingNote && Array.isArray(existingNote.images) ? existingNote.images.slice() : [];
+    renderNoteImageThumbs();
+    document.getElementById('deleteNoteBtn').style.display = existingNote ? '' : 'none';
+    document.getElementById('noteEditorOverlay').classList.add('open');
+    setTimeout(()=> document.getElementById('noteTitleInput').focus(), 50);
+  }
+  function closeNoteEditor(){
+    document.getElementById('noteEditorOverlay').classList.remove('open');
+  }
+
+  function saveNoteFromEditor(){
+    const id = document.getElementById('noteEditId').value;
+    const title = document.getElementById('noteTitleInput').value.trim();
+    const content = document.getElementById('noteContentInput').value.trim();
+    const severity = document.getElementById('noteSeveritySelect').value;
+    const testId = document.getElementById('noteTestSelect').value || null;
+    const catId = testId ? (testInfoById(testId) || {}).catId || null : null;
+
+    if(!content && !noteEditorImages.length){
+      setNoteEditorStatus(t('noteContentRequired'), true);
+      return;
+    }
+
+    if(currentSession){
+      const payload = { title, content, severity, test_id: testId, category_id: catId, images: noteEditorImages };
+      const req = id
+        ? apiRequest(`/sessions/${currentSession.id}/notes/${id}`, { method: 'PUT', body: JSON.stringify(payload) })
+        : apiRequest(`/sessions/${currentSession.id}/notes`, { method: 'POST', body: JSON.stringify(payload) });
+      req.then(()=> loadSessionNotes()).then(()=>{
+        refreshNotebookUI();
+        closeNoteEditor();
+        showToast(t('noteSaved'));
+      }).catch(err => setNoteEditorStatus(err.message || t('noteSaveError'), true));
+      return;
+    }
+
+    const now = new Date().toISOString();
+    if(id){
+      const idx = notebook.findIndex(n => String(n.id) === String(id));
+      if(idx > -1){
+        notebook[idx] = Object.assign({}, notebook[idx], { title, content, severity, test_id: testId, category_id: catId, images: noteEditorImages, updated_at: now });
+      }
+    } else {
+      notebook.push({ id: 'local' + Date.now() + Math.random().toString(36).slice(2), title, content, severity, test_id: testId, category_id: catId, images: noteEditorImages, created_at: now, updated_at: now });
+    }
+    saveNotebook();
+    refreshNotebookUI();
+    closeNoteEditor();
+    showToast(t('noteSaved'));
+  }
+
+  function deleteNoteFromEditor(){
+    const id = document.getElementById('noteEditId').value;
+    if(!id) return;
+    if(!confirm(t('noteDeleteConfirm'))) return;
+
+    if(currentSession){
+      apiRequest(`/sessions/${currentSession.id}/notes/${id}`, { method: 'DELETE' })
+        .then(()=> loadSessionNotes())
+        .then(()=>{
+          refreshNotebookUI();
+          closeNoteEditor();
+          showToast(t('noteDeleted'));
+        }).catch(err => setNoteEditorStatus(err.message || t('noteSaveError'), true));
+      return;
+    }
+
+    notebook = notebook.filter(n => String(n.id) !== String(id));
+    saveNotebook();
+    refreshNotebookUI();
+    closeNoteEditor();
+    showToast(t('noteDeleted'));
+  }
+
+  function openLightbox(src){
+    document.getElementById('lightboxImg').src = src;
+    document.getElementById('imageLightbox').classList.add('open');
+  }
+  function closeLightbox(){
+    document.getElementById('imageLightbox').classList.remove('open');
+    document.getElementById('lightboxImg').src = '';
   }
 
   function bindEvents(){
@@ -1127,9 +1626,79 @@
       if(btn.dataset.action === 'delete') deleteSessionUI(id);
     });
 
+    document.getElementById('notebookNavBtn').addEventListener('click', ()=> openNotebook());
+    document.getElementById('closeNotebookOverlay').addEventListener('click', closeNotebook);
+    document.getElementById('notebookOverlay').addEventListener('click', e=>{
+      if(e.target.id === 'notebookOverlay') closeNotebook();
+    });
+    document.getElementById('newNoteBtn').addEventListener('click', ()=> openNoteEditor(null));
+    document.getElementById('notebookTestFilter').addEventListener('change', e=>{
+      notebookFilterTestId = e.target.value;
+      renderNotebookList();
+    });
+    document.getElementById('notebookList').addEventListener('click', e=>{
+      const img = e.target.closest('.note-card-images img');
+      if(img){ e.stopPropagation(); openLightbox(img.dataset.full || img.src); return; }
+      const card = e.target.closest('.note-card');
+      if(!card) return;
+      const note = activeNotes().find(n => String(n.id) === String(card.dataset.noteId));
+      if(note) openNoteEditor(note);
+    });
+
+    document.getElementById('closeNoteEditorOverlay').addEventListener('click', closeNoteEditor);
+    document.getElementById('noteEditorOverlay').addEventListener('click', e=>{
+      if(e.target.id === 'noteEditorOverlay') closeNoteEditor();
+    });
+    document.getElementById('noteEditorForm').addEventListener('submit', e=> e.preventDefault());
+    document.getElementById('saveNoteBtn').addEventListener('click', saveNoteFromEditor);
+    document.getElementById('deleteNoteBtn').addEventListener('click', deleteNoteFromEditor);
+
+    const noteImageDrop = document.getElementById('noteImageDrop');
+    const noteImageInput = document.getElementById('noteImageInput');
+    noteImageInput.addEventListener('change', e=>{ addImagesToEditor(e.target.files); e.target.value = ''; });
+    noteImageDrop.addEventListener('dragover', e=>{ e.preventDefault(); noteImageDrop.classList.add('dragover'); });
+    noteImageDrop.addEventListener('dragleave', ()=> noteImageDrop.classList.remove('dragover'));
+    noteImageDrop.addEventListener('drop', e=>{
+      e.preventDefault();
+      noteImageDrop.classList.remove('dragover');
+      if(e.dataTransfer && e.dataTransfer.files) addImagesToEditor(e.dataTransfer.files);
+    });
+    document.getElementById('noteEditorForm').addEventListener('paste', e=>{
+      const items = (e.clipboardData && e.clipboardData.items) || [];
+      const files = [];
+      for(const item of items){ if(item.kind === 'file'){ const f = item.getAsFile(); if(f) files.push(f); } }
+      if(files.length) addImagesToEditor(files);
+    });
+    document.getElementById('noteImageThumbs').addEventListener('click', e=>{
+      const btn = e.target.closest('.remove-img');
+      if(!btn) return;
+      noteEditorImages.splice(parseInt(btn.dataset.idx, 10), 1);
+      renderNoteImageThumbs();
+    });
+
+    document.getElementById('closeLightbox').addEventListener('click', closeLightbox);
+    document.getElementById('imageLightbox').addEventListener('click', e=>{
+      if(e.target.id === 'imageLightbox') closeLightbox();
+    });
+
+    document.getElementById('importNavBtn').addEventListener('click', openImportModal);
+    document.getElementById('closeImportOverlay').addEventListener('click', closeImportModal);
+    document.getElementById('importOverlay').addEventListener('click', e=>{
+      if(e.target.id === 'importOverlay') closeImportModal();
+    });
+    document.getElementById('importAnalyzeBtn').addEventListener('click', analyzeImportFile);
+    document.getElementById('importApplyBtn').addEventListener('click', applyImportSelected);
+    document.getElementById('importPreviewList').addEventListener('change', e=>{
+      const cb = e.target.closest('.import-check');
+      if(!cb) return;
+      const row = lastImportFindings.find(f => f._rowId === cb.dataset.row);
+      if(row) row._checked = cb.checked;
+    });
+
     document.addEventListener('keydown', e=>{
       if(e.key === 'Escape'){
-        closeCategory(); closeThemeModal(); closeNewSessionOverlay(); closeTop10Detail();
+        closeCategory(); closeThemeModal(); closeNewSessionOverlay(); closeTop10Detail(); closeImportModal();
+        closeLightbox(); closeNoteEditor(); closeNotebook();
         if(document.getElementById('closeSessionGate').style.display !== 'none') closeSessionGate();
       }
     });
@@ -1147,6 +1716,13 @@
     document.getElementById('testList').addEventListener('click', e=>{
       const checkBtn = e.target.closest('.test-check');
       if(checkBtn){ e.stopPropagation(); toggleDone(checkBtn.dataset.id); return; }
+      const addNoteBtn = e.target.closest('.add-note-btn');
+      if(addNoteBtn){
+        e.stopPropagation();
+        closeCategory();
+        openNoteEditor(null, addNoteBtn.dataset.testId);
+        return;
+      }
       const copyBtn = e.target.closest('.copy-btn');
       if(copyBtn){ e.stopPropagation(); copyToClipboard(decodeURIComponent(copyBtn.dataset.copy)); return; }
       if(e.target.closest('.finding-block')){ e.stopPropagation(); return; }

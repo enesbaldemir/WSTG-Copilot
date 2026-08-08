@@ -27,6 +27,7 @@ No installation, backend, or build step required — just open `index.html` in a
 - 📱 Responsive design — works on both desktop and mobile
 - 📎 One-click access to the original **WSTG v4.2 PDF**
 - 🗄️ **Optional named test sessions saved to a database** — start a session with a name, tester, and target URL before testing; every checkbox is persisted to a Flask + SQLite backend and can be resumed later (falls back to the original `localStorage`-only mode automatically if the backend isn't running)
+- 📓 **Notebook** — a dedicated, evidence-friendly note space per target: entries can be linked to a specific WSTG test item or kept as general notes, with drag/paste/upload screenshot attachments
 - 🛡️ **OWASP Top 10:2025 reference module** — all ten risk categories with a description, how it happens, step-by-step pentest guidance, an example attack scenario/payload, prevention checklist, mapped CWEs, and recommended tools, cross-linked to the matching WSTG test items
 
 ### 🖥️ Overview
@@ -87,8 +88,20 @@ The API runs on `http://localhost:5000` and creates `backend/database/wstg.db` (
 | GET/PUT/DELETE | `/api/sessions/<id>` | Read / update / delete a session |
 | GET/POST | `/api/sessions/<id>/results` | List / add test results for a session |
 | PUT/DELETE | `/api/sessions/<id>/results/<test_id>` | Update / delete a single test result |
-| GET | `/api/sessions/<id>/report` | JSON summary report for a session |
+| GET/POST | `/api/sessions/<id>/notes` | List / add notebook entries for a session |
+| PUT/DELETE | `/api/sessions/<id>/notes/<note_id>` | Update / delete a single notebook entry |
+| GET | `/api/sessions/<id>/report` | JSON summary report for a session (includes notes) |
 
+
+### 📓 Notebook
+
+Every WSTG checklist item still has its own inline "Findings/Notes" box (with a severity picker) for quick, per-item notes — that hasn't changed. On top of that, there's now a dedicated **"Notebook"** section (sidebar → Notebook) for a more freeform, evidence-friendly way of tracking findings for the current target:
+
+- Each entry has a **title**, a **severity**, free-text **content**, and can optionally be **linked to a specific WSTG test item** — or left as a **general note** not tied to any single item (e.g. an overall observation about the target).
+- You can attach **evidence screenshots**: drag & drop, paste from the clipboard (Ctrl+V), or pick files. Click any thumbnail to view it full-size.
+- From inside any checklist item's detail view, the **"🗒️ Add to notebook"** button opens the note editor pre-linked to that exact test item.
+- The notebook list can be filtered by test item, or to general notes only.
+- Like everything else in the app, notebook entries follow the same storage mode as your session: saved to the database when a named session is active (and included in `/api/sessions/<id>/report`), or kept in `localStorage` in local/no-session mode.
 
 ### 🛡️ OWASP Top 10:2025 Module
 
@@ -196,6 +209,7 @@ Kurulum, backend veya derleme adımı gerektirmez — sadece `index.html` dosyas
 - 📱 Duyarlı (responsive) tasarım — mobil ve masaüstünde çalışır
 - 📎 Orijinal **WSTG v4.2 PDF**'ine tek tıkla erişim
 - 🗄️ **Opsiyonel: isim verilerek DB'ye kaydedilen test oturumları** — teste başlamadan önce bir isim, test uzmanı ve hedef URL vererek oturum başlatın; işaretlediğiniz her test Flask + SQLite tabanlı backend'e kaydedilir ve daha sonra kaldığınız yerden devam edebilirsiniz (backend çalışmıyorsa uygulama otomatik olarak eski `localStorage` moduna döner)
+- 📓 **Not Defteri** — her hedef için kanıt eklemeye uygun, ayrı bir not alanı: kayıtlar dilerseniz belirli bir WSTG test maddesine bağlanabilir ya da genel not olarak kalabilir; sürükle-bırak/yapıştır/yükle ile ekran görüntüsü eklenebilir
 - 🛡️ **OWASP Top 10:2025 referans modülü** — 10 risk kategorisinin tamamı; açıklama, nasıl oluştuğu, adım adım pentest rehberi, örnek saldırı senaryosu/payload, önlem listesi, ilişkili CWE'ler ve önerilen araçlarla birlikte, ilgili WSTG test maddelerine çapraz bağlantılı olarak
 
 ### 🖥️ Ekran Görünümü
@@ -256,8 +270,20 @@ API `http://localhost:5000` üzerinde çalışır ve ilk çalıştırmada `backe
 | GET/PUT/DELETE | `/api/sessions/<id>` | Oturumu getir / güncelle / sil |
 | GET/POST | `/api/sessions/<id>/results` | Oturuma ait test sonuçlarını listele / ekle |
 | PUT/DELETE | `/api/sessions/<id>/results/<test_id>` | Tek bir test sonucunu güncelle / sil |
-| GET | `/api/sessions/<id>/report` | Oturum için JSON özet raporu |
+| GET/POST | `/api/sessions/<id>/notes` | Oturuma ait not defteri kayıtlarını listele / ekle |
+| PUT/DELETE | `/api/sessions/<id>/notes/<note_id>` | Tek bir not defteri kaydını güncelle / sil |
+| GET | `/api/sessions/<id>/report` | Oturum için JSON özet raporu (notlar dahil) |
 
+
+### 📓 Not Defteri
+
+Her WSTG checklist maddesinin kendi satır içi "Bulgular/Notlar" kutusu (önem derecesi seçimiyle birlikte) hâlâ duruyor — bu değişmedi. Bunun yanına, aktif hedef için daha serbest ve kanıt eklemeye uygun bir **"Not Defteri"** bölümü eklendi (sidebar → Not Defteri):
+
+- Her kayıt bir **başlık**, bir **önem derecesi**, serbest metin bir **içerik** içerir ve dilerseniz belirli bir **WSTG test maddesine bağlanabilir** — ya da hiçbir maddeye bağlı olmayan bir **genel not** olarak bırakılabilir (örn. hedefle ilgili genel bir gözlem).
+- Kanıt için **ekran görüntüsü** ekleyebilirsiniz: sürükle-bırak, panodan yapıştırma (Ctrl+V) veya dosya seçerek. Küçük resme tıklayarak büyük halini görebilirsiniz.
+- Herhangi bir checklist maddesinin detay görünümünden **"🗒️ Not defterine ekle"** butonuyla, not editörü doğrudan o test maddesine bağlı şekilde açılır.
+- Not listesi test maddesine göre ya da sadece genel notlar olacak şekilde filtrelenebilir.
+- Uygulamanın geri kalanında olduğu gibi not defteri kayıtları da o anki oturumun saklama modunu izler: isimli bir oturum aktifken veritabanına kaydedilir (ve `/api/sessions/<id>/report` çıktısına dahil olur), oturumsuz/yerel modda ise `localStorage`'da tutulur.
 
 ### 🛡️ OWASP Top 10:2025 Modülü
 

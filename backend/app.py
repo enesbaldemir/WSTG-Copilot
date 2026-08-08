@@ -4,7 +4,7 @@ from datetime import datetime
 import os
 import json
 from config import DevelopmentConfig, ProductionConfig
-from models import db, Session, TestResult
+from models import db, Session, TestResult, Note
 
 app = Flask(__name__)
 
@@ -216,6 +216,125 @@ def delete_test_result(session_id, test_id):
         return jsonify({'error': str(e)}), 500
 
 # ========================
+# NOT DEFTERİ ENDPOINT'LERİ
+# ========================
+# Bu uçlar, checklist maddesindeki tekil 'notes/finding' alanından ayrı,
+# oturuma (siteye) bağlı serbest bir not defteri sağlar. Her not dilerse
+# belirli bir WSTG test maddesine (test_id) bağlanabilir, dilerse genel
+# (test_id=null) bir not olarak kalabilir. Kanıt için görsel eklenebilir
+# (base64 data-URL listesi olarak saklanır).
+
+MAX_NOTE_IMAGES = 8
+MAX_IMAGE_BYTES = 4 * 1024 * 1024  # tek görsel için kabaca üst sınır
+
+
+def _sanitize_images(raw_images):
+    """Gelen görsel listesini doğrular ve JSON string'e çevirir."""
+    if not raw_images:
+        return json.dumps([])
+    if not isinstance(raw_images, list):
+        raise ValueError('images bir liste olmalıdır')
+    if len(raw_images) > MAX_NOTE_IMAGES:
+        raise ValueError(f'En fazla {MAX_NOTE_IMAGES} görsel eklenebilir')
+    cleaned = []
+    for img in raw_images:
+        if not isinstance(img, dict):
+            continue
+        data = img.get('data', '')
+        if not isinstance(data, str) or not data.startswith('data:image/'):
+            raise ValueError('Geçersiz görsel verisi')
+        if len(data) > MAX_IMAGE_BYTES * 1.4:  # base64 şişmesi için kaba pay
+            raise ValueError('Görsel çok büyük')
+        cleaned.append({
+            'name': str(img.get('name', 'kanit'))[:200],
+            'data': data
+        })
+    return json.dumps(cleaned)
+
+
+@app.route('/api/sessions/<session_id>/notes', methods=['GET'])
+def get_notes(session_id):
+    try:
+        Session.query.get_or_404(session_id)
+        test_id = request.args.get('test_id')
+        query = Note.query.filter_by(session_id=session_id)
+        if test_id:
+            query = query.filter_by(test_id=test_id)
+        notes = query.order_by(Note.created_at.desc()).all()
+        return jsonify([n.to_dict() for n in notes]), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/sessions/<session_id>/notes', methods=['POST'])
+def create_note(session_id):
+    try:
+        Session.query.get_or_404(session_id)
+        data = request.json or {}
+
+        if not (data.get('content') or '').strip() and not data.get('images'):
+            return jsonify({'error': 'Not içeriği veya en az bir görsel gereklidir'}), 400
+
+        note = Note(
+            session_id=session_id,
+            test_id=data.get('test_id') or None,
+            category_id=data.get('category_id') or None,
+            title=data.get('title', ''),
+            content=data.get('content', ''),
+            severity=data.get('severity', 'info'),
+            images=_sanitize_images(data.get('images'))
+        )
+
+        db.session.add(note)
+        db.session.commit()
+
+        return jsonify(note.to_dict()), 201
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/sessions/<session_id>/notes/<int:note_id>', methods=['PUT'])
+def update_note(session_id, note_id):
+    try:
+        note = Note.query.filter_by(session_id=session_id, id=note_id).first_or_404()
+        data = request.json or {}
+
+        if 'title' in data:
+            note.title = data['title']
+        if 'content' in data:
+            note.content = data['content']
+        if 'severity' in data:
+            note.severity = data['severity']
+        if 'test_id' in data:
+            note.test_id = data['test_id'] or None
+        if 'category_id' in data:
+            note.category_id = data['category_id'] or None
+        if 'images' in data:
+            note.images = _sanitize_images(data['images'])
+
+        note.updated_at = datetime.utcnow()
+        db.session.commit()
+
+        return jsonify(note.to_dict()), 200
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/sessions/<session_id>/notes/<int:note_id>', methods=['DELETE'])
+def delete_note(session_id, note_id):
+    try:
+        note = Note.query.filter_by(session_id=session_id, id=note_id).first_or_404()
+        db.session.delete(note)
+        db.session.commit()
+        return jsonify({'message': 'Not silindi'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+# ========================
 # RAPOR ENDPOINT'İ
 # ========================
 
@@ -224,6 +343,7 @@ def generate_report(session_id):
     try:
         session = Session.query.get_or_404(session_id)
         results = TestResult.query.filter_by(session_id=session_id).all()
+        notes = Note.query.filter_by(session_id=session_id).order_by(Note.created_at.asc()).all()
         
         total = len(results)
         passed = len([r for r in results if r.status == 'passed'])
@@ -242,6 +362,7 @@ def generate_report(session_id):
                 'completion_rate': round((passed + failed) / total * 100, 2) if total > 0 else 0
             },
             'results': [r.to_dict() for r in results],
+            'notes': [n.to_dict() for n in notes],
             'generated_at': datetime.utcnow().isoformat()
         }
         
