@@ -3,8 +3,16 @@ from flask_cors import CORS
 from datetime import datetime
 import os
 import json
+import io
 from config import DevelopmentConfig, ProductionConfig
-from models import db, Session, TestResult, Note
+from models import db, Session, TestResult, Note, AIInteractionLog
+from ai import get_ai_provider, AIConfigError, AIRequestError
+import cvss as cvss_lib
+import mapping as mapping_lib
+import finding_analysis
+import next_test_suggestion
+import report_generator
+import study_metrics
 
 app = Flask(__name__)
 
@@ -21,6 +29,42 @@ os.makedirs(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'database')
 
 with app.app_context():
     db.create_all()
+
+    # ---- Hafif otomatik migrasyon (SQLite) ----
+    # db.create_all() sadece EKSİK TABLOLARI oluşturur, var olan bir tabloya
+    # yeni eklenen sütunları eklemez. Faz'lar ilerledikçe modele yeni alanlar
+    # eklendiğinde (örn. Faz 1'deki CVSS/CWE sütunları) mevcut geliştiricilerin
+    # veritabanını silmek zorunda kalmaması için eksik sütunları burada tespit
+    # edip ALTER TABLE ile ekliyoruz.
+    def _run_lightweight_sqlite_migrations():
+        from sqlalchemy import inspect, text
+        inspector = inspect(db.engine)
+        table_names = inspector.get_table_names()
+
+        tables_and_columns = {
+            'notes': {
+                'cvss_vector': 'VARCHAR(120)',
+                'cvss_score': 'FLOAT',
+                'cvss_rating': 'VARCHAR(20)',
+                'cwe_id': 'VARCHAR(20)',
+                'cwe_name': 'VARCHAR(200)',
+                'is_false_positive': 'BOOLEAN',
+            },
+            'sessions': {
+                'study_group': 'VARCHAR(20)',
+            },
+        }
+        with db.engine.begin() as conn:
+            for table, wanted_cols in tables_and_columns.items():
+                if table not in table_names:
+                    continue
+                existing_cols = {c['name'] for c in inspector.get_columns(table)}
+                for col, col_type in wanted_cols.items():
+                    if col not in existing_cols:
+                        conn.execute(text(f'ALTER TABLE {table} ADD COLUMN {col} {col_type}'))
+                        print(f"🔧 Migrasyon: {table}.{col} sütunu eklendi")
+
+    _run_lightweight_sqlite_migrations()
 
 # ========================
 # SESSION ENDPOINT'LERİ
@@ -49,7 +93,11 @@ def create_session():
         
         if not data.get('name'):
             return jsonify({'error': 'Oturum adı zorunludur'}), 400
-        
+
+        study_group = data.get('study_group') or None
+        if study_group not in (None, 'ai_assisted', 'control'):
+            return jsonify({'error': "study_group 'ai_assisted', 'control' ya da null olmalıdır"}), 400
+
         session = Session(
             name=data['name'],
             description=data.get('description', ''),
@@ -57,6 +105,7 @@ def create_session():
             target_url=data.get('target_url', ''),
             target_description=data.get('target_description', ''),
             status='active',
+            study_group=study_group,
             started_at=datetime.utcnow()
         )
         
@@ -88,6 +137,11 @@ def update_session(session_id):
             session.status = data['status']
             if data['status'] == 'completed':
                 session.completed_at = datetime.utcnow()
+        if 'study_group' in data:
+            group = data['study_group']
+            if group not in (None, '', 'ai_assisted', 'control'):
+                return jsonify({'error': "study_group 'ai_assisted', 'control' ya da null olmalıdır"}), 400
+            session.study_group = group or None
         
         session.updated_at = datetime.utcnow()
         db.session.commit()
@@ -252,6 +306,34 @@ def _sanitize_images(raw_images):
     return json.dumps(cleaned)
 
 
+def _apply_cvss_and_cwe(note, data):
+    """
+    Not/finding kaydına CVSS ve CWE alanlarını uygular. CVSS skoru/rating'i
+    HER ZAMAN sunucu tarafında cvss.calculate() ile yeniden hesaplanır —
+    istemciden gelen skor asla doğrudan güvenilmez (tutarlılık ve
+    ileride Faz 4'teki otomatik rapor üretiminin doğruluğu için önemli).
+    """
+    if 'cvss_vector' in data:
+        vector = (data.get('cvss_vector') or '').strip()
+        if not vector:
+            note.cvss_vector = None
+            note.cvss_score = None
+            note.cvss_rating = None
+        else:
+            try:
+                result = cvss_lib.calculate(vector)
+            except cvss_lib.CVSSError as e:
+                raise ValueError(f"Geçersiz CVSS vektörü: {e}")
+            note.cvss_vector = result['vector']
+            note.cvss_score = result['score']
+            note.cvss_rating = result['rating']
+
+    if 'cwe_id' in data:
+        note.cwe_id = (data.get('cwe_id') or '').strip() or None
+    if 'cwe_name' in data:
+        note.cwe_name = (data.get('cwe_name') or '').strip() or None
+
+
 @app.route('/api/sessions/<session_id>/notes', methods=['GET'])
 def get_notes(session_id):
     try:
@@ -283,6 +365,10 @@ def create_note(session_id):
             severity=data.get('severity', 'info'),
             images=_sanitize_images(data.get('images'))
         )
+        if 'is_false_positive' in data:
+            val = data['is_false_positive']
+            note.is_false_positive = bool(val) if val is not None else None
+        _apply_cvss_and_cwe(note, data)
 
         db.session.add(note)
         db.session.commit()
@@ -312,6 +398,10 @@ def update_note(session_id, note_id):
             note.category_id = data['category_id'] or None
         if 'images' in data:
             note.images = _sanitize_images(data['images'])
+        if 'is_false_positive' in data:
+            val = data['is_false_positive']
+            note.is_false_positive = bool(val) if val is not None else None
+        _apply_cvss_and_cwe(note, data)
 
         note.updated_at = datetime.utcnow()
         db.session.commit()
@@ -333,6 +423,238 @@ def delete_note(session_id, note_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
+# ========================
+# AI / LLM ENDPOINT'LERİ (Faz 0)
+# ========================
+# Bu bölüm şimdilik yalnızca altyapıyı doğrulamaya yarayan bir "ping" ve
+# geçmiş çağrıları listeleyen bir "logs" ucu içerir. Faz 2+'da eklenecek
+# gerçek analiz uçları (finding analizi, sonraki test önerisi, otomatik
+# rapor) hep aynı log_ai_interaction() yardımcısını kullanacak, böylece
+# Faz 5'teki deneysel karşılaştırma için veri en baştan tutarlı toplanır.
+
+def log_ai_interaction(purpose, provider=None, model=None, prompt=None,
+                        response=None, success=True, error_message=None,
+                        latency_ms=None, session_id=None):
+    try:
+        log = AIInteractionLog(
+            session_id=session_id,
+            purpose=purpose,
+            provider=provider,
+            model=model,
+            prompt=prompt,
+            response=response,
+            success=success,
+            error_message=error_message,
+            latency_ms=latency_ms
+        )
+        db.session.add(log)
+        db.session.commit()
+        return log
+    except Exception:
+        db.session.rollback()
+        return None
+
+
+@app.route('/api/ai/ping', methods=['GET'])
+def ai_ping():
+    """
+    Aktif AI sağlayıcısının doğru yapılandırıldığını ve gerçekten
+    yanıt verdiğini doğrulamak için basit bir bağlantı testi.
+    """
+    session_id = request.args.get('session_id')
+    try:
+        provider = get_ai_provider(app.config)
+    except ValueError as e:
+        return jsonify({'configured': False, 'error': str(e)}), 400
+
+    if not provider.is_configured():
+        return jsonify({
+            'configured': False,
+            'provider': provider.name,
+            'error': f"'{provider.name}' için API key/config eksik. backend/.env dosyasını kontrol edin."
+        }), 200
+
+    test_prompt = "Sadece 'WSTG-Copilot AI bağlantısı çalışıyor.' cümlesiyle cevap ver."
+    try:
+        result = provider.chat(system_prompt="", user_prompt=test_prompt, max_tokens=200)
+        log_ai_interaction(
+            purpose='ping', provider=result.provider, model=result.model,
+            prompt=test_prompt, response=result.text, success=True,
+            latency_ms=result.latency_ms, session_id=session_id
+        )
+        return jsonify({
+            'configured': True,
+            'provider': result.provider,
+            'model': result.model,
+            'latency_ms': result.latency_ms,
+            'sample_response': result.text
+        }), 200
+    except (AIConfigError, AIRequestError) as e:
+        log_ai_interaction(
+            purpose='ping', provider=provider.name, model=getattr(provider, 'model', None),
+            prompt=test_prompt, success=False, error_message=str(e),
+            latency_ms=getattr(e, 'latency_ms', None), session_id=session_id
+        )
+        return jsonify({'configured': True, 'provider': provider.name, 'error': str(e)}), 502
+
+
+@app.route('/api/ai/logs', methods=['GET'])
+def ai_logs():
+    """Faz 5'teki metrik/dashboard çalışması için ham AI çağrı geçmişi."""
+    session_id = request.args.get('session_id')
+    purpose = request.args.get('purpose')
+    query = AIInteractionLog.query
+    if session_id:
+        query = query.filter_by(session_id=session_id)
+    if purpose:
+        query = query.filter_by(purpose=purpose)
+    logs = query.order_by(AIInteractionLog.created_at.desc()).limit(200).all()
+    return jsonify([l.to_dict() for l in logs]), 200
+
+
+@app.route('/api/ai/analyze-finding', methods=['POST'])
+def ai_analyze_finding():
+    """
+    Faz 2: Bir bulguyu (title + content, dilerse bağlı test_id) AI'a
+    gönderip CWE/severity/CVSS önerisi + false-positive değerlendirmesi
+    alır. Notu OTOMATİK GÜNCELLEMEZ — sadece öneri döner; uygulamak
+    isteyen istemci mevcut PUT /notes/<id> ucunu kullanır.
+    """
+    data = request.json or {}
+    title = data.get('title', '')
+    content = (data.get('content') or '').strip()
+    test_id = data.get('test_id') or None
+    lang = data.get('lang', 'tr')
+    session_id = data.get('session_id') or None
+    note_id = data.get('note_id')  # sadece loglama amaçlı, opsiyonel
+
+    if not content:
+        return jsonify({'error': 'Analiz için bulgu içeriği (content) gereklidir'}), 400
+
+    try:
+        provider = get_ai_provider(app.config)
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+
+    if not provider.is_configured():
+        return jsonify({
+            'error': f"'{provider.name}' için API key/config eksik. backend/.env dosyasını kontrol edin."
+        }), 200
+
+    try:
+        analysis, ai_result = finding_analysis.analyze_finding(
+            provider, title, content, test_id=test_id, lang=lang
+        )
+        log_ai_interaction(
+            purpose='finding_analysis', provider=ai_result.provider, model=ai_result.model,
+            prompt=f"title={title!r} test_id={test_id!r} content_len={len(content)}",
+            response=ai_result.text, success=True, latency_ms=ai_result.latency_ms,
+            session_id=session_id
+        )
+        return jsonify({
+            **analysis,
+            'provider': ai_result.provider,
+            'model': ai_result.model,
+            'latency_ms': ai_result.latency_ms,
+            'note_id': note_id
+        }), 200
+    except (AIConfigError, AIRequestError, finding_analysis.FindingAnalysisError) as e:
+        log_ai_interaction(
+            purpose='finding_analysis', provider=provider.name, model=getattr(provider, 'model', None),
+            prompt=f"title={title!r} test_id={test_id!r} content_len={len(content)}",
+            success=False, error_message=str(e),
+            latency_ms=getattr(e, 'latency_ms', None), session_id=session_id
+        )
+        return jsonify({'error': str(e)}), 502
+
+
+@app.route('/api/ai/suggest-next-test', methods=['POST'])
+def ai_suggest_next_test():
+    """
+    Faz 3: Tamamlanan testler + bulgulara bakarak sırada hangi WSTG
+    testinin yapılmasının en mantıklı olacağını önerir. Öneri sadece
+    "henüz yapılmamış" havuzundan doğrulanır (suggestion_grounded).
+    """
+    data = request.json or {}
+    completed_test_ids = data.get('completed_test_ids') or []
+    findings = data.get('findings') or []
+    lang = data.get('lang', 'tr')
+    session_id = data.get('session_id') or None
+
+    if not isinstance(completed_test_ids, list):
+        return jsonify({'error': "'completed_test_ids' bir liste olmalıdır"}), 400
+
+    try:
+        provider = get_ai_provider(app.config)
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+
+    if not provider.is_configured():
+        return jsonify({
+            'error': f"'{provider.name}' için API key/config eksik. backend/.env dosyasını kontrol edin."
+        }), 200
+
+    try:
+        suggestion, ai_result = next_test_suggestion.suggest_next_test(
+            provider, completed_test_ids, findings, lang=lang
+        )
+        if ai_result is None:  # tüm testler tamamlanmış, AI'a hiç gidilmedi
+            return jsonify(suggestion), 200
+
+        log_ai_interaction(
+            purpose='next_test_suggestion', provider=ai_result.provider, model=ai_result.model,
+            prompt=f"completed={len(completed_test_ids)} findings={len(findings)}",
+            response=ai_result.text, success=True, latency_ms=ai_result.latency_ms,
+            session_id=session_id
+        )
+        return jsonify({
+            **suggestion,
+            'provider': ai_result.provider,
+            'model': ai_result.model,
+            'latency_ms': ai_result.latency_ms
+        }), 200
+    except (AIConfigError, AIRequestError, next_test_suggestion.NextTestSuggestionError) as e:
+        log_ai_interaction(
+            purpose='next_test_suggestion', provider=provider.name, model=getattr(provider, 'model', None),
+            prompt=f"completed={len(completed_test_ids)} findings={len(findings)}",
+            success=False, error_message=str(e),
+            latency_ms=getattr(e, 'latency_ms', None), session_id=session_id
+        )
+        return jsonify({'error': str(e)}), 502
+
+# ========================
+# CVSS / WSTG↔OWASP↔CWE ENDPOINT'LERİ (Faz 1)
+# ========================
+
+@app.route('/api/cvss/calculate', methods=['POST'])
+def cvss_calculate():
+    """Bir CVSS 3.1 vektöründen skor/rating hesaplar (durum tutmaz, sadece hesap makinesi)."""
+    data = request.json or {}
+    vector = (data.get('vector') or '').strip()
+    if not vector:
+        return jsonify({'error': "'vector' alanı gereklidir"}), 400
+    try:
+        result = cvss_lib.calculate(vector)
+        return jsonify(result), 200
+    except cvss_lib.CVSSError as e:
+        return jsonify({'error': str(e)}), 400
+
+@app.route('/api/mapping/wstg/<test_id>', methods=['GET'])
+def wstg_mapping(test_id):
+    """
+    Bir WSTG test ID'si için ilişkili OWASP Top 10 kategorileri ve
+    önerilen CWE'leri döner. Not editöründeki CWE önerisi ve Faz 2'deki
+    AI bulgu analizine verilecek bağlam bu uçtan beslenir.
+    """
+    lang = request.args.get('lang', 'tr')
+    matches = mapping_lib.get_mapping_for_test(test_id, lang)
+    suggested_cwes = mapping_lib.suggest_cwes_for_test(test_id, lang)
+    return jsonify({
+        'test_id': test_id,
+        'owasp_matches': matches,
+        'suggested_cwes': suggested_cwes
+    }), 200
 
 # ========================
 # RAPOR ENDPOINT'İ
@@ -367,6 +689,147 @@ def generate_report(session_id):
         }
         
         return jsonify(report), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ========================
+# FAZ 4: OTOMATİK RAPOR ÜRETİMİ
+# ========================
+
+def _load_report_data(session_id, lang):
+    session = Session.query.get_or_404(session_id)
+    results = TestResult.query.filter_by(session_id=session_id).all()
+    notes = Note.query.filter_by(session_id=session_id).all()
+    return report_generator.build_report_data(
+        session.to_dict(), [r.to_dict() for r in results], [n.to_dict() for n in notes], lang=lang
+    )
+
+
+@app.route('/api/sessions/<session_id>/report/data', methods=['GET'])
+def report_data(session_id):
+    """Faz 4 rapor önizlemesi için zenginleştirilmiş (CVSS/CWE/OWASP dahil) veri."""
+    lang = request.args.get('lang', 'tr')
+    try:
+        return jsonify(_load_report_data(session_id, lang)), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/sessions/<session_id>/report/summary', methods=['POST'])
+def report_ai_summary(session_id):
+    """
+    AI ile yönetici özeti taslağı üretir. Rapora HENÜZ İŞLENMEZ —
+    döndürülen metin frontend'de düzenlenebilir bir kutuda gösterilir;
+    nihai rapora ancak pentester onaylayıp indirme isteğine bu metni
+    dahil ederse girer (bkz. /report/download).
+    """
+    data = request.json or {}
+    lang = data.get('lang', 'tr')
+
+    try:
+        provider = get_ai_provider(app.config)
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+
+    if not provider.is_configured():
+        return jsonify({
+            'error': f"'{provider.name}' için API key/config eksik. backend/.env dosyasını kontrol edin."
+        }), 200
+
+    try:
+        report = _load_report_data(session_id, lang)
+        summary, ai_result = report_generator.generate_executive_summary(provider, report, lang=lang)
+        log_ai_interaction(
+            purpose='report_generation', provider=ai_result.provider, model=ai_result.model,
+            prompt=f"session={session_id} findings={report['stats']['total_findings']}",
+            response=summary, success=True, latency_ms=ai_result.latency_ms, session_id=session_id
+        )
+        return jsonify({
+            'summary': summary,
+            'provider': ai_result.provider,
+            'model': ai_result.model,
+            'latency_ms': ai_result.latency_ms
+        }), 200
+    except (AIConfigError, AIRequestError) as e:
+        log_ai_interaction(
+            purpose='report_generation', provider=provider.name, model=getattr(provider, 'model', None),
+            success=False, error_message=str(e), latency_ms=getattr(e, 'latency_ms', None), session_id=session_id
+        )
+        return jsonify({'error': str(e)}), 502
+
+
+@app.route('/api/sessions/<session_id>/report/download', methods=['POST'])
+def report_download(session_id):
+    """
+    Nihai rapor dosyasını üretir. Gövdede opsiyonel 'executive_summary'
+    (pentester tarafından düzenlenmiş/onaylanmış metin) ve 'format'
+    ('docx' | 'md') beklenir.
+    """
+    data = request.json or {}
+    fmt = (data.get('format') or 'md').lower()
+    lang = data.get('lang', 'tr')
+    executive_summary = (data.get('executive_summary') or '').strip() or None
+
+    if fmt not in ('docx', 'md'):
+        return jsonify({'error': "format 'docx' ya da 'md' olmalıdır"}), 400
+
+    try:
+        report = _load_report_data(session_id, lang)
+        session_name = (report['session'].get('name') or 'pentest-raporu').strip().replace(' ', '_')
+
+        if fmt == 'md':
+            content = report_generator.render_markdown(report, executive_summary, lang=lang)
+            buf = io.BytesIO(content.encode('utf-8'))
+            return send_file(buf, mimetype='text/markdown', as_attachment=True,
+                              download_name=f"{session_name}.md")
+
+        buf = report_generator.render_docx(report, executive_summary, lang=lang)
+        return send_file(
+            buf,
+            mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            as_attachment=True, download_name=f"{session_name}.docx"
+        )
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ========================
+# FAZ 5: DENEYSEL A/B KARŞILAŞTIRMA
+# ========================
+
+@app.route('/api/study/metrics', methods=['GET'])
+def study_metrics_endpoint():
+    """
+    Çalışma grubuna ('ai_assisted' / 'control') atanmış tüm oturumların
+    metriklerini ve iki grup arası karşılaştırmayı döner. Etiketlenmemiş
+    oturumlar (study_group=None) hesaplamaya dahil edilmez ama şeffaflık
+    için 'unassigned_sessions_count' alanında sayısı belirtilir.
+    """
+    try:
+        all_sessions = Session.query.all()
+        per_session = []
+        unassigned_count = 0
+
+        for session in all_sessions:
+            if not session.study_group:
+                unassigned_count += 1
+                continue
+            results = TestResult.query.filter_by(session_id=session.id).all()
+            notes = Note.query.filter_by(session_id=session.id).all()
+            ai_logs = AIInteractionLog.query.filter_by(session_id=session.id).all()
+            per_session.append(study_metrics.compute_session_metrics(
+                session.to_dict(),
+                [r.to_dict() for r in results],
+                [n.to_dict() for n in notes],
+                [l.to_dict() for l in ai_logs],
+            ))
+
+        comparison = study_metrics.compare_groups(per_session)
+        return jsonify({
+            'sessions': per_session,
+            'comparison': comparison,
+            'unassigned_sessions_count': unassigned_count,
+        }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

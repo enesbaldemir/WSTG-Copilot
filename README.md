@@ -91,7 +91,47 @@ The API runs on `http://localhost:5000` and creates `backend/database/wstg.db` (
 | GET/POST | `/api/sessions/<id>/notes` | List / add notebook entries for a session |
 | PUT/DELETE | `/api/sessions/<id>/notes/<note_id>` | Update / delete a single notebook entry |
 | GET | `/api/sessions/<id>/report` | JSON summary report for a session (includes notes) |
+| GET | `/api/ai/ping` | Verify the configured AI provider is reachable |
+| GET | `/api/ai/logs` | List logged AI interactions (Phase 5 metrics) |
+| POST | `/api/ai/analyze-finding` | AI-suggested CWE/severity/CVSS + false-positive assessment for a finding (does not modify any note) |
+| POST | `/api/ai/suggest-next-test` | AI-suggested next WSTG test to run, based on completed tests + findings |
+| GET | `/api/sessions/<id>/report/data` | Enriched report data (stats, findings with CVSS/CWE/OWASP) for a session |
+| POST | `/api/sessions/<id>/report/summary` | AI-drafted executive summary (for review, not auto-applied) |
+| POST | `/api/sessions/<id>/report/download` | Download the final report as `.md` or `.docx` |
+| GET | `/api/study/metrics` | Per-session metrics + AI-assisted vs. control group comparison (Phase 5) |
+| POST | `/api/cvss/calculate` | Calculate a CVSS 3.1 base score from a vector string |
+| GET | `/api/mapping/wstg/<test_id>` | Related OWASP Top 10 categories + suggested CWEs for a WSTG test |
 
+
+### 🤖 AI Integration (Roadmap)
+
+This project is evolving into an **AI-assisted pentest decision-support system** built on top of the WSTG checklist foundation. The plan:
+
+| Phase | Status | What it adds |
+|---|---|---|
+| 0 | ✅ Done | Pluggable AI provider layer (`backend/ai/`) supporting Gemini, OpenAI, Anthropic, and local Ollama; `/api/ai/ping` connectivity check; `AIInteractionLog` table logging every AI call (provider, latency, success/failure) |
+| 1 | ✅ Done | Real CVSS 3.1 base-score calculator (`backend/cvss.py` + `js/cvss.js`, verified against published reference scores), CWE fields on findings, and a WSTG↔OWASP Top 10↔CWE relationship index (`backend/mapping.py`) built from the existing Top 10 data — surfaced in the notebook editor as a live CVSS vector builder and CWE auto-suggestions |
+| 2 | ✅ Done | AI finding analysis (`backend/finding_analysis.py`) — sends a finding's title/content (plus its linked WSTG test + candidate CWEs as grounding context) to the configured LLM and gets back a suggested CWE, severity, CVSS vector, and a false-positive likelihood assessment with reasoning. The AI never overwrites a finding automatically — suggestions are shown in a review panel with per-field "Apply" buttons, and each suggested CWE is flagged as "grounded" (matches a known candidate) or the model's own inference, so you can gauge how much to trust it |
+| 3 | ✅ Done | AI next-test suggestion (`backend/next_test_suggestion.py`) — given completed tests and current findings (sorted by severity), the AI recommends which pending WSTG test to run next, with reasoning, a priority level, and 1-3 alternatives. Suggested test IDs are validated against the real pending-test pool (`suggestion_grounded`), and when everything is already completed the AI isn't called at all. Surfaced via a "What's Next?" panel with a one-click "Go to This Test" that jumps straight to the suggested checklist item |
+| 4 | ✅ Done | Automated report generation (`backend/report_generator.py`) — aggregates findings (sorted by severity/CVSS, enriched with their OWASP Top 10 category) into a downloadable **Markdown or Word (.docx)** report with a stats summary, per-finding technical detail, and a methodology appendix of completed tests. The AI can draft a plain-language executive summary, but it's shown in an editable box first — nothing goes into the final document until the pentester reviews and approves it |
+| 5 | ✅ Done | Experimental A/B comparison module (`backend/study_metrics.py`) — sessions can be tagged **AI-Assisted** or **Control (Checklist Only)** at creation; control-group sessions have every AI feature (analysis, next-test suggestion, report drafting) hidden in the UI so the two conditions are genuinely comparable. Findings can be marked as confirmed valid or confirmed false-positive (ground truth, separate from the AI's own likelihood estimate). A "Study Metrics" dashboard aggregates and compares both groups — completion time, tests completed, findings count, false-positive rate, AI call volume/latency — with a per-metric % difference, ready to back a claim like *"the AI-assisted group finished X% faster and found Y% more findings."* |
+
+**All 6 phases (0–5) are now complete.** The project has grown from a WSTG checklist tracker into what the README below calls it: an AI-assisted pentest decision-support system with a built-in (if small-scale) experimental evaluation framework.
+
+**Configuring a provider**
+
+```bash
+cd backend
+cp .env.example .env
+# then edit .env — the free/no-credit-card option is Google Gemini:
+# https://aistudio.google.com/apikey
+```
+
+By default `AI_PROVIDER=gemini`. Set it to `openai`, `anthropic`, or `ollama` (fully local, no API key, no rate limits — the best option for the Phase 5 experiment) instead — no other code changes needed. Verify it's working with:
+
+```bash
+curl http://localhost:5000/api/ai/ping
+```
 
 ### 📓 Notebook
 
@@ -273,7 +313,47 @@ API `http://localhost:5000` üzerinde çalışır ve ilk çalıştırmada `backe
 | GET/POST | `/api/sessions/<id>/notes` | Oturuma ait not defteri kayıtlarını listele / ekle |
 | PUT/DELETE | `/api/sessions/<id>/notes/<note_id>` | Tek bir not defteri kaydını güncelle / sil |
 | GET | `/api/sessions/<id>/report` | Oturum için JSON özet raporu (notlar dahil) |
+| GET | `/api/ai/ping` | Yapılandırılan AI sağlayıcısına erişilebildiğini doğrular |
+| GET | `/api/ai/logs` | Loglanan AI çağrılarını listeler (Faz 5 metrikleri) |
+| POST | `/api/ai/analyze-finding` | Bir bulgu için AI destekli CWE/severity/CVSS önerisi + false-positive değerlendirmesi (hiçbir notu değiştirmez) |
+| POST | `/api/ai/suggest-next-test` | Tamamlanan testler + bulgulara göre AI'nin önerdiği sıradaki WSTG testi |
+| GET | `/api/sessions/<id>/report/data` | Bir oturum için zenginleştirilmiş rapor verisi (istatistikler, CVSS/CWE/OWASP dahil bulgular) |
+| POST | `/api/sessions/<id>/report/summary` | AI'nin yazdığı yönetici özeti taslağı (incelemeye sunulur, otomatik uygulanmaz) |
+| POST | `/api/sessions/<id>/report/download` | Nihai raporu `.md` veya `.docx` olarak indirir |
+| GET | `/api/study/metrics` | Oturum bazlı metrikler + AI destekli/kontrol grubu karşılaştırması (Faz 5) |
+| POST | `/api/cvss/calculate` | Bir CVSS 3.1 vektöründen taban skoru hesaplar |
+| GET | `/api/mapping/wstg/<test_id>` | Bir WSTG testi için ilişkili OWASP Top 10 kategorileri + önerilen CWE'ler |
 
+
+### 🤖 AI Entegrasyonu (Yol Haritası)
+
+Bu proje, WSTG checklist temeli üzerine kurulan **AI destekli bir pentest karar destek sistemine** dönüşüyor. Plan:
+
+| Faz | Durum | Ne ekliyor |
+|---|---|---|
+| 0 | ✅ Tamamlandı | Pluggable AI sağlayıcı katmanı (`backend/ai/`) — Gemini, OpenAI, Anthropic ve yerel Ollama desteği; bağlantı testi için `/api/ai/ping`; her AI çağrısını (sağlayıcı, gecikme, başarı/hata) loglayan `AIInteractionLog` tablosu |
+| 1 | ✅ Tamamlandı | Resmi formüle uygun CVSS 3.1 taban skoru hesaplayıcı (`backend/cvss.py` + `js/cvss.js`, yayınlanmış referans skorlarıyla doğrulandı), bulgulara CWE alanları, ve mevcut Top 10 verisinden inşa edilen WSTG↔OWASP Top 10↔CWE ilişki indexi (`backend/mapping.py`) — not editöründe canlı CVSS vektör oluşturucu ve otomatik CWE önerisi olarak karşınıza çıkıyor |
+| 2 | ✅ Tamamlandı | AI bulgu analizi (`backend/finding_analysis.py`) — bir bulgunun başlığını/içeriğini (bağlı olduğu WSTG testi ve aday CWE'leri bağlam olarak vererek) yapılandırılan LLM'e gönderip önerilen CWE, önem derecesi, CVSS vektörü ve gerekçeli bir false-positive değerlendirmesi alıyor. AI bulguyu asla otomatik güncellemiyor — öneriler, her alan için ayrı "Uygula" butonu olan bir inceleme panelinde gösteriliyor; önerilen her CWE, bilinen adaylardan biri mi yoksa modelin kendi çıkarımı mı olduğuna göre işaretleniyor, böylece ne kadar güvenileceğinizi siz değerlendiriyorsunuz |
+| 3 | ✅ Tamamlandı | AI sonraki test önerisi (`backend/next_test_suggestion.py`) — tamamlanan testlere ve (önem derecesine göre sıralanmış) mevcut bulgulara bakarak AI, henüz yapılmamış testler arasından hangisinin sırada yapılmasının en mantıklı olacağını gerekçesiyle, bir öncelik seviyesiyle ve 1-3 alternatifle önerir. Önerilen test ID'leri gerçek "yapılmamış" havuzuna karşı doğrulanır (`suggestion_grounded`); zaten her şey tamamlanmışsa AI'a hiç gidilmez. "Sırada Ne Var?" panelinde, önerilen checklist maddesine tek tıkla götüren bir "Bu Teste Git" butonuyla sunulur |
+| 4 | ✅ Tamamlandı | Otomatik rapor üretimi (`backend/report_generator.py`) — bulguları (severity/CVSS'e göre sıralı, OWASP Top 10 kategorisiyle zenginleştirilmiş) indirilebilir bir **Markdown ya da Word (.docx)** raporuna dönüştürür: istatistik özeti, bulgu bazlı teknik detay, tamamlanan testlerin metodoloji eki. AI sade bir dille yönetici özeti taslağı yazabilir, ama önce düzenlenebilir bir kutuda gösterilir — pentester onaylamadan hiçbir şey nihai belgeye girmez |
+| 5 | ✅ Tamamlandı | Deneysel A/B karşılaştırma modülü (`backend/study_metrics.py`) — oturumlar oluşturulurken **AI Destekli** ya da **Kontrol (Sadece Checklist)** olarak etiketlenebilir; kontrol grubu oturumlarında tüm AI özellikleri (analiz, sonraki test önerisi, rapor taslağı) arayüzden gizlenir, böylece iki koşul gerçekten karşılaştırılabilir olur. Bulgular doğrulanmış geçerli/false-positive olarak işaretlenebilir (AI'nin kendi tahmininden ayrı, pentester'ın nihai kararı — ground truth). "Çalışma Metrikleri" paneli iki grubu topluca karşılaştırır — tamamlanma süresi, tamamlanan test sayısı, bulgu sayısı, false-positive oranı, AI çağrı hacmi/gecikmesi — her metrik için yüzdesel farkla birlikte; *"AI destekli grup %X daha hızlı tamamladı ve %Y daha fazla bulgu buldu"* gibi bir iddiayı destekleyecek şekilde. |
+
+**Artık 6 fazın (0–5) tamamı tamamlandı.** Proje bir WSTG checklist takip aracından, README'nin başında tarif edilen şeye dönüştü: küçük ölçekli de olsa gömülü bir deneysel değerlendirme çerçevesine sahip, AI destekli bir pentest karar destek sistemi.
+
+**Sağlayıcı yapılandırma**
+
+```bash
+cd backend
+cp .env.example .env
+# .env dosyasını düzenleyin — kredi kartı gerektirmeyen ücretsiz seçenek Google Gemini:
+# https://aistudio.google.com/apikey
+```
+
+Varsayılan `AI_PROVIDER=gemini`. İsterseniz `openai`, `anthropic`, ya da `ollama` (tamamen yerel, API key gerekmez, rate-limit yoktur — Faz 5 deneyi için en uygun seçenek) olarak değiştirin — başka hiçbir kod değişikliği gerekmez. Çalıştığını doğrulamak için:
+
+```bash
+curl http://localhost:5000/api/ai/ping
+```
 
 ### 📓 Not Defteri
 

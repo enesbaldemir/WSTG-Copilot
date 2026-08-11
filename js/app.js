@@ -210,9 +210,106 @@
       noteGeneralBadge: "Genel not",
       noteUntitled: "(Başlıksız not)",
       addNoteFromTest: "🗒️ Not defterine ekle",
-      noteJustNow: "az önce"
-    },
-    en: {
+      noteJustNow: "az önce",
+
+      cvssLabel: "CVSS 3.1 Skoru (opsiyonel)",
+      cvssNone: "— Hesaplanmadı —",
+      cvssAV: "Saldırı Vektörü (AV)",
+      cvssAC: "Saldırı Karmaşıklığı (AC)",
+      cvssPR: "Gereken Yetki (PR)",
+      cvssUI: "Kullanıcı Etkileşimi (UI)",
+      cvssS: "Kapsam (S)",
+      cvssC: "Gizlilik Etkisi (C)",
+      cvssI: "Bütünlük Etkisi (I)",
+      cvssA: "Erişilebilirlik Etkisi (A)",
+      cvssClear: "Temizle",
+      cweLabel: "CWE (opsiyonel)",
+      cwePlaceholder: "Örn: CWE-89",
+      cweNamePlaceholder: "Örn: SQL Injection",
+      cweSuggestedFor: testId => `${testId} için önerilen CWE'ler`,
+      relatedOwaspLabel: "İlgili OWASP Top 10",
+
+      aiAnalyzeBtn: "AI ile Analiz Et",
+      aiAnalyzing: "Analiz ediliyor...",
+      aiAnalysisRationale: "AI Değerlendirmesi",
+      aiFpLikelihood: "False-Positive İhtimali",
+      fp_low: "Düşük", fp_medium: "Orta", fp_high: "Yüksek",
+      aiSuggestedCweLabel: cwe => `Önerilen CWE: <b>${cwe}</b>`,
+      aiSuggestedSeverityLabel: sev => `Önerilen önem derecesi: <b>${sev}</b>`,
+      aiSuggestedCvssLabel: (score, rating) => `Önerilen CVSS: <b>${score} · ${rating}</b>`,
+      aiApplyBtn: "Uygula",
+      aiGroundedYes: "✓ bilinen adaylardan",
+      aiGroundedNo: "⚠ modelin kendi çıkarımı, doğrulayın",
+      aiAnalysisNoSuggestions: "AI bu bulgu için somut bir CWE/CVSS önerisi yapmadı.",
+      aiAppliedToast: "Öneri uygulandı ✓",
+      aiPoweredBy: (provider, model, ms) => `${provider} · ${model} · ${ms}ms`,
+      aiNotConfiguredShort: "AI sağlayıcısı yapılandırılmamış. backend/.env dosyasını kontrol edin.",
+
+      navAiSuggest: "AI: Sırada Ne Var?",
+      aiSuggestTitle: "AI: Sırada Ne Var?",
+      aiSuggestDesc: "Tamamladığınız testlere ve bulgularınıza bakarak sırada hangi WSTG testinin yapılmasının en mantıklı olacağını önerir.",
+      aiSuggestLoading: "Öneri hazırlanıyor...",
+      aiSuggestGoBtn: "Bu Teste Git",
+      aiSuggestRefreshBtn: "Yeniden Öner",
+      aiSuggestAlternativesLabel: "Alternatifler",
+      aiSuggestUngroundedWarning: "⚠️ AI bu test ID'sini önerdi ama checklist'te bulunamadı — dikkatli değerlendirin.",
+      aiSuggestAllDoneTitle: "🎉 Tüm WSTG testleri tamamlandı!",
+      aiSuggestAllDoneDesc: "Önerilecek yeni bir test kalmadı. Harika iş çıkardınız.",
+
+      navReport: "Rapor Oluştur",
+      reportTitle: "Rapor Oluştur",
+      reportDesc: "Toplanan bulgulardan (CVSS/CWE dahil) indirilebilir bir pentest raporu oluşturun.",
+      reportLocalModeMsg: "Rapor oluşturmak için isimli bir test oturumu açmanız gerekir. Sol üstten yeni bir oturum başlatabilirsiniz.",
+      reportStatCompleted: "Tamamlanan Test",
+      reportStatFindings: "Bulgu",
+      reportStatAvgCvss: "Ort. CVSS",
+      reportStatMaxCvss: "En Yüksek CVSS",
+      reportSummarySectionTitle: "Yönetici Özeti",
+      reportGenerateSummaryBtn: "🤖 AI ile Taslak Özet Oluştur",
+      reportSummaryPlaceholder: "AI ile bir taslak oluşturabilir ya da buraya kendiniz yazabilirsiniz. İndirmeden önce mutlaka gözden geçirin.",
+      reportSummaryGenerating: "Taslak hazırlanıyor...",
+      reportDownloadSectionTitle: "İndir",
+      reportFormatMd: "Markdown (.md)",
+      reportFormatDocx: "Word (.docx)",
+      reportDownloadBtn: "İndir",
+      reportDownloadPreparing: "Hazırlanıyor...",
+      reportNoFindingsNote: "Henüz kayıtlı bulgu yok — yine de metodoloji/istatistik raporu indirebilirsiniz.",
+      reportDownloadError: "Rapor indirilemedi",
+      reportFileDownloadedToast: "Rapor indirildi ✓",
+
+      studyGroupLabel: "Çalışma Grubu (opsiyonel)",
+      studyGroupNone: "— Seçilmedi —",
+      studyGroupAi: "AI Destekli",
+      studyGroupControl: "Kontrol (Sadece Checklist)",
+      studyGroupHintAi: "Bu oturumda tüm AI özellikleri (analiz, sonraki test önerisi, rapor taslağı) kullanılabilir olacak.",
+      studyGroupHintControl: "Bu oturumda AI özellikleri (analiz, sonraki test önerisi, rapor taslağı) devre dışı bırakılacak — deneysel karşılaştırma için 'sadece checklist' koşulunu simüle eder.",
+
+      navStudyMetrics: "Çalışma Metrikleri",
+      studyMetricsTitle: "Çalışma Metrikleri",
+      studyMetricsDesc: "\"AI Destekli\" ve \"Kontrol\" grubuna etiketlenen oturumları karşılaştırır.",
+      studyMetricsLocalMsg: "Bu özellik backend bağlantısı gerektirir.",
+      studyMetricsEmptyMsg: "Henüz hiçbir oturum bir çalışma grubuna etiketlenmemiş. Yeni oturum oluştururken 'Çalışma Grubu' seçerek başlayabilirsiniz.",
+      studyMetricsColAi: "AI Destekli",
+      studyMetricsColControl: "Kontrol",
+      studyMetricNRow: n => `n = ${n} oturum`,
+      studyMetricCompletionMinutes: "Tamamlanma Süresi (dk)",
+      studyMetricCompletedTests: "Tamamlanan Test Sayısı",
+      studyMetricCompletionPct: "Tamamlanma Oranı (%)",
+      studyMetricTotalFindings: "Bulgu Sayısı",
+      studyMetricFpRate: "False-Positive Oranı (%)",
+      studyMetricAiCalls: "AI Çağrısı Sayısı",
+      studyMetricAiLatency: "Ort. AI Gecikmesi (ms)",
+      studyMetricReportGenerated: "Rapor Üretilen Oturum Oranı (%)",
+      studyMetricsUnassignedNote: n => `${n} oturum herhangi bir çalışma grubuna etiketlenmemiş (hesaplamaya dahil değil).`,
+
+      fpStatusLabel: "Doğrulama Durumu (opsiyonel)",
+      fpStatusUndetermined: "— Henüz değerlendirilmedi —",
+      fpStatusValid: "✓ Gerçek/geçerli bulgu",
+      fpStatusFp: "✗ False positive",
+
+      controlGroupBannerNote: "Bu oturum \"Kontrol\" grubunda — AI destekli analiz bu oturumda devre dışı.",
+      controlGroupBannerReport: "Bu oturum \"Kontrol\" grubunda — AI ile özet taslağı bu oturumda devre dışı."
+    },    en: {
       navWorkspace: "Workspace",
       navDashboard: "Dashboard",
       navCategories: "WSTG Categories",
@@ -369,8 +466,106 @@
       noteTooManyImages: n => `You can attach up to ${n} images`,
       noteImageTooBig: "Image is too large (max ~4MB)",
       noteGeneralBadge: "General note",
+      noteUntitled: "(Untitled note)",
       addNoteFromTest: "🗒️ Add to notebook",
-      noteJustNow: "just now"
+      noteJustNow: "just now",
+
+      cvssLabel: "CVSS 3.1 Score (optional)",
+      cvssNone: "— Not calculated —",
+      cvssAV: "Attack Vector (AV)",
+      cvssAC: "Attack Complexity (AC)",
+      cvssPR: "Privileges Required (PR)",
+      cvssUI: "User Interaction (UI)",
+      cvssS: "Scope (S)",
+      cvssC: "Confidentiality Impact (C)",
+      cvssI: "Integrity Impact (I)",
+      cvssA: "Availability Impact (A)",
+      cvssClear: "Clear",
+      cweLabel: "CWE (optional)",
+      cwePlaceholder: "e.g. CWE-89",
+      cweNamePlaceholder: "e.g. SQL Injection",
+      cweSuggestedFor: testId => `Suggested CWEs for ${testId}`,
+      relatedOwaspLabel: "Related OWASP Top 10",
+
+      aiAnalyzeBtn: "Analyze with AI",
+      aiAnalyzing: "Analyzing...",
+      aiAnalysisRationale: "AI Assessment",
+      aiFpLikelihood: "False-Positive Likelihood",
+      fp_low: "Low", fp_medium: "Medium", fp_high: "High",
+      aiSuggestedCweLabel: cwe => `Suggested CWE: <b>${cwe}</b>`,
+      aiSuggestedSeverityLabel: sev => `Suggested severity: <b>${sev}</b>`,
+      aiSuggestedCvssLabel: (score, rating) => `Suggested CVSS: <b>${score} · ${rating}</b>`,
+      aiApplyBtn: "Apply",
+      aiGroundedYes: "✓ from known candidates",
+      aiGroundedNo: "⚠ model's own inference, verify",
+      aiAnalysisNoSuggestions: "AI didn't produce a concrete CWE/CVSS suggestion for this finding.",
+      aiAppliedToast: "Suggestion applied ✓",
+      aiPoweredBy: (provider, model, ms) => `${provider} · ${model} · ${ms}ms`,
+      aiNotConfiguredShort: "AI provider isn't configured. Check backend/.env.",
+
+      navAiSuggest: "AI: What's Next?",
+      aiSuggestTitle: "AI: What's Next?",
+      aiSuggestDesc: "Looks at your completed tests and findings to suggest which WSTG test makes the most sense to run next.",
+      aiSuggestLoading: "Preparing a suggestion...",
+      aiSuggestGoBtn: "Go to This Test",
+      aiSuggestRefreshBtn: "Suggest Again",
+      aiSuggestAlternativesLabel: "Alternatives",
+      aiSuggestUngroundedWarning: "⚠️ The AI suggested this test ID but it wasn't found in the checklist — review carefully.",
+      aiSuggestAllDoneTitle: "🎉 All WSTG tests completed!",
+      aiSuggestAllDoneDesc: "There's nothing left to suggest. Great work.",
+
+      navReport: "Generate Report",
+      reportTitle: "Generate Report",
+      reportDesc: "Build a downloadable pentest report from your collected findings (including CVSS/CWE).",
+      reportLocalModeMsg: "Generating a report requires an active named session. Start one from the top-left.",
+      reportStatCompleted: "Tests Completed",
+      reportStatFindings: "Findings",
+      reportStatAvgCvss: "Avg. CVSS",
+      reportStatMaxCvss: "Highest CVSS",
+      reportSummarySectionTitle: "Executive Summary",
+      reportGenerateSummaryBtn: "🤖 Draft with AI",
+      reportSummaryPlaceholder: "Generate a draft with AI, or write your own here. Always review before downloading.",
+      reportSummaryGenerating: "Preparing draft...",
+      reportDownloadSectionTitle: "Download",
+      reportFormatMd: "Markdown (.md)",
+      reportFormatDocx: "Word (.docx)",
+      reportDownloadBtn: "Download",
+      reportDownloadPreparing: "Preparing...",
+      reportNoFindingsNote: "No findings recorded yet — you can still download a methodology/stats report.",
+      reportFileDownloadedToast: "Report downloaded ✓",
+
+      studyGroupLabel: "Study Group (optional)",
+      studyGroupNone: "— Not selected —",
+      studyGroupAi: "AI-Assisted",
+      studyGroupControl: "Control (Checklist Only)",
+      studyGroupHintAi: "All AI features (analysis, next-test suggestion, report draft) will be available in this session.",
+      studyGroupHintControl: "AI features (analysis, next-test suggestion, report draft) will be disabled in this session — simulates a 'checklist-only' condition for the experimental comparison.",
+
+      navStudyMetrics: "Study Metrics",
+      studyMetricsTitle: "Study Metrics",
+      studyMetricsDesc: "Compares sessions tagged as \"AI-Assisted\" vs. \"Control\".",
+      studyMetricsLocalMsg: "This feature requires a backend connection.",
+      studyMetricsEmptyMsg: "No sessions have been tagged to a study group yet. Start by selecting a 'Study Group' when creating a new session.",
+      studyMetricsColAi: "AI-Assisted",
+      studyMetricsColControl: "Control",
+      studyMetricNRow: n => `n = ${n} sessions`,
+      studyMetricCompletionMinutes: "Completion Time (min)",
+      studyMetricCompletedTests: "Tests Completed",
+      studyMetricCompletionPct: "Completion Rate (%)",
+      studyMetricTotalFindings: "Findings",
+      studyMetricFpRate: "False-Positive Rate (%)",
+      studyMetricAiCalls: "AI Calls",
+      studyMetricAiLatency: "Avg. AI Latency (ms)",
+      studyMetricReportGenerated: "Sessions with a Report Generated (%)",
+      studyMetricsUnassignedNote: n => `${n} session(s) aren't tagged to a study group (excluded from this comparison).`,
+
+      fpStatusLabel: "Verification Status (optional)",
+      fpStatusUndetermined: "— Not evaluated yet —",
+      fpStatusValid: "✓ Real/valid finding",
+      fpStatusFp: "✗ False positive",
+
+      controlGroupBannerNote: "This session is in the \"Control\" group — AI-assisted analysis is disabled here.",
+      controlGroupBannerReport: "This session is in the \"Control\" group — AI summary drafting is disabled here."
     }
   };
 
@@ -870,7 +1065,7 @@
   function loadTop10Data(){
     return fetch(TOP10_FILES[currentLang] || TOP10_FILES.tr)
       .then(r => r.json())
-      .then(data => { TOP10 = data; })
+      .then(data => { TOP10 = data; wstgCweIndexCache = null; })
       .catch(err => { console.error(err); });
   }
 
@@ -1038,6 +1233,7 @@
   }
 
   function updateSessionUI(){
+    updateStudyGroupBodyClass();
     const chip = document.getElementById('sessionChip');
     const topBtn = document.getElementById('topbarSessionBtn');
     if(!chip || !topBtn) return;
@@ -1078,6 +1274,7 @@
         renderSidebar(); renderDashboard();
         if(currentCategoryId) renderTestList();
         updateSessionUI();
+        updateStudyGroupBodyClass();
         closeSessionGate();
       });
   }
@@ -1155,7 +1352,8 @@
     const payload = {
       name,
       tester_name: document.getElementById('testerNameInput').value.trim(),
-      target_url: document.getElementById('targetUrlInput').value.trim()
+      target_url: document.getElementById('targetUrlInput').value.trim(),
+      study_group: document.getElementById('studyGroupSelect').value || null
     };
     apiRequest('/sessions', { method: 'POST', body: JSON.stringify(payload) })
       .then(session => {
@@ -1177,6 +1375,7 @@
         progress = loadProgress();
         renderSidebar(); renderDashboard();
         updateSessionUI();
+        updateStudyGroupBodyClass();
       }
       renderSessionList();
       showToast(t('sessionDeleted'));
@@ -1198,6 +1397,14 @@
   // ========================
 
   let lastImportFindings = [];
+
+  // Faz 5: aktif oturum "Kontrol" grubundaysa <body>'e bir sınıf ekler;
+  // CSS bu sınıfa göre AI özelliklerini (analiz butonu, sonraki test önerisi,
+  // rapor AI taslağı) gizler. Oturum değişimi olan her yerden çağrılır.
+  function updateStudyGroupBodyClass(){
+    const isControl = !!(currentSession && currentSession.study_group === 'control');
+    document.body.classList.toggle('study-control-mode', isControl);
+  }
 
   function testInfoById(id){
     if(!DATA) return null;
@@ -1328,6 +1535,55 @@
   const MAX_NOTE_IMAGES = 8;
   const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
 
+  const CVSS_METRIC_OPTIONS = {
+    AV: [['N','Network'],['A','Adjacent'],['L','Local'],['P','Physical']],
+    AC: [['L','Low'],['H','High']],
+    PR: [['N','None'],['L','Low'],['H','High']],
+    UI: [['N','None'],['R','Required']],
+    S:  [['U','Unchanged'],['C','Changed']],
+    C:  [['N','None'],['L','Low'],['H','High']],
+    I:  [['N','None'],['L','Low'],['H','High']],
+    A:  [['N','None'],['L','Low'],['H','High']]
+  };
+
+  let wstgCweIndexCache = null;
+
+  // TOP10 verisindeki 'wstgRefs' (kategori -> WSTG test ID listesi) ve
+  // 'notableCwe' alanlarını TERSİNE çevirerek "bu test ID'sine bakınca
+  // hangi OWASP Top10 kategorisi/CWE'ler ilişkili?" indexini kurar.
+  // backend/mapping.py ile aynı mantığı istemci tarafında (yerel mod
+  // için backend'e ihtiyaç duymadan) uygular.
+  function buildWstgCweIndex(){
+    const idx = {};
+    if(!TOP10 || !Array.isArray(TOP10.top10)) return idx;
+    TOP10.top10.forEach(cat=>{
+      const cwes = (cat.notableCwe || []).map(raw=>{
+        const m = /^([Cc][Ww][Ee]-\d+)\s*(.*)$/.exec(raw.trim());
+        return m ? { id: m[1].toUpperCase(), name: m[2].trim() } : { id: null, name: raw.trim() };
+      });
+      (cat.wstgRefs || []).forEach(testId=>{
+        if(!idx[testId]) idx[testId] = [];
+        idx[testId].push({ owasp_id: cat.id, owasp_title: cat.title, cwes });
+      });
+    });
+    return idx;
+  }
+  function getWstgCweIndex(){
+    if(!wstgCweIndexCache) wstgCweIndexCache = buildWstgCweIndex();
+    return wstgCweIndexCache;
+  }
+  function getOwaspMatchesForTest(testId){
+    if(!testId) return [];
+    return getWstgCweIndex()[testId] || [];
+  }
+  function suggestCwesForTest(testId){
+    const seen = {};
+    getOwaspMatchesForTest(testId).forEach(match=>{
+      match.cwes.forEach(c=>{ if(c.id && !seen[c.id]) seen[c.id] = c; });
+    });
+    return Object.values(seen);
+  }
+
   // Şu an aktif not listesini döner: DB oturumu açıksa backend cache'i,
   // değilse yerel (localStorage) not defterini.
   function activeNotes(){
@@ -1362,6 +1618,179 @@
     try{ return new Date(iso).toLocaleString(t('dateLocale')); }catch(e){ return iso; }
   }
 
+  function populateCvssBuilder(){
+    document.querySelectorAll('#cvssBuilder select[data-cvss]').forEach(sel=>{
+      const key = sel.dataset.cvss;
+      sel.innerHTML = `<option value="">–</option>` +
+        CVSS_METRIC_OPTIONS[key].map(([v,label])=>`<option value="${v}">${v} · ${label}</option>`).join('');
+    });
+  }
+
+  function readCvssBuilderVector(){
+    const parts = [];
+    let complete = true;
+    document.querySelectorAll('#cvssBuilder select[data-cvss]').forEach(sel=>{
+      const v = sel.value;
+      if(!v) complete = false;
+      else parts.push(`${sel.dataset.cvss}:${v}`);
+    });
+    return complete ? parts.join('/') : null;
+  }
+
+  function setCvssBuilderFromVector(vector){
+    const selects = document.querySelectorAll('#cvssBuilder select[data-cvss]');
+    if(!vector){
+      selects.forEach(sel => sel.value = '');
+      return;
+    }
+    try{
+      const { metrics } = CVSS.calculate(vector);
+      selects.forEach(sel => { sel.value = metrics[sel.dataset.cvss] || ''; });
+    }catch(e){
+      selects.forEach(sel => sel.value = '');
+    }
+  }
+
+  function updateCvssResultUI(){
+    const badge = document.getElementById('cvssResultBadge');
+    const vector = readCvssBuilderVector();
+    badge.classList.remove('rating-none','rating-low','rating-medium','rating-high','rating-critical');
+    if(!vector){
+      badge.textContent = t('cvssNone');
+      badge.classList.add('rating-none');
+      return null;
+    }
+    try{
+      const result = CVSS.calculate(vector);
+      badge.textContent = `${result.score.toFixed(1)} · ${t('severity_'+result.rating)} — ${result.vector}`;
+      badge.classList.add('rating-'+result.rating);
+      return result;
+    }catch(e){
+      badge.textContent = t('cvssNone');
+      badge.classList.add('rating-none');
+      return null;
+    }
+  }
+
+  function renderCweSuggestions(testId){
+    const wrap = document.getElementById('cweSuggestions');
+    if(!wrap) return;
+    const suggestions = suggestCwesForTest(testId);
+    if(!suggestions.length){ wrap.innerHTML = ''; return; }
+    wrap.innerHTML = `<div class="cwe-suggestions-label">${escapeHtml(t('cweSuggestedFor')(testId))}</div>` +
+      suggestions.map(c => `<button type="button" class="cwe-suggestion-chip" data-cwe-id="${escapeHtml(c.id)}" data-cwe-name="${escapeHtml(c.name)}">${escapeHtml(c.id)} — ${escapeHtml(c.name)}</button>`).join('');
+  }
+
+  // ---- Faz 2: AI Bulgu Analizi ----
+  let lastAiAnalysis = null;
+
+  function resetAiAnalysisPanel(){
+    lastAiAnalysis = null;
+    const panel = document.getElementById('aiAnalysisPanel');
+    panel.style.display = 'none';
+    panel.innerHTML = '';
+    document.getElementById('aiAnalyzeSpinner').style.display = 'none';
+  }
+
+  function renderAiAnalysisPanel(result){
+    lastAiAnalysis = result;
+    const panel = document.getElementById('aiAnalysisPanel');
+    panel.style.display = 'flex';
+
+    if(result.error){
+      panel.innerHTML = `<div class="ai-analysis-error">⚠️ ${escapeHtml(result.error)}</div>`;
+      return;
+    }
+
+    let html = '';
+    if(result.rationale){
+      html += `<div class="ai-analysis-rationale"><strong>${escapeHtml(t('aiAnalysisRationale'))}:</strong> ${escapeHtml(result.rationale)}</div>`;
+    }
+    if(result.false_positive_likelihood){
+      html += `<div class="ai-fp-row">
+        <span>${escapeHtml(t('aiFpLikelihood'))}:</span>
+        <span class="ai-fp-badge fp-${result.false_positive_likelihood}">${escapeHtml(t('fp_'+result.false_positive_likelihood))}</span>
+      </div>`;
+      if(result.false_positive_reasoning){
+        html += `<div class="ai-fp-reasoning">${escapeHtml(result.false_positive_reasoning)}</div>`;
+      }
+    }
+
+    let hasSuggestion = false;
+    if(result.suggested_cwe_id){
+      hasSuggestion = true;
+      const groundedTag = result.cwe_grounded === true ? t('aiGroundedYes') : (result.cwe_grounded === false ? t('aiGroundedNo') : '');
+      html += `<div class="ai-suggestion-row">
+        <span class="ai-suggestion-label">${t('aiSuggestedCweLabel')(escapeHtml(result.suggested_cwe_id) + (result.suggested_cwe_name ? ' — '+escapeHtml(result.suggested_cwe_name) : ''))}<span class="ai-grounded-tag">${escapeHtml(groundedTag)}</span></span>
+        <button type="button" class="copy-btn ai-apply-btn" data-apply="cwe">${escapeHtml(t('aiApplyBtn'))}</button>
+      </div>`;
+    }
+    if(result.suggested_severity){
+      hasSuggestion = true;
+      html += `<div class="ai-suggestion-row">
+        <span class="ai-suggestion-label">${t('aiSuggestedSeverityLabel')(escapeHtml(t('severity_'+result.suggested_severity)))}</span>
+        <button type="button" class="copy-btn ai-apply-btn" data-apply="severity">${escapeHtml(t('aiApplyBtn'))}</button>
+      </div>`;
+    }
+    if(result.suggested_cvss_vector){
+      hasSuggestion = true;
+      html += `<div class="ai-suggestion-row">
+        <span class="ai-suggestion-label">${t('aiSuggestedCvssLabel')(Number(result.suggested_cvss_score).toFixed(1), escapeHtml(t('severity_'+result.suggested_cvss_rating)))}</span>
+        <button type="button" class="copy-btn ai-apply-btn" data-apply="cvss">${escapeHtml(t('aiApplyBtn'))}</button>
+      </div>`;
+    }
+    if(!hasSuggestion && !result.rationale){
+      html += `<div class="ai-analysis-error">${escapeHtml(t('aiAnalysisNoSuggestions'))}</div>`;
+    }
+    if(result.provider){
+      html += `<div class="ai-analysis-footer">${escapeHtml(t('aiPoweredBy')(result.provider, result.model, result.latency_ms))}</div>`;
+    }
+    panel.innerHTML = html;
+  }
+
+  function applyAiSuggestion(kind){
+    if(!lastAiAnalysis) return;
+    if(kind === 'cwe'){
+      document.getElementById('noteCweIdInput').value = lastAiAnalysis.suggested_cwe_id || '';
+      document.getElementById('noteCweNameInput').value = lastAiAnalysis.suggested_cwe_name || '';
+    } else if(kind === 'severity'){
+      document.getElementById('noteSeveritySelect').value = lastAiAnalysis.suggested_severity;
+    } else if(kind === 'cvss'){
+      setCvssBuilderFromVector(lastAiAnalysis.suggested_cvss_vector);
+      updateCvssResultUI();
+    }
+    showToast(t('aiAppliedToast'));
+  }
+
+  function analyzeNoteWithAI(){
+    const content = document.getElementById('noteContentInput').value.trim();
+    if(!content){
+      setNoteEditorStatus(t('noteContentRequired'), true);
+      return;
+    }
+    const title = document.getElementById('noteTitleInput').value.trim();
+    const testId = document.getElementById('noteTestSelect').value || null;
+
+    document.getElementById('aiAnalysisPanel').style.display = 'none';
+    document.getElementById('aiAnalyzeSpinner').style.display = '';
+    document.getElementById('aiAnalyzeBtn').disabled = true;
+
+    apiRequest('/ai/analyze-finding', {
+      method: 'POST',
+      body: JSON.stringify({
+        title, content, test_id: testId, lang: currentLang,
+        session_id: currentSession ? currentSession.id : null
+      })
+    }).then(result=>{
+      renderAiAnalysisPanel(result);
+    }).catch(err=>{
+      renderAiAnalysisPanel({ error: err.message || t('aiNotConfiguredShort') });
+    }).finally(()=>{
+      document.getElementById('aiAnalyzeSpinner').style.display = 'none';
+      document.getElementById('aiAnalyzeBtn').disabled = false;
+    });
+  }
+
   function renderNotebookList(){
     const list = document.getElementById('notebookList');
     if(!list) return;
@@ -1383,12 +1812,22 @@
       const images = Array.isArray(n.images) ? n.images : [];
       const thumbs = images.slice(0, 3).map(img => `<img src="${img.data}" alt="${escapeHtml(img.name||'')}" data-full="${img.data}">`).join('');
       const more = images.length > 3 ? `<span class="note-more-chip">+${images.length-3}</span>` : '';
+      const badges = [];
+      if(n.cvss_score !== null && n.cvss_score !== undefined){
+        badges.push(`<span class="note-cvss-chip rating-${n.cvss_rating||'none'}">CVSS ${Number(n.cvss_score).toFixed(1)} · ${t('severity_'+(n.cvss_rating||'none'))}</span>`);
+      }
+      if(n.cwe_id){
+        badges.push(`<span class="note-cwe-chip">${escapeHtml(n.cwe_id)}${n.cwe_name ? ' — '+escapeHtml(n.cwe_name) : ''}</span>`);
+      }
+      const owaspMatches = n.test_id ? getOwaspMatchesForTest(n.test_id) : [];
+      owaspMatches.slice(0,1).forEach(m => badges.push(`<span class="note-owasp-chip">${escapeHtml(m.owasp_id)}</span>`));
       return `<div class="note-card" data-note-id="${n.id}">
         <div class="note-card-top">
           <div class="note-card-title">${escapeHtml(n.title && n.title.trim() ? n.title : t('noteEditorDesc'))}</div>
           <span class="severity-badge sev-${n.severity||'info'}">${t('severity_'+(n.severity||'info'))}</span>
         </div>
         ${chip}
+        ${badges.length ? `<div class="note-card-badges">${badges.join('')}</div>` : ''}
         ${n.content ? `<div class="note-card-content">${escapeHtml(n.content)}</div>` : ''}
         ${images.length ? `<div class="note-card-images">${thumbs}${more}</div>` : ''}
         <div class="note-card-meta"><span>${formatNoteDate(n.updated_at || n.created_at)}</span></div>
@@ -1493,10 +1932,22 @@
     document.getElementById('noteTitleInput').value = existingNote ? (existingNote.title || '') : '';
     document.getElementById('noteContentInput').value = existingNote ? (existingNote.content || '') : '';
     document.getElementById('noteSeveritySelect').value = existingNote ? (existingNote.severity || 'info') : 'info';
-    document.getElementById('noteTestSelect').innerHTML = notebookTestOptionsHtml(existingNote ? existingNote.test_id : (prefillTestId || ''));
+    const fpVal = existingNote ? existingNote.is_false_positive : null;
+    document.getElementById('noteFpStatusSelect').value = fpVal === true ? 'fp' : (fpVal === false ? 'valid' : '');
+    const linkedTestId = existingNote ? existingNote.test_id : (prefillTestId || '');
+    document.getElementById('noteTestSelect').innerHTML = notebookTestOptionsHtml(linkedTestId);
     if(!existingNote && prefillTestId) document.getElementById('noteTestSelect').value = prefillTestId;
     noteEditorImages = existingNote && Array.isArray(existingNote.images) ? existingNote.images.slice() : [];
     renderNoteImageThumbs();
+
+    document.getElementById('noteCweIdInput').value = existingNote ? (existingNote.cwe_id || '') : '';
+    document.getElementById('noteCweNameInput').value = existingNote ? (existingNote.cwe_name || '') : '';
+    renderCweSuggestions(linkedTestId);
+    populateCvssBuilder();
+    setCvssBuilderFromVector(existingNote ? existingNote.cvss_vector : null);
+    updateCvssResultUI();
+    resetAiAnalysisPanel();
+
     document.getElementById('deleteNoteBtn').style.display = existingNote ? '' : 'none';
     document.getElementById('noteEditorOverlay').classList.add('open');
     setTimeout(()=> document.getElementById('noteTitleInput').focus(), 50);
@@ -1512,14 +1963,30 @@
     const severity = document.getElementById('noteSeveritySelect').value;
     const testId = document.getElementById('noteTestSelect').value || null;
     const catId = testId ? (testInfoById(testId) || {}).catId || null : null;
+    const cweId = document.getElementById('noteCweIdInput').value.trim() || null;
+    const cweName = document.getElementById('noteCweNameInput').value.trim() || null;
+    const cvssVector = readCvssBuilderVector();
+    const fpSelectVal = document.getElementById('noteFpStatusSelect').value;
+    const isFalsePositive = fpSelectVal === 'fp' ? true : (fpSelectVal === 'valid' ? false : null);
 
     if(!content && !noteEditorImages.length){
       setNoteEditorStatus(t('noteContentRequired'), true);
       return;
     }
 
+    let cvssScore = null, cvssRating = null, normalizedVector = null;
+    if(cvssVector){
+      try{
+        const r = CVSS.calculate(cvssVector);
+        normalizedVector = r.vector; cvssScore = r.score; cvssRating = r.rating;
+      }catch(e){ /* eksik/yanlış seçim varsa CVSS kaydedilmeden devam edilir */ }
+    }
+
     if(currentSession){
-      const payload = { title, content, severity, test_id: testId, category_id: catId, images: noteEditorImages };
+      const payload = {
+        title, content, severity, test_id: testId, category_id: catId, images: noteEditorImages,
+        cwe_id: cweId, cwe_name: cweName, cvss_vector: normalizedVector, is_false_positive: isFalsePositive
+      };
       const req = id
         ? apiRequest(`/sessions/${currentSession.id}/notes/${id}`, { method: 'PUT', body: JSON.stringify(payload) })
         : apiRequest(`/sessions/${currentSession.id}/notes`, { method: 'POST', body: JSON.stringify(payload) });
@@ -1532,13 +1999,18 @@
     }
 
     const now = new Date().toISOString();
+    const localFields = {
+      title, content, severity, test_id: testId, category_id: catId, images: noteEditorImages,
+      cwe_id: cweId, cwe_name: cweName, cvss_vector: normalizedVector, cvss_score: cvssScore, cvss_rating: cvssRating,
+      is_false_positive: isFalsePositive
+    };
     if(id){
       const idx = notebook.findIndex(n => String(n.id) === String(id));
       if(idx > -1){
-        notebook[idx] = Object.assign({}, notebook[idx], { title, content, severity, test_id: testId, category_id: catId, images: noteEditorImages, updated_at: now });
+        notebook[idx] = Object.assign({}, notebook[idx], localFields, { updated_at: now });
       }
     } else {
-      notebook.push({ id: 'local' + Date.now() + Math.random().toString(36).slice(2), title, content, severity, test_id: testId, category_id: catId, images: noteEditorImages, created_at: now, updated_at: now });
+      notebook.push(Object.assign({ id: 'local' + Date.now() + Math.random().toString(36).slice(2), created_at: now, updated_at: now }, localFields));
     }
     saveNotebook();
     refreshNotebookUI();
@@ -1576,6 +2048,318 @@
   function closeLightbox(){
     document.getElementById('imageLightbox').classList.remove('open');
     document.getElementById('lightboxImg').src = '';
+  }
+
+  // ========================
+  // Faz 3: AI Sonraki Test Önerisi
+  // ========================
+
+  function gatherCompletedTestIds(){
+    return Object.keys(progress).filter(id => progress[id]);
+  }
+
+  function gatherFindingsSummary(){
+    return activeNotes().map(n => ({
+      title: n.title || '',
+      severity: n.severity || 'info',
+      cwe_id: n.cwe_id || null,
+      test_id: n.test_id || null
+    }));
+  }
+
+  function renderAiSuggestContent(html){
+    document.getElementById('aiSuggestContent').innerHTML = html;
+  }
+
+  function renderAiSuggestResult(data){
+    if(data.error){
+      renderAiSuggestContent(`<div class="ai-suggest-error">⚠️ ${escapeHtml(data.error)}</div>`);
+      return;
+    }
+    if(data.all_done){
+      renderAiSuggestContent(`
+        <div class="ai-suggest-alldone">
+          <div class="big-emoji">🎉</div>
+          <h4>${escapeHtml(t('aiSuggestAllDoneTitle'))}</h4>
+          <p style="color:var(--muted)">${escapeHtml(t('aiSuggestAllDoneDesc'))}</p>
+        </div>`);
+      return;
+    }
+
+    const info = data.suggested_test_id ? testInfoById(data.suggested_test_id) : null;
+    const warning = data.suggestion_grounded === false
+      ? `<div class="ai-suggest-ungrounded-warning">${escapeHtml(t('aiSuggestUngroundedWarning'))}</div>` : '';
+    const priorityBadge = data.priority
+      ? `<span class="ai-priority-badge priority-${data.priority}">${escapeHtml(t('severity_'+data.priority))}</span>` : '';
+    const alternatives = (data.alternative_test_ids || []).map(id=>{
+      const ainfo = testInfoById(id);
+      return `<button type="button" class="ai-suggest-alt-chip" data-jump-test="${escapeHtml(id)}">${escapeHtml(id)}${ainfo ? ' — '+escapeHtml(ainfo.title) : ''}</button>`;
+    }).join('');
+    const footer = data.provider ? `<div class="ai-analysis-footer">${escapeHtml(t('aiPoweredBy')(data.provider, data.model, data.latency_ms))}</div>` : '';
+
+    renderAiSuggestContent(`
+      <div class="ai-suggest-card">
+        <div class="ai-suggest-card-top">
+          <div>
+            <div class="ai-suggest-test-id">${escapeHtml(data.suggested_test_id || '')}${info ? ' · '+escapeHtml(info.catCode) : ''}</div>
+            <div class="ai-suggest-test-title">${escapeHtml(data.suggested_test_title || info?.title || data.suggested_test_id || '')}</div>
+          </div>
+          ${priorityBadge}
+        </div>
+        ${warning}
+        ${data.reasoning ? `<div class="ai-suggest-reasoning">${escapeHtml(data.reasoning)}</div>` : ''}
+        ${alternatives ? `<div><div class="cwe-suggestions-label">${escapeHtml(t('aiSuggestAlternativesLabel'))}</div><div class="ai-suggest-alternatives">${alternatives}</div></div>` : ''}
+        <div class="ai-suggest-actions">
+          <button type="button" class="btn btn-primary" id="aiSuggestGoBtn" data-jump-test="${escapeHtml(data.suggested_test_id || '')}">${escapeHtml(t('aiSuggestGoBtn'))}</button>
+          <button type="button" class="btn btn-secondary" id="aiSuggestRefreshBtn">${escapeHtml(t('aiSuggestRefreshBtn'))}</button>
+        </div>
+        ${footer}
+      </div>`);
+  }
+
+  function requestAiSuggestion(){
+    renderAiSuggestContent(`<div class="ai-suggest-loading">${escapeHtml(t('aiSuggestLoading'))}</div>`);
+    apiRequest('/ai/suggest-next-test', {
+      method: 'POST',
+      body: JSON.stringify({
+        completed_test_ids: gatherCompletedTestIds(),
+        findings: gatherFindingsSummary(),
+        lang: currentLang,
+        session_id: currentSession ? currentSession.id : null
+      })
+    }).then(renderAiSuggestResult)
+      .catch(err => renderAiSuggestResult({ error: err.message || t('aiNotConfiguredShort') }));
+  }
+
+  function openAiSuggestModal(){
+    document.getElementById('aiSuggestOverlay').classList.add('open');
+    requestAiSuggestion();
+  }
+  function closeAiSuggestModal(){
+    document.getElementById('aiSuggestOverlay').classList.remove('open');
+  }
+  function jumpToTest(testId){
+    if(!testId) return;
+    const info = testInfoById(testId);
+    if(!info) return;
+    closeAiSuggestModal();
+    openCategory(info.catId, testId);
+  }
+
+  // ========================
+  // Faz 4: Otomatik Rapor Üretimi
+  // ========================
+
+  function renderReportStats(report){
+    const stats = report.stats;
+    const sevOrder = ['critical','high','medium','low','info'];
+    const sevChips = sevOrder.filter(s => stats.severity_counts[s]).map(s=>
+      `<span class="report-sev-chip rating-${s}">${escapeHtml(t('severity_'+s))}: ${stats.severity_counts[s]}</span>`
+    ).join('');
+
+    return `
+      <div class="report-stats-grid">
+        <div class="report-stat-card"><div class="report-stat-value">${stats.completed_tests}/${stats.total_tests}</div><div class="report-stat-label">${escapeHtml(t('reportStatCompleted'))}</div></div>
+        <div class="report-stat-card"><div class="report-stat-value">${stats.total_findings}</div><div class="report-stat-label">${escapeHtml(t('reportStatFindings'))}</div></div>
+        <div class="report-stat-card"><div class="report-stat-value">${stats.avg_cvss !== null ? stats.avg_cvss.toFixed(1) : '–'}</div><div class="report-stat-label">${escapeHtml(t('reportStatAvgCvss'))}</div></div>
+        <div class="report-stat-card"><div class="report-stat-value">${stats.max_cvss !== null ? stats.max_cvss.toFixed(1) : '–'}</div><div class="report-stat-label">${escapeHtml(t('reportStatMaxCvss'))}</div></div>
+      </div>
+      ${sevChips ? `<div class="report-severity-breakdown">${sevChips}</div>` : `<p class="report-findings-note">${escapeHtml(t('reportNoFindingsNote'))}</p>`}
+    `;
+  }
+
+  function renderReportPanel(report){
+    const content = document.getElementById('reportContent');
+    const isControl = currentSession && currentSession.study_group === 'control';
+    const summarySection = isControl
+      ? `<div class="control-group-banner">${escapeHtml(t('controlGroupBannerReport'))}</div>`
+      : `<div class="report-summary-row">
+          <button type="button" class="copy-btn" id="reportGenSummaryBtn">${escapeHtml(t('reportGenerateSummaryBtn'))}</button>
+          <span class="ai-analyze-spinner" id="reportSummarySpinner" style="display:none">${escapeHtml(t('reportSummaryGenerating'))}</span>
+        </div>`;
+    content.innerHTML = `
+      ${renderReportStats(report)}
+      <div class="report-section-title">${escapeHtml(t('reportSummarySectionTitle'))}</div>
+      ${summarySection}
+      <textarea class="report-summary-textarea" id="reportSummaryText" placeholder="${escapeHtml(t('reportSummaryPlaceholder'))}"></textarea>
+      <div id="reportSummaryFooter"></div>
+
+      <div class="report-section-title">${escapeHtml(t('reportDownloadSectionTitle'))}</div>
+      <div class="report-format-row">
+        <select id="reportFormatSelect">
+          <option value="md">${escapeHtml(t('reportFormatMd'))}</option>
+          <option value="docx">${escapeHtml(t('reportFormatDocx'))}</option>
+        </select>
+        <button type="button" class="btn btn-primary" id="reportDownloadBtn">${escapeHtml(t('reportDownloadBtn'))}</button>
+      </div>
+      <div class="import-status" id="reportDownloadStatus"></div>
+    `;
+  }
+
+  function loadReportPanel(){
+    if(!currentSession){
+      renderReportContent(`<div class="report-local-msg">${escapeHtml(t('reportLocalModeMsg'))}</div>`);
+      return;
+    }
+    renderReportContent(`<div class="ai-suggest-loading">${escapeHtml(t('aiSuggestLoading'))}</div>`);
+    apiRequest(`/sessions/${currentSession.id}/report/data?lang=${encodeURIComponent(currentLang)}`)
+      .then(report => renderReportPanel(report))
+      .catch(err => renderReportContent(`<div class="ai-suggest-error">⚠️ ${escapeHtml(err.message)}</div>`));
+  }
+  function renderReportContent(html){
+    document.getElementById('reportContent').innerHTML = html;
+  }
+
+  function generateReportSummary(){
+    const btn = document.getElementById('reportGenSummaryBtn');
+    const spinner = document.getElementById('reportSummarySpinner');
+    btn.disabled = true;
+    spinner.style.display = '';
+    document.getElementById('reportSummaryFooter').innerHTML = '';
+    apiRequest(`/sessions/${currentSession.id}/report/summary`, {
+      method: 'POST',
+      body: JSON.stringify({ lang: currentLang })
+    }).then(result=>{
+      if(result.error){
+        document.getElementById('reportSummaryFooter').innerHTML = `<div class="ai-analysis-error">⚠️ ${escapeHtml(result.error)}</div>`;
+        return;
+      }
+      document.getElementById('reportSummaryText').value = result.summary || '';
+      document.getElementById('reportSummaryFooter').innerHTML =
+        `<div class="ai-analysis-footer">${escapeHtml(t('aiPoweredBy')(result.provider, result.model, result.latency_ms))}</div>`;
+    }).catch(err=>{
+      document.getElementById('reportSummaryFooter').innerHTML = `<div class="ai-analysis-error">⚠️ ${escapeHtml(err.message)}</div>`;
+    }).finally(()=>{
+      btn.disabled = false;
+      spinner.style.display = 'none';
+    });
+  }
+
+  function downloadReport(){
+    const format = document.getElementById('reportFormatSelect').value;
+    const executiveSummary = document.getElementById('reportSummaryText').value.trim();
+    const btn = document.getElementById('reportDownloadBtn');
+    const status = document.getElementById('reportDownloadStatus');
+    btn.disabled = true;
+    status.textContent = t('reportDownloadPreparing');
+
+    fetch(API_BASE + `/sessions/${currentSession.id}/report/download`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ format, executive_summary: executiveSummary, lang: currentLang })
+    }).then(async res=>{
+      if(!res.ok){
+        let msg = res.statusText;
+        try{ const j = await res.json(); msg = j.error || msg; }catch(e){}
+        throw new Error(msg);
+      }
+      return res.blob();
+    }).then(blob=>{
+      const safeName = (currentSession.name || 'pentest-raporu').trim().replace(/\s+/g, '_');
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${safeName}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      status.textContent = '';
+      showToast(t('reportFileDownloadedToast'));
+    }).catch(err=>{
+      status.textContent = `⚠️ ${err.message || t('reportDownloadError')}`;
+    }).finally(()=>{
+      btn.disabled = false;
+    });
+  }
+
+  function openReportModal(){
+    document.getElementById('reportOverlay').classList.add('open');
+    loadReportPanel();
+  }
+  function closeReportModal(){
+    document.getElementById('reportOverlay').classList.remove('open');
+  }
+
+  // ========================
+  // Faz 5: Çalışma Metrikleri (A/B Karşılaştırma)
+  // ========================
+
+  const STUDY_METRIC_ROWS = [
+    ['completion_minutes', 'studyMetricCompletionMinutes', true],
+    ['completed_tests', 'studyMetricCompletedTests', false],
+    ['completion_pct', 'studyMetricCompletionPct', false],
+    ['total_findings', 'studyMetricTotalFindings', false],
+    ['false_positive_rate_pct', 'studyMetricFpRate', true],
+    ['ai_calls_total', 'studyMetricAiCalls', false],
+    ['avg_ai_latency_ms', 'studyMetricAiLatency', true]
+  ]; // [alan, i18n anahtarı, lowerIsBetter]
+
+  function formatStudyValue(v){
+    if(v === null || v === undefined) return '–';
+    return Number.isInteger(v) ? String(v) : v.toFixed(1);
+  }
+
+  function renderStudyMetricsPanel(data){
+    const content = document.getElementById('studyMetricsContent');
+    const ai = data.comparison.ai_assisted;
+    const control = data.comparison.control;
+    const diff = data.comparison.diff_pct || {};
+
+    if(!ai.n && !control.n){
+      content.innerHTML = `<div class="study-empty">${escapeHtml(t('studyMetricsEmptyMsg'))}</div>`;
+      return;
+    }
+
+    const rows = STUDY_METRIC_ROWS.map(([field, labelKey, lowerIsBetter])=>{
+      const aiVal = ai[`avg_${field}`];
+      const controlVal = control[`avg_${field}`];
+      const d = diff[field];
+      let diffChip = '';
+      if(d !== null && d !== undefined){
+        const isGood = lowerIsBetter ? d < 0 : d > 0;
+        diffChip = `<span class="study-compare-diff ${isGood ? 'positive' : 'negative'}">${d > 0 ? '+' : ''}${d}%</span>`;
+      }
+      return `
+        <div>${escapeHtml(t(labelKey))}</div>
+        <div>${formatStudyValue(aiVal)}</div>
+        <div>${formatStudyValue(controlVal)}${diffChip}</div>
+      `;
+    }).join('');
+
+    const reportRow = `
+      <div>${escapeHtml(t('studyMetricReportGenerated'))}</div>
+      <div>${formatStudyValue(ai.pct_report_generated)}</div>
+      <div>${formatStudyValue(control.pct_report_generated)}</div>
+    `;
+
+    content.innerHTML = `
+      <div class="study-compare-grid">
+        <div class="study-compare-header"></div>
+        <div class="study-compare-header">${escapeHtml(t('studyMetricsColAi'))}</div>
+        <div class="study-compare-header">${escapeHtml(t('studyMetricsColControl'))}</div>
+        <div>n</div>
+        <div>${ai.n}</div>
+        <div>${control.n}</div>
+        ${rows}
+        ${reportRow}
+      </div>
+      ${data.unassigned_sessions_count ? `<div class="study-n-note">${escapeHtml(t('studyMetricsUnassignedNote')(data.unassigned_sessions_count))}</div>` : ''}
+    `;
+  }
+
+  function openStudyMetricsModal(){
+    document.getElementById('studyMetricsOverlay').classList.add('open');
+    const content = document.getElementById('studyMetricsContent');
+    content.innerHTML = `<div class="ai-suggest-loading">${escapeHtml(t('aiSuggestLoading'))}</div>`;
+    apiRequest('/study/metrics')
+      .then(renderStudyMetricsPanel)
+      .catch(()=> {
+        content.innerHTML = `<div class="report-local-msg">${escapeHtml(t('studyMetricsLocalMsg'))}</div>`;
+      });
+  }
+  function closeStudyMetricsModal(){
+    document.getElementById('studyMetricsOverlay').classList.remove('open');
   }
 
   function bindEvents(){
@@ -1653,6 +2437,26 @@
     document.getElementById('saveNoteBtn').addEventListener('click', saveNoteFromEditor);
     document.getElementById('deleteNoteBtn').addEventListener('click', deleteNoteFromEditor);
 
+    document.getElementById('noteTestSelect').addEventListener('change', e=>{
+      renderCweSuggestions(e.target.value);
+    });
+    document.getElementById('cweSuggestions').addEventListener('click', e=>{
+      const chip = e.target.closest('.cwe-suggestion-chip');
+      if(!chip) return;
+      document.getElementById('noteCweIdInput').value = chip.dataset.cweId;
+      document.getElementById('noteCweNameInput').value = chip.dataset.cweName;
+    });
+    document.getElementById('cvssBuilder').addEventListener('change', updateCvssResultUI);
+    document.getElementById('cvssClearBtn').addEventListener('click', ()=>{
+      setCvssBuilderFromVector(null);
+      updateCvssResultUI();
+    });
+    document.getElementById('aiAnalyzeBtn').addEventListener('click', analyzeNoteWithAI);
+    document.getElementById('aiAnalysisPanel').addEventListener('click', e=>{
+      const btn = e.target.closest('.ai-apply-btn');
+      if(btn) applyAiSuggestion(btn.dataset.apply);
+    });
+
     const noteImageDrop = document.getElementById('noteImageDrop');
     const noteImageInput = document.getElementById('noteImageInput');
     noteImageInput.addEventListener('change', e=>{ addImagesToEditor(e.target.files); e.target.value = ''; });
@@ -1681,6 +2485,40 @@
       if(e.target.id === 'imageLightbox') closeLightbox();
     });
 
+    document.getElementById('aiSuggestNavBtn').addEventListener('click', openAiSuggestModal);
+    document.getElementById('closeAiSuggestOverlay').addEventListener('click', closeAiSuggestModal);
+    document.getElementById('aiSuggestOverlay').addEventListener('click', e=>{
+      if(e.target.id === 'aiSuggestOverlay') closeAiSuggestModal();
+    });
+    document.getElementById('aiSuggestContent').addEventListener('click', e=>{
+      const refreshBtn = e.target.closest('#aiSuggestRefreshBtn');
+      if(refreshBtn){ requestAiSuggestion(); return; }
+      const jumpBtn = e.target.closest('[data-jump-test]');
+      if(jumpBtn && jumpBtn.dataset.jumpTest){ jumpToTest(jumpBtn.dataset.jumpTest); }
+    });
+
+    document.getElementById('reportNavBtn').addEventListener('click', openReportModal);
+    document.getElementById('closeReportOverlay').addEventListener('click', closeReportModal);
+    document.getElementById('reportOverlay').addEventListener('click', e=>{
+      if(e.target.id === 'reportOverlay') closeReportModal();
+    });
+    document.getElementById('reportContent').addEventListener('click', e=>{
+      if(e.target.closest('#reportGenSummaryBtn')) generateReportSummary();
+      if(e.target.closest('#reportDownloadBtn')) downloadReport();
+    });
+
+    document.getElementById('studyGroupSelect').addEventListener('change', e=>{
+      const hint = document.getElementById('studyGroupHint');
+      if(e.target.value === 'ai_assisted') hint.textContent = t('studyGroupHintAi');
+      else if(e.target.value === 'control') hint.textContent = t('studyGroupHintControl');
+      else hint.textContent = '';
+    });
+    document.getElementById('studyMetricsNavBtn').addEventListener('click', openStudyMetricsModal);
+    document.getElementById('closeStudyMetricsOverlay').addEventListener('click', closeStudyMetricsModal);
+    document.getElementById('studyMetricsOverlay').addEventListener('click', e=>{
+      if(e.target.id === 'studyMetricsOverlay') closeStudyMetricsModal();
+    });
+
     document.getElementById('importNavBtn').addEventListener('click', openImportModal);
     document.getElementById('closeImportOverlay').addEventListener('click', closeImportModal);
     document.getElementById('importOverlay').addEventListener('click', e=>{
@@ -1698,7 +2536,7 @@
     document.addEventListener('keydown', e=>{
       if(e.key === 'Escape'){
         closeCategory(); closeThemeModal(); closeNewSessionOverlay(); closeTop10Detail(); closeImportModal();
-        closeLightbox(); closeNoteEditor(); closeNotebook();
+        closeLightbox(); closeNoteEditor(); closeNotebook(); closeAiSuggestModal(); closeReportModal(); closeStudyMetricsModal();
         if(document.getElementById('closeSessionGate').style.display !== 'none') closeSessionGate();
       }
     });

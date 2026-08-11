@@ -48,6 +48,9 @@
       </div>
       <button class="nav-item" id="sessionsNavBtn"><span class="dot"></span><span data-i18n="navSessions">Test Oturumları</span></button>
       <button class="nav-item" id="notebookNavBtn"><span class="dot"></span><span data-i18n="navNotebook">Not Defteri</span></button>
+      <button class="nav-item" id="aiSuggestNavBtn"><span class="dot"></span><span data-i18n="navAiSuggest">AI: Sırada Ne Var?</span></button>
+      <button class="nav-item" id="reportNavBtn"><span class="dot"></span><span data-i18n="navReport">Rapor Oluştur</span></button>
+      <button class="nav-item" id="studyMetricsNavBtn"><span class="dot"></span><span data-i18n="navStudyMetrics">Çalışma Metrikleri</span></button>
       <button class="nav-item" id="importNavBtn"><span class="dot"></span><span data-i18n="navImport">Bulgu İçe Aktar</span></button>
       <button class="nav-item" id="exportBtn"><span class="dot"></span><span data-i18n="exportReport">Raporu Dışa Aktar</span></button>
       <button class="nav-item" id="resetBtn"><span class="dot"></span><span data-i18n="resetProgress">İlerlemeyi Sıfırla</span></button>
@@ -248,6 +251,13 @@
         <input type="text" id="testerNameInput" data-i18n-placeholder="testerNamePlaceholder" placeholder="Adınız">
         <label data-i18n="targetUrlLabel">Hedef URL</label>
         <input type="text" id="targetUrlInput" placeholder="https://example.com">
+        <label data-i18n="studyGroupLabel">Çalışma Grubu (opsiyonel)</label>
+        <select id="studyGroupSelect">
+          <option value="" data-i18n="studyGroupNone">— Seçilmedi —</option>
+          <option value="ai_assisted" data-i18n="studyGroupAi">AI Destekli</option>
+          <option value="control" data-i18n="studyGroupControl">Kontrol (Sadece Checklist)</option>
+        </select>
+        <p class="report-findings-note" id="studyGroupHint" style="margin:-4px 0 4px"></p>
         <div class="hero-actions" style="margin-top:8px">
           <button type="button" class="btn btn-primary" id="createSessionBtn" data-i18n="startSession">Oturumu Başlat</button>
         </div>
@@ -344,8 +354,45 @@
           <option value="high" data-i18n="severity_high">Yüksek</option>
           <option value="critical" data-i18n="severity_critical">Kritik</option>
         </select>
+        <label data-i18n="fpStatusLabel">Doğrulama Durumu (opsiyonel)</label>
+        <select id="noteFpStatusSelect">
+          <option value="" data-i18n="fpStatusUndetermined">— Henüz değerlendirilmedi —</option>
+          <option value="valid" data-i18n="fpStatusValid">✓ Gerçek/geçerli bulgu</option>
+          <option value="fp" data-i18n="fpStatusFp">✗ False positive</option>
+        </select>
         <label data-i18n="noteContentLabel">Not / Bulgu</label>
         <textarea id="noteContentInput" class="finding-textarea" style="min-height:120px" data-i18n-placeholder="noteContentPlaceholder" placeholder="Zafiyeti, adımları ve etkisini buraya yazın..."></textarea>
+
+        <div class="ai-analyze-row">
+          <button type="button" class="btn btn-secondary" id="aiAnalyzeBtn">🤖 <span data-i18n="aiAnalyzeBtn">AI ile Analiz Et</span></button>
+          <span class="ai-analyze-spinner" id="aiAnalyzeSpinner" style="display:none" data-i18n="aiAnalyzing">Analiz ediliyor...</span>
+        </div>
+        <div class="control-group-banner" id="noteEditorControlBanner" style="display:none" data-i18n="controlGroupBannerNote">Bu oturum "Kontrol" grubunda — AI destekli analiz bu oturumda devre dışı.</div>
+        <div class="ai-analysis-panel" id="aiAnalysisPanel" style="display:none"></div>
+
+        <label data-i18n="cweLabel">CWE (opsiyonel)</label>
+        <div class="cwe-row">
+          <input type="text" id="noteCweIdInput" data-i18n-placeholder="cwePlaceholder" placeholder="Örn: CWE-89" style="max-width:130px">
+          <input type="text" id="noteCweNameInput" data-i18n-placeholder="cweNamePlaceholder" placeholder="Örn: SQL Injection">
+        </div>
+        <div class="cwe-suggestions" id="cweSuggestions"></div>
+
+        <label data-i18n="cvssLabel">CVSS 3.1 Skoru (opsiyonel)</label>
+        <div class="cvss-builder" id="cvssBuilder">
+          <div class="cvss-field"><span data-i18n="cvssAV">Saldırı Vektörü (AV)</span><select data-cvss="AV"></select></div>
+          <div class="cvss-field"><span data-i18n="cvssAC">Saldırı Karmaşıklığı (AC)</span><select data-cvss="AC"></select></div>
+          <div class="cvss-field"><span data-i18n="cvssPR">Gereken Yetki (PR)</span><select data-cvss="PR"></select></div>
+          <div class="cvss-field"><span data-i18n="cvssUI">Kullanıcı Etkileşimi (UI)</span><select data-cvss="UI"></select></div>
+          <div class="cvss-field"><span data-i18n="cvssS">Kapsam (S)</span><select data-cvss="S"></select></div>
+          <div class="cvss-field"><span data-i18n="cvssC">Gizlilik Etkisi (C)</span><select data-cvss="C"></select></div>
+          <div class="cvss-field"><span data-i18n="cvssI">Bütünlük Etkisi (I)</span><select data-cvss="I"></select></div>
+          <div class="cvss-field"><span data-i18n="cvssA">Erişilebilirlik Etkisi (A)</span><select data-cvss="A"></select></div>
+        </div>
+        <div class="cvss-result-row">
+          <span class="cvss-result-badge" id="cvssResultBadge" data-i18n="cvssNone">— Hesaplanmadı —</span>
+          <button type="button" class="copy-btn" id="cvssClearBtn" data-i18n="cvssClear">Temizle</button>
+        </div>
+
         <label data-i18n="noteImagesLabel">Kanıt Görselleri</label>
         <div class="note-image-drop" id="noteImageDrop">
           <span data-i18n="noteImageDropText">Görselleri buraya sürükleyin, yapıştırın (Ctrl+V) ya da seçin</span>
@@ -368,8 +415,57 @@
   <button class="close-btn" id="closeLightbox" style="position:fixed;top:24px;right:28px">&times;</button>
 </div>
 
+<!-- AI: Sıradaki Test Önerisi -->
+<div class="overlay" id="aiSuggestOverlay">
+  <div class="panel" style="max-width:640px">
+    <div class="panel-header">
+      <div>
+        <h3 data-i18n="aiSuggestTitle">AI: Sırada Ne Var?</h3>
+        <p data-i18n="aiSuggestDesc">Tamamladığınız testlere ve bulgularınıza bakarak sırada hangi WSTG testinin yapılmasının en mantıklı olacağını önerir.</p>
+      </div>
+      <button class="close-btn" id="closeAiSuggestOverlay">&times;</button>
+    </div>
+    <div class="panel-body">
+      <div id="aiSuggestContent"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Rapor Oluştur -->
+<div class="overlay" id="reportOverlay">
+  <div class="panel" style="max-width:720px">
+    <div class="panel-header">
+      <div>
+        <h3 data-i18n="reportTitle">Rapor Oluştur</h3>
+        <p data-i18n="reportDesc">Toplanan bulgulardan (CVSS/CWE dahil) indirilebilir bir pentest raporu oluşturun.</p>
+      </div>
+      <button class="close-btn" id="closeReportOverlay">&times;</button>
+    </div>
+    <div class="panel-body">
+      <div id="reportContent"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Çalışma Metrikleri (Faz 5: A/B Karşılaştırma) -->
+<div class="overlay" id="studyMetricsOverlay">
+  <div class="panel" style="max-width:800px">
+    <div class="panel-header">
+      <div>
+        <h3 data-i18n="studyMetricsTitle">Çalışma Metrikleri</h3>
+        <p data-i18n="studyMetricsDesc">"AI Destekli" ve "Kontrol" grubuna etiketlenen oturumları karşılaştırır.</p>
+      </div>
+      <button class="close-btn" id="closeStudyMetricsOverlay">&times;</button>
+    </div>
+    <div class="panel-body">
+      <div id="studyMetricsContent"></div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
+<script src="js/cvss.js"></script>
 <script src="js/import-parsers.js"></script>
 <script src="js/app.js"></script>
 </body>
