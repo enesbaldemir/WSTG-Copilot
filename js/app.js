@@ -1865,13 +1865,6 @@
     document.getElementById('notebookOverlay').classList.remove('open');
   }
 
-  function resetNoteImageInputsUI(){
-    noteEditorImages = [];
-    renderNoteImageThumbs();
-    const fileInput = document.getElementById('noteImageInput');
-    if(fileInput) fileInput.value = '';
-  }
-
   function renderNoteImageThumbs(){
     const wrap = document.getElementById('noteImageThumbs');
     if(!wrap) return;

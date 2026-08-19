@@ -208,7 +208,7 @@ def _set_cell_shading(cell, hex_color):
 
 def render_docx(report_data, executive_summary=None, lang="tr", output_path=None):
     from docx import Document
-    from docx.shared import Pt, RGBColor, Inches
+    from docx.shared import Pt, RGBColor
     from docx.enum.text import WD_ALIGN_PARAGRAPH
 
     s = report_data["session"]

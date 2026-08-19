@@ -11,7 +11,6 @@ CVSS hesaplayıcılar gibi).
 """
 
 import math
-import re
 
 _AV = {"N": 0.85, "A": 0.62, "L": 0.55, "P": 0.20}
 _AC = {"L": 0.77, "H": 0.44}

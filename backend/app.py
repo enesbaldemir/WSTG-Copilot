@@ -25,7 +25,6 @@ else:
 db.init_app(app)
 _cors_origins = [o.strip() for o in app.config['CORS_ORIGINS'].split(',') if o.strip()]
 CORS(app, resources={r"/*": {"origins": _cors_origins}})
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'database'), exist_ok=True)
 
 with app.app_context():
