@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+env/
+
+# Backend secrets & local data
+backend/.env
+backend/database/
+*.db
+*.sqlite
+*.sqlite3
+
+# Uploads
+backend/uploads/
+
+# OS / editor
+.DS_Store
+*.swp
+.vscode/
+.idea/
