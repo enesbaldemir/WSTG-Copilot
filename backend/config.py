@@ -16,7 +16,6 @@ class Config:
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
     CORS_ORIGINS = os.getenv('CORS_ORIGINS', 'http://localhost:8000,http://localhost:3000')
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024
-    UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
     LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
 
     # ==================== AI / LLM ENTEGRASYONU ====================

@@ -23,8 +23,8 @@ else:
     app.config.from_object(DevelopmentConfig)
 
 db.init_app(app)
-CORS(app, resources={r"/*": {"origins": "*"}})
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+_cors_origins = [o.strip() for o in app.config['CORS_ORIGINS'].split(',') if o.strip()]
+CORS(app, resources={r"/*": {"origins": _cors_origins}})
 os.makedirs(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'database'), exist_ok=True)
 
 with app.app_context():
@@ -841,4 +841,8 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
         print('✅ Veritabanı oluşturuldu!')
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # Debug modu ve dış ağa açık bind (0.0.0.0) birlikte AÇIK OLURSA Werkzeug'un
+    # interaktif debugger'ı ağdan erişilebilir hale gelir (bilinen bir RCE riski).
+    # Bu yüzden ikisi de config/env'den okunuyor; varsayılan sadece localhost'a bind eder.
+    host = os.getenv('FLASK_RUN_HOST', '127.0.0.1')
+    app.run(host=host, port=5000, debug=app.config['DEBUG'])
