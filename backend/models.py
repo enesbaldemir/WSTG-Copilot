@@ -5,10 +5,334 @@ import json
 
 db = SQLAlchemy()
 
+class Project(db.Model):
+    __tablename__ = 'projects'
+
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    name = db.Column(db.String(200), nullable=False)
+    client = db.Column(db.String(200))
+    description = db.Column(db.Text)
+    status = db.Column(db.String(20), default='planning')  # planning|active|paused|completed|archived
+
+    start_date = db.Column(db.Date)
+    end_date = db.Column(db.Date)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    scope_items = db.relationship('ScopeItem', backref='project', lazy=True, cascade='all, delete-orphan')
+    timeline_events = db.relationship('TimelineEvent', backref='project', lazy=True, cascade='all, delete-orphan')
+    recon_runs = db.relationship('ReconRun', backref='project', lazy=True, cascade='all, delete-orphan')
+    evidence_items = db.relationship('Evidence', backref='project', lazy=True, cascade='all, delete-orphan')
+    custom_tests = db.relationship('CustomTest', backref='project', lazy=True, cascade='all, delete-orphan')
+    tool_runs = db.relationship('ToolRun', backref='project', lazy=True, cascade='all, delete-orphan')
+    findings = db.relationship('Finding', backref='project', lazy=True, cascade='all, delete-orphan')
+    # Sessions are NOT cascade-deleted with a project — a session's test data
+    # should survive even if the parent project is removed; see delete_project().
+    sessions = db.relationship('Session', backref='project', lazy=True)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'client': self.client,
+            'description': self.description,
+            'status': self.status,
+            'start_date': self.start_date.isoformat() if self.start_date else None,
+            'end_date': self.end_date.isoformat() if self.end_date else None,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+            'session_count': len(self.sessions) if self.sessions else 0
+        }
+
+
+class ScopeItem(db.Model):
+    __tablename__ = 'scope_items'
+
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.String(36), db.ForeignKey('projects.id'), nullable=False)
+    type = db.Column(db.String(20), nullable=False)  # domain|subdomain|ip|cidr
+    value = db.Column(db.String(300), nullable=False)
+    description = db.Column(db.String(300))
+    in_scope = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'project_id': self.project_id,
+            'type': self.type,
+            'value': self.value,
+            'description': self.description,
+            'in_scope': self.in_scope,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+
+class TimelineEvent(db.Model):
+    __tablename__ = 'timeline_events'
+
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.String(36), db.ForeignKey('projects.id'), nullable=False)
+    event_type = db.Column(db.String(50), nullable=False)
+    message = db.Column(db.String(500), nullable=False)
+    meta = db.Column(db.Text)  # JSON-encoded extra context, optional
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        meta_parsed = None
+        if self.meta:
+            try:
+                meta_parsed = json.loads(self.meta)
+            except Exception:
+                meta_parsed = self.meta
+        return {
+            'id': self.id,
+            'project_id': self.project_id,
+            'event_type': self.event_type,
+            'message': self.message,
+            'meta': meta_parsed,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+
+class Finding(db.Model):
+    """Profesyonel Finding nesnesi (roadmap: 'Findings sistemi + CVSS').
+
+    Bilinçli tasarım kararı: TestResult.finding (basit metin alanı) HİÇ
+    değiştirilmedi -- Attack Chains, raporlar ve lifecycle dashboard hâlâ
+    ona dayanıyor. Finding, üzerine KATMAN olarak eklenen, daha zengin bir
+    yapı: CVSS, CWE, endpoint/parametre, remediation, atanan kişi, retest
+    takibi. Bir TestResult'tan "Professional Finding'e Yükselt" ile
+    oluşturulabilir, ya da bağımsız olarak da eklenebilir (session_id/
+    test_id nullable)."""
+    __tablename__ = 'findings'
+
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.String(36), db.ForeignKey('projects.id'), nullable=False)
+    session_id = db.Column(db.String(36), db.ForeignKey('sessions.id'), nullable=True)
+    test_id = db.Column(db.String(50), nullable=True)  # WSTG-* / LLM-* / CUSTOM-*
+
+    title = db.Column(db.String(300), nullable=False)
+    severity = db.Column(db.String(20), default='info')  # cvss varsa severity_label'dan türetilir
+
+    cvss_score = db.Column(db.Float)
+    cvss_vector = db.Column(db.String(80))
+    cwe = db.Column(db.String(50))
+    owasp_category = db.Column(db.String(100))
+
+    endpoint = db.Column(db.String(300))
+    parameter = db.Column(db.String(200))
+
+    description = db.Column(db.Text)
+    impact = db.Column(db.Text)
+    remediation = db.Column(db.Text)
+    references = db.Column(db.Text)  # satır satır URL
+
+    status = db.Column(db.String(20), default='open')  # open|confirmed|fixed|retest_pending|resolved|wont_fix|accepted_risk
+    assigned_to = db.Column(db.String(100))
+
+    retest_result = db.Column(db.String(20))  # not_tested|fixed|not_fixed
+    retest_notes = db.Column(db.Text)
+    retested_at = db.Column(db.DateTime)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'finding_code': f'FND-{self.id:04d}' if self.id else None,
+            'project_id': self.project_id,
+            'session_id': self.session_id,
+            'test_id': self.test_id,
+            'title': self.title,
+            'severity': self.severity,
+            'cvss_score': self.cvss_score,
+            'cvss_vector': self.cvss_vector,
+            'cwe': self.cwe,
+            'owasp_category': self.owasp_category,
+            'endpoint': self.endpoint,
+            'parameter': self.parameter,
+            'description': self.description,
+            'impact': self.impact,
+            'remediation': self.remediation,
+            'references': self.references,
+            'status': self.status,
+            'assigned_to': self.assigned_to,
+            'retest_result': self.retest_result,
+            'retest_notes': self.retest_notes,
+            'retested_at': self.retested_at.isoformat() if self.retested_at else None,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class ToolRun(db.Model):
+    """Tool Integration: gerçek bir CLI aracının (nmap/httpx/whatweb/
+    subfinder/dnsx) kullanıcının kendi makinesinde çalıştırılmasının
+    kaydı. Komut her zaman argv listesi olarak çalıştırılır — bkz.
+    backend/tool_runner.py docstring'i."""
+    __tablename__ = 'tool_runs'
+
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.String(36), db.ForeignKey('projects.id'), nullable=False)
+    tool = db.Column(db.String(50), nullable=False)
+    target = db.Column(db.String(300), nullable=False)
+    command = db.Column(db.String(500))
+    status = db.Column(db.String(20), default='completed')  # completed|failed|timeout
+    exit_code = db.Column(db.Integer)
+    stdout = db.Column(db.Text)
+    stderr = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'project_id': self.project_id,
+            'tool': self.tool,
+            'target': self.target,
+            'command': self.command,
+            'status': self.status,
+            'exit_code': self.exit_code,
+            'stdout': self.stdout,
+            'stderr': self.stderr,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+
+class CustomTest(db.Model):
+    """Kuruluşa özel test maddeleri (roadmap: 'Custom -> Organization-specific
+    tests'). Bunlar resmi WSTG-04 veri setinden gelmez ama checklist'te
+    normal bir WSTG testi gibi davranır: işaretlenebilir, bulgu eklenebilir.
+    OWASP WSTG 5.0 henüz yayınlanmadığı için (bkz. proje notları) bu,
+    şu an gerçekten uygulanabilecek 'version-aware / genişletilebilir test
+    kataloğu' parçasıdır."""
+    __tablename__ = 'custom_tests'
+
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.String(36), db.ForeignKey('projects.id'), nullable=False)
+    test_id = db.Column(db.String(40), nullable=False)  # örn. 'CUSTOM-a1b2c3d4'
+    title = db.Column(db.String(300), nullable=False)
+    description = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'project_id': self.project_id,
+            'test_id': self.test_id,
+            'title': self.title,
+            'description': self.description,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+
+class Evidence(db.Model):
+    __tablename__ = 'evidence'
+
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.String(36), db.ForeignKey('projects.id'), nullable=False)
+
+    evidence_type = db.Column(db.String(20), default='image')  # image|http_transaction
+
+    # --- image tipi alanları ---
+    filename = db.Column(db.String(300))       # kullanıcının orijinal dosya adı (sadece görüntüleme amaçlı)
+    stored_filename = db.Column(db.String(100))  # diskteki güvenli, UUID tabanlı ad
+    mime_type = db.Column(db.String(100))
+    size_bytes = db.Column(db.Integer)
+
+    # --- http_transaction tipi alanları ---
+    # HAM metin her zaman saklanır (pentester gerçek kanıta ihtiyaç duyar);
+    # redakte edilmiş versiyon AYRICA saklanır ve varsayılan görüntüleme/
+    # export bunu kullanır. Ham metni görmek açık bir kullanıcı eylemi
+    # gerektirir (bkz. backend/redaction.py).
+    http_request = db.Column(db.Text)
+    http_response = db.Column(db.Text)
+    http_request_redacted = db.Column(db.Text)
+    http_response_redacted = db.Column(db.Text)
+
+    # AI Vision analizi (opsiyonel — ANTHROPIC_API_KEY ayarlıysa doldurulur, sadece image tipi için)
+    ai_analysis = db.Column(db.Text)                # modelin serbest metin açıklaması
+    ai_suggested_test_ids = db.Column(db.Text)       # JSON-encoded list[str]
+    ai_confidence = db.Column(db.Float)              # 0-100
+    ai_error = db.Column(db.Text)                    # analiz denendi ama başarısız olduysa neden
+
+    # İnsan onayı (roadmap'teki Accept/Reject akışı)
+    review_status = db.Column(db.String(20), default='pending')  # pending|accepted|rejected|manual
+    linked_session_id = db.Column(db.String(36), db.ForeignKey('sessions.id'), nullable=True)
+    linked_test_id = db.Column(db.String(50), nullable=True)
+    linked_finding_id = db.Column(db.Integer, db.ForeignKey('findings.id'), nullable=True)  # Evidence -> Finding ilişkisi
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self, include_raw=False):
+        suggested = []
+        if self.ai_suggested_test_ids:
+            try:
+                suggested = json.loads(self.ai_suggested_test_ids)
+            except Exception:
+                suggested = []
+        data = {
+            'id': self.id,
+            'project_id': self.project_id,
+            'evidence_type': self.evidence_type or 'image',
+            'filename': self.filename,
+            'stored_filename': self.stored_filename,
+            'mime_type': self.mime_type,
+            'size_bytes': self.size_bytes,
+            'http_request_redacted': self.http_request_redacted,
+            'http_response_redacted': self.http_response_redacted,
+            'ai_analysis': self.ai_analysis,
+            'ai_suggested_test_ids': suggested,
+            'ai_confidence': self.ai_confidence,
+            'ai_error': self.ai_error,
+            'review_status': self.review_status,
+            'linked_session_id': self.linked_session_id,
+            'linked_test_id': self.linked_test_id,
+            'linked_finding_id': self.linked_finding_id,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+        # Ham (redakte edilmemiş) metin SADECE acikca istendiyse dahil edilir.
+        if include_raw:
+            data['http_request'] = self.http_request
+            data['http_response'] = self.http_response
+        return data
+
+
+class ReconRun(db.Model):
+    __tablename__ = 'recon_runs'
+
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.String(36), db.ForeignKey('projects.id'), nullable=False)
+    target = db.Column(db.String(300))
+    subdomains = db.Column(db.Text)     # JSON-encoded list[str]
+    technologies = db.Column(db.Text)   # JSON-encoded list[str]
+    endpoints = db.Column(db.Text)      # JSON-encoded list[str]
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        def _load(field):
+            try:
+                return json.loads(field) if field else []
+            except Exception:
+                return []
+        return {
+            'id': self.id,
+            'project_id': self.project_id,
+            'target': self.target,
+            'subdomains': _load(self.subdomains),
+            'technologies': _load(self.technologies),
+            'endpoints': _load(self.endpoints),
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+
 class Session(db.Model):
     __tablename__ = 'sessions'
     
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    project_id = db.Column(db.String(36), db.ForeignKey('projects.id'), nullable=True)
     name = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
     tester_name = db.Column(db.String(100))
@@ -21,17 +345,13 @@ class Session(db.Model):
     completed_at = db.Column(db.DateTime)
     
     status = db.Column(db.String(20), default='active')
-
-    # ---- Faz 5: Deneysel A/B karşılaştırma ----
-    # 'ai_assisted' | 'control' | None (çalışmaya dahil değil)
-    study_group = db.Column(db.String(20), nullable=True)
     
     results = db.relationship('TestResult', backref='session', lazy=True, cascade='all, delete-orphan')
-    notes = db.relationship('Note', backref='session', lazy=True, cascade='all, delete-orphan')
     
     def to_dict(self):
         return {
             'id': self.id,
+            'project_id': self.project_id,
             'name': self.name,
             'description': self.description,
             'tester_name': self.tester_name,
@@ -42,10 +362,8 @@ class Session(db.Model):
             'started_at': self.started_at.isoformat() if self.started_at else None,
             'completed_at': self.completed_at.isoformat() if self.completed_at else None,
             'status': self.status,
-            'study_group': self.study_group,
             'total_tests': len(self.results) if self.results else 0,
-            'completed_tests': len([r for r in self.results if r.status != 'pending']) if self.results else 0,
-            'total_notes': len(self.notes) if self.notes else 0
+            'completed_tests': len([r for r in self.results if r.status != 'pending']) if self.results else 0
         }
 
 class TestResult(db.Model):
@@ -61,7 +379,13 @@ class TestResult(db.Model):
     notes = db.Column(db.Text)
     evidence = db.Column(db.Text)
     finding = db.Column(db.Text)
-    
+    # Vulnerability Lifecycle: bir bulgunun remediation durumu. Yalnızca
+    # 'finding' doluyken anlamlıdır (gerçek bir zafiyet varken). Akış:
+    # open -> fixed -> retesting -> resolved  (veya retesting -> open,
+    # yani "reopened" — retest sırasında hâlâ mevcutsa). wont_fix ve
+    # accepted_risk, open'dan doğrudan geçilebilecek terminal durumlardır.
+    finding_status = db.Column(db.String(20), default='open')
+
     started_at = db.Column(db.DateTime)
     completed_at = db.Column(db.DateTime)
     progress = db.Column(db.Integer, default=0)
@@ -80,113 +404,10 @@ class TestResult(db.Model):
             'notes': self.notes,
             'evidence': self.evidence,
             'finding': self.finding,
+            'finding_status': self.finding_status,
             'started_at': self.started_at.isoformat() if self.started_at else None,
             'completed_at': self.completed_at.isoformat() if self.completed_at else None,
             'progress': self.progress,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
-        }
-
-class Note(db.Model):
-    """
-    Serbest formatlı not defteri kaydı. TestResult'taki alan (her checklist
-    maddesinin kendi 'notes/finding' kutusu) ile karışmasın diye ayrı bir
-    tablo: burası oturuma (siteye) bağlı, dilenirse belirli bir WSTG test
-    maddesine de bağlanabilen, görsel/kanıt ekli genel bir not defteridir.
-    test_id NULL ise bu genel bir nottur (belirli bir test maddesiyle
-    ilişkilendirilmemiştir).
-    """
-    __tablename__ = 'notes'
-
-    id = db.Column(db.Integer, primary_key=True)
-    session_id = db.Column(db.String(36), db.ForeignKey('sessions.id'), nullable=False)
-    test_id = db.Column(db.String(50), nullable=True)
-    category_id = db.Column(db.String(50), nullable=True)
-
-    title = db.Column(db.String(200))
-    content = db.Column(db.Text)
-    severity = db.Column(db.String(20), default='info')
-    # JSON-encoded list of {"name": str, "data": "data:image/...;base64,..."}
-    images = db.Column(db.Text)
-
-    # ---- Faz 1: CVSS 3.1 + CWE alanları ----
-    cvss_vector = db.Column(db.String(120), nullable=True)   # örn. "CVSS:3.1/AV:N/AC:L/..."
-    cvss_score = db.Column(db.Float, nullable=True)           # backend'de cvss.calculate() ile hesaplanır
-    cvss_rating = db.Column(db.String(20), nullable=True)     # none|low|medium|high|critical
-    cwe_id = db.Column(db.String(20), nullable=True)          # örn. "CWE-89"
-    cwe_name = db.Column(db.String(200), nullable=True)       # örn. "SQL Injection"
-
-    # ---- Faz 5: Deneysel A/B karşılaştırma (ground-truth etiketleme) ----
-    # None = henüz değerlendirilmedi, True = false-positive olarak doğrulandı,
-    # False = gerçek/geçerli bulgu olarak doğrulandı. AI'nin false_positive_likelihood
-    # TAHMİNİNDEN FARKLI: bu alan pentester'ın kendi nihai kararıdır.
-    is_false_positive = db.Column(db.Boolean, nullable=True)
-
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    def to_dict(self):
-        try:
-            images = json.loads(self.images) if self.images else []
-        except (TypeError, ValueError):
-            images = []
-        return {
-            'id': self.id,
-            'session_id': self.session_id,
-            'test_id': self.test_id,
-            'category_id': self.category_id,
-            'title': self.title,
-            'content': self.content,
-            'severity': self.severity,
-            'images': images,
-            'cvss_vector': self.cvss_vector,
-            'cvss_score': self.cvss_score,
-            'cvss_rating': self.cvss_rating,
-            'cwe_id': self.cwe_id,
-            'cwe_name': self.cwe_name,
-            'is_false_positive': self.is_false_positive,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None
-        }
-
-class AIInteractionLog(db.Model):
-    """
-    Her AI cagrisinin kaydi. Faz 2-4'teki (bulgu analizi, sonraki test
-    onerisi, otomatik rapor) her istek burada loglanir. Faz 5'teki
-    "AI'li vs AI'siz" deneysel karsilastirmanin ham verisi bu tablodur:
-    yanit suresi, basari/hata orani, hangi oturumda hangi amacla
-    kac kez cagrildigi gibi metrikler dogrudan buradan hesaplanir.
-    """
-    __tablename__ = 'ai_interaction_logs'
-
-    id = db.Column(db.Integer, primary_key=True)
-    session_id = db.Column(db.String(36), db.ForeignKey('sessions.id'), nullable=True)
-
-    # 'next_test_suggestion' | 'finding_analysis' | 'false_positive_check' |
-    # 'report_generation' | 'ping' ...
-    purpose = db.Column(db.String(50), nullable=False)
-
-    provider = db.Column(db.String(30))
-    model = db.Column(db.String(80))
-
-    prompt = db.Column(db.Text)
-    response = db.Column(db.Text)
-
-    success = db.Column(db.Boolean, default=True)
-    error_message = db.Column(db.Text)
-    latency_ms = db.Column(db.Integer)
-
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'session_id': self.session_id,
-            'purpose': self.purpose,
-            'provider': self.provider,
-            'model': self.model,
-            'success': self.success,
-            'error_message': self.error_message,
-            'latency_ms': self.latency_ms,
-            'created_at': self.created_at.isoformat() if self.created_at else None
         }

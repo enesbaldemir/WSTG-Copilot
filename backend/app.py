@@ -3,16 +3,18 @@ from flask_cors import CORS
 from datetime import datetime
 import os
 import json
-import io
+import uuid
+from werkzeug.utils import secure_filename
+from sqlalchemy import text
 from config import DevelopmentConfig, ProductionConfig
-from models import db, Session, TestResult, Note, AIInteractionLog
-from ai import get_ai_provider, AIConfigError, AIRequestError
-import cvss as cvss_lib
-import mapping as mapping_lib
-import finding_analysis
-import next_test_suggestion
-import report_generator
-import study_metrics
+from models import db, Session, TestResult, Project, ScopeItem, TimelineEvent, ReconRun, Evidence, CustomTest, ToolRun, Finding
+import recon
+import attack_chains
+import report_builder
+import evidence_intel
+import tool_runner
+import cvss
+import redaction
 
 app = Flask(__name__)
 
@@ -23,48 +25,83 @@ else:
     app.config.from_object(DevelopmentConfig)
 
 db.init_app(app)
-_cors_origins = [o.strip() for o in app.config['CORS_ORIGINS'].split(',') if o.strip()]
-CORS(app, resources={r"/*": {"origins": _cors_origins}})
+CORS(app, resources={r"/*": {"origins": "*"}})
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'evidence'), exist_ok=True)
 os.makedirs(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'database'), exist_ok=True)
 
-with app.app_context():
+
+def ensure_schema():
+    """db.create_all() sadece EKSİK tabloları oluşturur, var olan tabloları
+    ALTER etmez. Project modülü ile birlikte 'sessions' tablosuna eklenen
+    'project_id' kolonu, önceden oluşturulmuş bir veritabanı dosyasında
+    eksik kalabilir. Bu fonksiyon önce eksik tabloları yaratır, sonra
+    'sessions' tablosunda 'project_id' kolonu yoksa ekler (SQLite'ta basit
+    ADD COLUMN ile). Var olan hiçbir veriyi silmez/değiştirmez."""
     db.create_all()
+    try:
+        cols = [row[1] for row in db.session.execute(text("PRAGMA table_info(sessions)")).fetchall()]
+        if 'project_id' not in cols:
+            db.session.execute(text("ALTER TABLE sessions ADD COLUMN project_id VARCHAR(36)"))
+            db.session.commit()
+    except Exception:
+        db.session.rollback()  # muhtemelen SQLite dışında bir DB — sessizce geç
 
-    # ---- Hafif otomatik migrasyon (SQLite) ----
-    # db.create_all() sadece EKSİK TABLOLARI oluşturur, var olan bir tabloya
-    # yeni eklenen sütunları eklemez. Faz'lar ilerledikçe modele yeni alanlar
-    # eklendiğinde (örn. Faz 1'deki CVSS/CWE sütunları) mevcut geliştiricilerin
-    # veritabanını silmek zorunda kalmaması için eksik sütunları burada tespit
-    # edip ALTER TABLE ile ekliyoruz.
-    def _run_lightweight_sqlite_migrations():
-        from sqlalchemy import inspect, text
-        inspector = inspect(db.engine)
-        table_names = inspector.get_table_names()
+    try:
+        cols = [row[1] for row in db.session.execute(text("PRAGMA table_info(test_results)")).fetchall()]
+        if 'finding_status' not in cols:
+            db.session.execute(text("ALTER TABLE test_results ADD COLUMN finding_status VARCHAR(20) DEFAULT 'open'"))
+            db.session.commit()
+    except Exception:
+        db.session.rollback()
 
-        tables_and_columns = {
-            'notes': {
-                'cvss_vector': 'VARCHAR(120)',
-                'cvss_score': 'FLOAT',
-                'cvss_rating': 'VARCHAR(20)',
-                'cwe_id': 'VARCHAR(20)',
-                'cwe_name': 'VARCHAR(200)',
-                'is_false_positive': 'BOOLEAN',
-            },
-            'sessions': {
-                'study_group': 'VARCHAR(20)',
-            },
+    try:
+        cols = [row[1] for row in db.session.execute(text("PRAGMA table_info(evidence)")).fetchall()]
+        if 'linked_finding_id' not in cols:
+            db.session.execute(text("ALTER TABLE evidence ADD COLUMN linked_finding_id INTEGER"))
+            db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+    try:
+        cols = [row[1] for row in db.session.execute(text("PRAGMA table_info(evidence)")).fetchall()]
+        http_cols = {
+            'evidence_type': "VARCHAR(20) DEFAULT 'image'",
+            'http_request': "TEXT", 'http_response': "TEXT",
+            'http_request_redacted': "TEXT", 'http_response_redacted': "TEXT",
         }
-        with db.engine.begin() as conn:
-            for table, wanted_cols in tables_and_columns.items():
-                if table not in table_names:
-                    continue
-                existing_cols = {c['name'] for c in inspector.get_columns(table)}
-                for col, col_type in wanted_cols.items():
-                    if col not in existing_cols:
-                        conn.execute(text(f'ALTER TABLE {table} ADD COLUMN {col} {col_type}'))
-                        print(f"🔧 Migrasyon: {table}.{col} sütunu eklendi")
+        for col, coltype in http_cols.items():
+            if col not in cols:
+                db.session.execute(text(f"ALTER TABLE evidence ADD COLUMN {col} {coltype}"))
+        # filename/stored_filename artık NOT NULL değil ama SQLite ALTER TABLE
+        # ile mevcut NOT NULL kısıtlaması kaldırılamaz -- yeni satırlar zaten
+        # models.py üzerinden nullable olarak ekleniyor, sorun teşkil etmez.
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
 
-    _run_lightweight_sqlite_migrations()
+
+with app.app_context():
+    ensure_schema()
+
+
+def log_event(project_id, event_type, message, meta=None):
+    """Bir proje altında gerçekleşen olayı Timeline'a kaydeder.
+    project_id boşsa (proje bağlamı olmayan eski/bağımsız kullanım) hiçbir
+    şey yapmaz — mevcut proje-siz akışları etkilemez."""
+    if not project_id:
+        return
+    try:
+        event = TimelineEvent(
+            project_id=project_id,
+            event_type=event_type,
+            message=message,
+            meta=json.dumps(meta) if meta is not None else None
+        )
+        db.session.add(event)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
 
 # ========================
 # SESSION ENDPOINT'LERİ
@@ -73,7 +110,11 @@ with app.app_context():
 @app.route('/api/sessions', methods=['GET'])
 def get_sessions():
     try:
-        sessions = Session.query.order_by(Session.created_at.desc()).all()
+        query = Session.query
+        project_id = request.args.get('project_id')
+        if project_id:
+            query = query.filter_by(project_id=project_id)
+        sessions = query.order_by(Session.created_at.desc()).all()
         return jsonify([s.to_dict() for s in sessions]), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -94,23 +135,26 @@ def create_session():
         if not data.get('name'):
             return jsonify({'error': 'Oturum adı zorunludur'}), 400
 
-        study_group = data.get('study_group') or None
-        if study_group not in (None, 'ai_assisted', 'control'):
-            return jsonify({'error': "study_group 'ai_assisted', 'control' ya da null olmalıdır"}), 400
+        project_id = data.get('project_id')
+        if project_id and not Project.query.get(project_id):
+            return jsonify({'error': 'Belirtilen proje bulunamadı'}), 404
 
         session = Session(
+            project_id=project_id,
             name=data['name'],
             description=data.get('description', ''),
             tester_name=data.get('tester_name', ''),
             target_url=data.get('target_url', ''),
             target_description=data.get('target_description', ''),
             status='active',
-            study_group=study_group,
             started_at=datetime.utcnow()
         )
         
         db.session.add(session)
         db.session.commit()
+
+        if project_id:
+            log_event(project_id, 'session_created', f"Test oturumu oluşturuldu: {session.name}")
         
         return jsonify(session.to_dict()), 201
     except Exception as e:
@@ -137,11 +181,8 @@ def update_session(session_id):
             session.status = data['status']
             if data['status'] == 'completed':
                 session.completed_at = datetime.utcnow()
-        if 'study_group' in data:
-            group = data['study_group']
-            if group not in (None, '', 'ai_assisted', 'control'):
-                return jsonify({'error': "study_group 'ai_assisted', 'control' ya da null olmalıdır"}), 400
-            session.study_group = group or None
+                if session.project_id:
+                    log_event(session.project_id, 'session_completed', f"Test oturumu tamamlandı: {session.name}")
         
         session.updated_at = datetime.utcnow()
         db.session.commit()
@@ -209,11 +250,21 @@ def create_test_result(session_id):
             notes=data.get('notes', ''),
             evidence=data.get('evidence', ''),
             finding=data.get('finding', ''),
+            finding_status=data.get('finding_status') if data.get('finding_status') in VALID_FINDING_STATUSES else 'open',
             started_at=datetime.utcnow()
         )
         
         db.session.add(result)
         db.session.commit()
+
+        if session.project_id:
+            if result.finding and result.finding.strip():
+                log_event(session.project_id, 'finding_created',
+                          f"Yeni bulgu: {result.test_id} ({result.severity or 'info'})",
+                          {'session_id': session_id, 'test_id': result.test_id, 'severity': result.severity})
+            if result.status in ['passed', 'failed', 'skipped']:
+                log_event(session.project_id, 'test_completed',
+                          f"{result.test_id} → {result.status}", {'session_id': session_id, 'test_id': result.test_id})
         
         return jsonify(result.to_dict()), 201
     except Exception as e:
@@ -229,11 +280,17 @@ def update_test_result(session_id, test_id):
         ).first_or_404()
         
         data = request.json
+        session_obj = Session.query.get(session_id)
+        had_finding_before = bool(result.finding and result.finding.strip())
+        old_finding_status = result.finding_status
         
         if 'status' in data:
             result.status = data['status']
             if data['status'] in ['passed', 'failed', 'skipped']:
                 result.completed_at = datetime.utcnow()
+                if session_obj and session_obj.project_id:
+                    log_event(session_obj.project_id, 'test_completed',
+                              f"{test_id} → {data['status']}", {'session_id': session_id, 'test_id': test_id})
         if 'severity' in data:
             result.severity = data['severity']
         if 'notes' in data:
@@ -242,11 +299,27 @@ def update_test_result(session_id, test_id):
             result.evidence = data['evidence']
         if 'finding' in data:
             result.finding = data['finding']
+        if 'finding_status' in data:
+            if data['finding_status'] not in VALID_FINDING_STATUSES:
+                return jsonify({'error': 'Geçersiz finding_status değeri'}), 400
+            result.finding_status = data['finding_status']
         if 'progress' in data:
             result.progress = data['progress']
         
         result.updated_at = datetime.utcnow()
         db.session.commit()
+
+        has_finding_now = bool(result.finding and result.finding.strip())
+        if has_finding_now and not had_finding_before and session_obj and session_obj.project_id:
+            log_event(session_obj.project_id, 'finding_created',
+                      f"Yeni bulgu: {test_id} ({result.severity or 'info'})",
+                      {'session_id': session_id, 'test_id': test_id, 'severity': result.severity})
+
+        if session_obj and session_obj.project_id and result.finding_status != old_finding_status:
+            log_event(session_obj.project_id, 'finding_status_changed',
+                      f"{test_id}: {old_finding_status} → {result.finding_status}",
+                      {'session_id': session_id, 'test_id': test_id,
+                       'from': old_finding_status, 'to': result.finding_status})
         
         return jsonify(result.to_dict()), 200
     except Exception as e:
@@ -270,393 +343,6 @@ def delete_test_result(session_id, test_id):
         return jsonify({'error': str(e)}), 500
 
 # ========================
-# NOT DEFTERİ ENDPOINT'LERİ
-# ========================
-# Bu uçlar, checklist maddesindeki tekil 'notes/finding' alanından ayrı,
-# oturuma (siteye) bağlı serbest bir not defteri sağlar. Her not dilerse
-# belirli bir WSTG test maddesine (test_id) bağlanabilir, dilerse genel
-# (test_id=null) bir not olarak kalabilir. Kanıt için görsel eklenebilir
-# (base64 data-URL listesi olarak saklanır).
-
-MAX_NOTE_IMAGES = 8
-MAX_IMAGE_BYTES = 4 * 1024 * 1024  # tek görsel için kabaca üst sınır
-
-
-def _sanitize_images(raw_images):
-    """Gelen görsel listesini doğrular ve JSON string'e çevirir."""
-    if not raw_images:
-        return json.dumps([])
-    if not isinstance(raw_images, list):
-        raise ValueError('images bir liste olmalıdır')
-    if len(raw_images) > MAX_NOTE_IMAGES:
-        raise ValueError(f'En fazla {MAX_NOTE_IMAGES} görsel eklenebilir')
-    cleaned = []
-    for img in raw_images:
-        if not isinstance(img, dict):
-            continue
-        data = img.get('data', '')
-        if not isinstance(data, str) or not data.startswith('data:image/'):
-            raise ValueError('Geçersiz görsel verisi')
-        if len(data) > MAX_IMAGE_BYTES * 1.4:  # base64 şişmesi için kaba pay
-            raise ValueError('Görsel çok büyük')
-        cleaned.append({
-            'name': str(img.get('name', 'kanit'))[:200],
-            'data': data
-        })
-    return json.dumps(cleaned)
-
-
-def _apply_cvss_and_cwe(note, data):
-    """
-    Not/finding kaydına CVSS ve CWE alanlarını uygular. CVSS skoru/rating'i
-    HER ZAMAN sunucu tarafında cvss.calculate() ile yeniden hesaplanır —
-    istemciden gelen skor asla doğrudan güvenilmez (tutarlılık ve
-    ileride Faz 4'teki otomatik rapor üretiminin doğruluğu için önemli).
-    """
-    if 'cvss_vector' in data:
-        vector = (data.get('cvss_vector') or '').strip()
-        if not vector:
-            note.cvss_vector = None
-            note.cvss_score = None
-            note.cvss_rating = None
-        else:
-            try:
-                result = cvss_lib.calculate(vector)
-            except cvss_lib.CVSSError as e:
-                raise ValueError(f"Geçersiz CVSS vektörü: {e}")
-            note.cvss_vector = result['vector']
-            note.cvss_score = result['score']
-            note.cvss_rating = result['rating']
-
-    if 'cwe_id' in data:
-        note.cwe_id = (data.get('cwe_id') or '').strip() or None
-    if 'cwe_name' in data:
-        note.cwe_name = (data.get('cwe_name') or '').strip() or None
-
-
-@app.route('/api/sessions/<session_id>/notes', methods=['GET'])
-def get_notes(session_id):
-    try:
-        Session.query.get_or_404(session_id)
-        test_id = request.args.get('test_id')
-        query = Note.query.filter_by(session_id=session_id)
-        if test_id:
-            query = query.filter_by(test_id=test_id)
-        notes = query.order_by(Note.created_at.desc()).all()
-        return jsonify([n.to_dict() for n in notes]), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/sessions/<session_id>/notes', methods=['POST'])
-def create_note(session_id):
-    try:
-        Session.query.get_or_404(session_id)
-        data = request.json or {}
-
-        if not (data.get('content') or '').strip() and not data.get('images'):
-            return jsonify({'error': 'Not içeriği veya en az bir görsel gereklidir'}), 400
-
-        note = Note(
-            session_id=session_id,
-            test_id=data.get('test_id') or None,
-            category_id=data.get('category_id') or None,
-            title=data.get('title', ''),
-            content=data.get('content', ''),
-            severity=data.get('severity', 'info'),
-            images=_sanitize_images(data.get('images'))
-        )
-        if 'is_false_positive' in data:
-            val = data['is_false_positive']
-            note.is_false_positive = bool(val) if val is not None else None
-        _apply_cvss_and_cwe(note, data)
-
-        db.session.add(note)
-        db.session.commit()
-
-        return jsonify(note.to_dict()), 201
-    except ValueError as e:
-        return jsonify({'error': str(e)}), 400
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/sessions/<session_id>/notes/<int:note_id>', methods=['PUT'])
-def update_note(session_id, note_id):
-    try:
-        note = Note.query.filter_by(session_id=session_id, id=note_id).first_or_404()
-        data = request.json or {}
-
-        if 'title' in data:
-            note.title = data['title']
-        if 'content' in data:
-            note.content = data['content']
-        if 'severity' in data:
-            note.severity = data['severity']
-        if 'test_id' in data:
-            note.test_id = data['test_id'] or None
-        if 'category_id' in data:
-            note.category_id = data['category_id'] or None
-        if 'images' in data:
-            note.images = _sanitize_images(data['images'])
-        if 'is_false_positive' in data:
-            val = data['is_false_positive']
-            note.is_false_positive = bool(val) if val is not None else None
-        _apply_cvss_and_cwe(note, data)
-
-        note.updated_at = datetime.utcnow()
-        db.session.commit()
-
-        return jsonify(note.to_dict()), 200
-    except ValueError as e:
-        return jsonify({'error': str(e)}), 400
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/sessions/<session_id>/notes/<int:note_id>', methods=['DELETE'])
-def delete_note(session_id, note_id):
-    try:
-        note = Note.query.filter_by(session_id=session_id, id=note_id).first_or_404()
-        db.session.delete(note)
-        db.session.commit()
-        return jsonify({'message': 'Not silindi'}), 200
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
-
-# ========================
-# AI / LLM ENDPOINT'LERİ (Faz 0)
-# ========================
-# Bu bölüm şimdilik yalnızca altyapıyı doğrulamaya yarayan bir "ping" ve
-# geçmiş çağrıları listeleyen bir "logs" ucu içerir. Faz 2+'da eklenecek
-# gerçek analiz uçları (finding analizi, sonraki test önerisi, otomatik
-# rapor) hep aynı log_ai_interaction() yardımcısını kullanacak, böylece
-# Faz 5'teki deneysel karşılaştırma için veri en baştan tutarlı toplanır.
-
-def log_ai_interaction(purpose, provider=None, model=None, prompt=None,
-                        response=None, success=True, error_message=None,
-                        latency_ms=None, session_id=None):
-    try:
-        log = AIInteractionLog(
-            session_id=session_id,
-            purpose=purpose,
-            provider=provider,
-            model=model,
-            prompt=prompt,
-            response=response,
-            success=success,
-            error_message=error_message,
-            latency_ms=latency_ms
-        )
-        db.session.add(log)
-        db.session.commit()
-        return log
-    except Exception:
-        db.session.rollback()
-        return None
-
-
-@app.route('/api/ai/ping', methods=['GET'])
-def ai_ping():
-    """
-    Aktif AI sağlayıcısının doğru yapılandırıldığını ve gerçekten
-    yanıt verdiğini doğrulamak için basit bir bağlantı testi.
-    """
-    session_id = request.args.get('session_id')
-    try:
-        provider = get_ai_provider(app.config)
-    except ValueError as e:
-        return jsonify({'configured': False, 'error': str(e)}), 400
-
-    if not provider.is_configured():
-        return jsonify({
-            'configured': False,
-            'provider': provider.name,
-            'error': f"'{provider.name}' için API key/config eksik. backend/.env dosyasını kontrol edin."
-        }), 200
-
-    test_prompt = "Sadece 'WSTG-Copilot AI bağlantısı çalışıyor.' cümlesiyle cevap ver."
-    try:
-        result = provider.chat(system_prompt="", user_prompt=test_prompt, max_tokens=200)
-        log_ai_interaction(
-            purpose='ping', provider=result.provider, model=result.model,
-            prompt=test_prompt, response=result.text, success=True,
-            latency_ms=result.latency_ms, session_id=session_id
-        )
-        return jsonify({
-            'configured': True,
-            'provider': result.provider,
-            'model': result.model,
-            'latency_ms': result.latency_ms,
-            'sample_response': result.text
-        }), 200
-    except (AIConfigError, AIRequestError) as e:
-        log_ai_interaction(
-            purpose='ping', provider=provider.name, model=getattr(provider, 'model', None),
-            prompt=test_prompt, success=False, error_message=str(e),
-            latency_ms=getattr(e, 'latency_ms', None), session_id=session_id
-        )
-        return jsonify({'configured': True, 'provider': provider.name, 'error': str(e)}), 502
-
-
-@app.route('/api/ai/logs', methods=['GET'])
-def ai_logs():
-    """Faz 5'teki metrik/dashboard çalışması için ham AI çağrı geçmişi."""
-    session_id = request.args.get('session_id')
-    purpose = request.args.get('purpose')
-    query = AIInteractionLog.query
-    if session_id:
-        query = query.filter_by(session_id=session_id)
-    if purpose:
-        query = query.filter_by(purpose=purpose)
-    logs = query.order_by(AIInteractionLog.created_at.desc()).limit(200).all()
-    return jsonify([l.to_dict() for l in logs]), 200
-
-
-@app.route('/api/ai/analyze-finding', methods=['POST'])
-def ai_analyze_finding():
-    """
-    Faz 2: Bir bulguyu (title + content, dilerse bağlı test_id) AI'a
-    gönderip CWE/severity/CVSS önerisi + false-positive değerlendirmesi
-    alır. Notu OTOMATİK GÜNCELLEMEZ — sadece öneri döner; uygulamak
-    isteyen istemci mevcut PUT /notes/<id> ucunu kullanır.
-    """
-    data = request.json or {}
-    title = data.get('title', '')
-    content = (data.get('content') or '').strip()
-    test_id = data.get('test_id') or None
-    lang = data.get('lang', 'tr')
-    session_id = data.get('session_id') or None
-    note_id = data.get('note_id')  # sadece loglama amaçlı, opsiyonel
-
-    if not content:
-        return jsonify({'error': 'Analiz için bulgu içeriği (content) gereklidir'}), 400
-
-    try:
-        provider = get_ai_provider(app.config)
-    except ValueError as e:
-        return jsonify({'error': str(e)}), 400
-
-    if not provider.is_configured():
-        return jsonify({
-            'error': f"'{provider.name}' için API key/config eksik. backend/.env dosyasını kontrol edin."
-        }), 200
-
-    try:
-        analysis, ai_result = finding_analysis.analyze_finding(
-            provider, title, content, test_id=test_id, lang=lang
-        )
-        log_ai_interaction(
-            purpose='finding_analysis', provider=ai_result.provider, model=ai_result.model,
-            prompt=f"title={title!r} test_id={test_id!r} content_len={len(content)}",
-            response=ai_result.text, success=True, latency_ms=ai_result.latency_ms,
-            session_id=session_id
-        )
-        return jsonify({
-            **analysis,
-            'provider': ai_result.provider,
-            'model': ai_result.model,
-            'latency_ms': ai_result.latency_ms,
-            'note_id': note_id
-        }), 200
-    except (AIConfigError, AIRequestError, finding_analysis.FindingAnalysisError) as e:
-        log_ai_interaction(
-            purpose='finding_analysis', provider=provider.name, model=getattr(provider, 'model', None),
-            prompt=f"title={title!r} test_id={test_id!r} content_len={len(content)}",
-            success=False, error_message=str(e),
-            latency_ms=getattr(e, 'latency_ms', None), session_id=session_id
-        )
-        return jsonify({'error': str(e)}), 502
-
-
-@app.route('/api/ai/suggest-next-test', methods=['POST'])
-def ai_suggest_next_test():
-    """
-    Faz 3: Tamamlanan testler + bulgulara bakarak sırada hangi WSTG
-    testinin yapılmasının en mantıklı olacağını önerir. Öneri sadece
-    "henüz yapılmamış" havuzundan doğrulanır (suggestion_grounded).
-    """
-    data = request.json or {}
-    completed_test_ids = data.get('completed_test_ids') or []
-    findings = data.get('findings') or []
-    lang = data.get('lang', 'tr')
-    session_id = data.get('session_id') or None
-
-    if not isinstance(completed_test_ids, list):
-        return jsonify({'error': "'completed_test_ids' bir liste olmalıdır"}), 400
-
-    try:
-        provider = get_ai_provider(app.config)
-    except ValueError as e:
-        return jsonify({'error': str(e)}), 400
-
-    if not provider.is_configured():
-        return jsonify({
-            'error': f"'{provider.name}' için API key/config eksik. backend/.env dosyasını kontrol edin."
-        }), 200
-
-    try:
-        suggestion, ai_result = next_test_suggestion.suggest_next_test(
-            provider, completed_test_ids, findings, lang=lang
-        )
-        if ai_result is None:  # tüm testler tamamlanmış, AI'a hiç gidilmedi
-            return jsonify(suggestion), 200
-
-        log_ai_interaction(
-            purpose='next_test_suggestion', provider=ai_result.provider, model=ai_result.model,
-            prompt=f"completed={len(completed_test_ids)} findings={len(findings)}",
-            response=ai_result.text, success=True, latency_ms=ai_result.latency_ms,
-            session_id=session_id
-        )
-        return jsonify({
-            **suggestion,
-            'provider': ai_result.provider,
-            'model': ai_result.model,
-            'latency_ms': ai_result.latency_ms
-        }), 200
-    except (AIConfigError, AIRequestError, next_test_suggestion.NextTestSuggestionError) as e:
-        log_ai_interaction(
-            purpose='next_test_suggestion', provider=provider.name, model=getattr(provider, 'model', None),
-            prompt=f"completed={len(completed_test_ids)} findings={len(findings)}",
-            success=False, error_message=str(e),
-            latency_ms=getattr(e, 'latency_ms', None), session_id=session_id
-        )
-        return jsonify({'error': str(e)}), 502
-
-# ========================
-# CVSS / WSTG↔OWASP↔CWE ENDPOINT'LERİ (Faz 1)
-# ========================
-
-@app.route('/api/cvss/calculate', methods=['POST'])
-def cvss_calculate():
-    """Bir CVSS 3.1 vektöründen skor/rating hesaplar (durum tutmaz, sadece hesap makinesi)."""
-    data = request.json or {}
-    vector = (data.get('vector') or '').strip()
-    if not vector:
-        return jsonify({'error': "'vector' alanı gereklidir"}), 400
-    try:
-        result = cvss_lib.calculate(vector)
-        return jsonify(result), 200
-    except cvss_lib.CVSSError as e:
-        return jsonify({'error': str(e)}), 400
-
-@app.route('/api/mapping/wstg/<test_id>', methods=['GET'])
-def wstg_mapping(test_id):
-    """
-    Bir WSTG test ID'si için ilişkili OWASP Top 10 kategorileri ve
-    önerilen CWE'leri döner. Not editöründeki CWE önerisi ve Faz 2'deki
-    AI bulgu analizine verilecek bağlam bu uçtan beslenir.
-    """
-    lang = request.args.get('lang', 'tr')
-    matches = mapping_lib.get_mapping_for_test(test_id, lang)
-    suggested_cwes = mapping_lib.suggest_cwes_for_test(test_id, lang)
-    return jsonify({
-        'test_id': test_id,
-        'owasp_matches': matches,
-        'suggested_cwes': suggested_cwes
-    }), 200
-
-# ========================
 # RAPOR ENDPOINT'İ
 # ========================
 
@@ -665,7 +351,6 @@ def generate_report(session_id):
     try:
         session = Session.query.get_or_404(session_id)
         results = TestResult.query.filter_by(session_id=session_id).all()
-        notes = Note.query.filter_by(session_id=session_id).order_by(Note.created_at.asc()).all()
         
         total = len(results)
         passed = len([r for r in results if r.status == 'passed'])
@@ -684,7 +369,6 @@ def generate_report(session_id):
                 'completion_rate': round((passed + failed) / total * 100, 2) if total > 0 else 0
             },
             'results': [r.to_dict() for r in results],
-            'notes': [n.to_dict() for n in notes],
             'generated_at': datetime.utcnow().isoformat()
         }
         
@@ -692,146 +376,1042 @@ def generate_report(session_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
 # ========================
-# FAZ 4: OTOMATİK RAPOR ÜRETİMİ
+# ATTACK SURFACE DISCOVERY (RECON) ENDPOINT'İ
 # ========================
-
-def _load_report_data(session_id, lang):
-    session = Session.query.get_or_404(session_id)
-    results = TestResult.query.filter_by(session_id=session_id).all()
-    notes = Note.query.filter_by(session_id=session_id).all()
-    return report_generator.build_report_data(
-        session.to_dict(), [r.to_dict() for r in results], [n.to_dict() for n in notes], lang=lang
-    )
-
-
-@app.route('/api/sessions/<session_id>/report/data', methods=['GET'])
-def report_data(session_id):
-    """Faz 4 rapor önizlemesi için zenginleştirilmiş (CVSS/CWE/OWASP dahil) veri."""
-    lang = request.args.get('lang', 'tr')
+#
+# Bu endpoint yalnızca kullanıcının kendi makinesinde, kendi belirttiği
+# hedefe karşı PASİF (crt.sh CT log) ve HAFİF-AKTİF (tek istek + WSTG'nin
+# kendi önerdiği küçük, bilinen yol listesi) bir keşif yapar. Kullanıcı
+# `confirm_authorized: true` göndermezse istek reddedilir — bu, aracın
+# yanlışlıkla yetkisiz bir hedefe karşı kullanılmasının önüne geçmek
+# için bilinçli olarak konmuş bir zorunluluktur ve gevşetilmemelidir.
+@app.route('/api/recon', methods=['POST'])
+def run_recon():
     try:
-        return jsonify(_load_report_data(session_id, lang)), 200
+        data = request.json or {}
+        if not data.get('confirm_authorized'):
+            return jsonify({'error': 'Bu hedefi test etmeye yetkili olduğunuzu onaylamalısınız (confirm_authorized).'}), 400
+
+        target = data.get('target', '')
+        try:
+            result = recon.run_discovery(target)
+        except recon.ReconError as e:
+            return jsonify({'error': str(e)}), 400
+
+        project_id = data.get('project_id')
+        if project_id and Project.query.get(project_id):
+            try:
+                run = ReconRun(
+                    project_id=project_id,
+                    target=result.get('target'),
+                    subdomains=json.dumps(result.get('subdomains', [])),
+                    technologies=json.dumps(result.get('technologies', [])),
+                    endpoints=json.dumps(list(dict.fromkeys(
+                        (result.get('endpoints') or []) + [p['path'] for p in (result.get('interestingPaths') or [])]
+                    )))
+                )
+                db.session.add(run)
+                db.session.commit()
+                log_event(project_id, 'recon_run', f"Attack Surface Discovery çalıştırıldı: {result.get('target')}",
+                          {'subdomains': len(result.get('subdomains', [])), 'technologies': result.get('technologies', [])})
+            except Exception:
+                db.session.rollback()
+
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ========================
+# PROJECT / ENGAGEMENT ENDPOINT'LERİ
+# ========================
+
+class NotFoundError(Exception):
+    """Werkzeug'un get_or_404()/first_or_404() fırlattığı NotFound, bu
+    dosyadaki geniş 'except Exception' bloklarına yakalanıp yanlışlıkla
+    500'e çevriliyordu (var olmayan/başka projeye ait bir kayıt 404 yerine
+    500 dönüyordu). Bunun yerine kendi NotFoundError'ımızı kullanıp her
+    endpoint'te ayrıca yakalayarak doğru 404 döndürüyoruz."""
+    pass
+
+def _project_or_404(project_id):
+    project = Project.query.get(project_id)
+    if not project:
+        raise NotFoundError('Proje bulunamadı')
+    return project
+
+def _parse_date(value):
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value, '%Y-%m-%d').date()
+    except ValueError:
+        return None
+
+VALID_PROJECT_STATUSES = {'planning', 'active', 'paused', 'completed', 'archived'}
+VALID_SCOPE_TYPES = {'domain', 'subdomain', 'ip', 'cidr'}
+VALID_FINDING_STATUSES = {'open', 'retesting', 'fixed', 'resolved', 'wont_fix', 'accepted_risk'}
+
+
+@app.route('/api/projects', methods=['GET'])
+def get_projects():
+    try:
+        projects = Project.query.order_by(Project.updated_at.desc()).all()
+        return jsonify([p.to_dict() for p in projects]), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/api/sessions/<session_id>/report/summary', methods=['POST'])
-def report_ai_summary(session_id):
-    """
-    AI ile yönetici özeti taslağı üretir. Rapora HENÜZ İŞLENMEZ —
-    döndürülen metin frontend'de düzenlenebilir bir kutuda gösterilir;
-    nihai rapora ancak pentester onaylayıp indirme isteğine bu metni
-    dahil ederse girer (bkz. /report/download).
-    """
-    data = request.json or {}
-    lang = data.get('lang', 'tr')
-
+@app.route('/api/projects', methods=['POST'])
+def create_project():
     try:
-        provider = get_ai_provider(app.config)
-    except ValueError as e:
-        return jsonify({'error': str(e)}), 400
+        data = request.json or {}
+        name = (data.get('name') or '').strip()
+        if not name:
+            return jsonify({'error': 'Proje adı zorunludur'}), 400
 
-    if not provider.is_configured():
-        return jsonify({
-            'error': f"'{provider.name}' için API key/config eksik. backend/.env dosyasını kontrol edin."
-        }), 200
+        status = data.get('status', 'planning')
+        if status not in VALID_PROJECT_STATUSES:
+            status = 'planning'
 
-    try:
-        report = _load_report_data(session_id, lang)
-        summary, ai_result = report_generator.generate_executive_summary(provider, report, lang=lang)
-        log_ai_interaction(
-            purpose='report_generation', provider=ai_result.provider, model=ai_result.model,
-            prompt=f"session={session_id} findings={report['stats']['total_findings']}",
-            response=summary, success=True, latency_ms=ai_result.latency_ms, session_id=session_id
+        project = Project(
+            name=name,
+            client=(data.get('client') or '').strip(),
+            description=data.get('description', ''),
+            status=status,
+            start_date=_parse_date(data.get('start_date')),
+            end_date=_parse_date(data.get('end_date'))
         )
-        return jsonify({
-            'summary': summary,
-            'provider': ai_result.provider,
-            'model': ai_result.model,
-            'latency_ms': ai_result.latency_ms
-        }), 200
-    except (AIConfigError, AIRequestError) as e:
-        log_ai_interaction(
-            purpose='report_generation', provider=provider.name, model=getattr(provider, 'model', None),
-            success=False, error_message=str(e), latency_ms=getattr(e, 'latency_ms', None), session_id=session_id
-        )
-        return jsonify({'error': str(e)}), 502
+        db.session.add(project)
+        db.session.commit()
+
+        log_event(project.id, 'project_created', f"Proje oluşturuldu: {project.name}")
+
+        return jsonify(project.to_dict()), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 
-@app.route('/api/sessions/<session_id>/report/download', methods=['POST'])
-def report_download(session_id):
-    """
-    Nihai rapor dosyasını üretir. Gövdede opsiyonel 'executive_summary'
-    (pentester tarafından düzenlenmiş/onaylanmış metin) ve 'format'
-    ('docx' | 'md') beklenir.
-    """
-    data = request.json or {}
-    fmt = (data.get('format') or 'md').lower()
-    lang = data.get('lang', 'tr')
-    executive_summary = (data.get('executive_summary') or '').strip() or None
-
-    if fmt not in ('docx', 'md'):
-        return jsonify({'error': "format 'docx' ya da 'md' olmalıdır"}), 400
-
+@app.route('/api/projects/<project_id>', methods=['GET'])
+def get_project(project_id):
     try:
-        report = _load_report_data(session_id, lang)
-        session_name = (report['session'].get('name') or 'pentest-raporu').strip().replace(' ', '_')
+        project = _project_or_404(project_id)
+        return jsonify(project.to_dict()), 200
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
-        if fmt == 'md':
-            content = report_generator.render_markdown(report, executive_summary, lang=lang)
-            buf = io.BytesIO(content.encode('utf-8'))
-            return send_file(buf, mimetype='text/markdown', as_attachment=True,
-                              download_name=f"{session_name}.md")
 
-        buf = report_generator.render_docx(report, executive_summary, lang=lang)
+@app.route('/api/projects/<project_id>', methods=['PUT'])
+def update_project(project_id):
+    try:
+        project = _project_or_404(project_id)
+        data = request.json or {}
+
+        if 'name' in data:
+            name = (data['name'] or '').strip()
+            if not name:
+                return jsonify({'error': 'Proje adı boş olamaz'}), 400
+            project.name = name
+        if 'client' in data:
+            project.client = data['client']
+        if 'description' in data:
+            project.description = data['description']
+        if 'status' in data:
+            if data['status'] not in VALID_PROJECT_STATUSES:
+                return jsonify({'error': 'Geçersiz durum'}), 400
+            project.status = data['status']
+        if 'start_date' in data:
+            project.start_date = _parse_date(data['start_date'])
+        if 'end_date' in data:
+            project.end_date = _parse_date(data['end_date'])
+
+        project.updated_at = datetime.utcnow()
+        db.session.commit()
+        return jsonify(project.to_dict()), 200
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/projects/<project_id>', methods=['DELETE'])
+def delete_project(project_id):
+    try:
+        project = _project_or_404(project_id)
+        # Sessions/test sonuçları bilerek silinmiyor — sadece proje bağı
+        # kaldırılıyor, böylece o oturumdaki test verisi/bulgular kaybolmaz.
+        for s in project.sessions:
+            s.project_id = None
+        db.session.delete(project)
+        db.session.commit()
+        return jsonify({'message': 'Proje silindi'}), 200
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/projects/<project_id>/dashboard', methods=['GET'])
+def project_dashboard(project_id):
+    try:
+        project = _project_or_404(project_id)
+        sessions = Session.query.filter_by(project_id=project_id).all()
+        all_results = []
+        for s in sessions:
+            all_results.extend(s.results)
+
+        total_tests = len(all_results)
+        completed_tests = len([r for r in all_results if r.status != 'pending'])
+        findings = [r for r in all_results if r.finding and r.finding.strip()]
+
+        severity_counts = {'critical': 0, 'high': 0, 'medium': 0, 'low': 0, 'info': 0}
+        for r in findings:
+            sev = (r.severity or 'info').lower()
+            if sev in severity_counts:
+                severity_counts[sev] += 1
+
+        recon_runs = ReconRun.query.filter_by(project_id=project_id).all()
+        asset_set = set()
+        for run in recon_runs:
+            try:
+                asset_set.update(json.loads(run.subdomains or '[]'))
+            except Exception:
+                pass
+
+        # --- Framework Coverage (WSTG / LLM Security / Custom) ---
+        # report_builder.WSTG_INDEX iki resmi checklist'i (WSTG-04 + LLM Top10
+        # 2025) zaten birleştirmiş durumda; test_id önekine göre ayırıyoruz.
+        wstg_total = len([k for k in report_builder.WSTG_INDEX if k.startswith('WSTG-')])
+        llm_total = len([k for k in report_builder.WSTG_INDEX if k.startswith('LLM-')])
+        custom_total = CustomTest.query.filter_by(project_id=project_id).count()
+
+        wstg_completed_ids, llm_completed_ids, custom_completed_ids = set(), set(), set()
+        for r in all_results:
+            if r.status == 'pending':
+                continue
+            if r.test_id.startswith('WSTG-'):
+                wstg_completed_ids.add(r.test_id)
+            elif r.test_id.startswith('LLM-'):
+                llm_completed_ids.add(r.test_id)
+            elif r.test_id.startswith('CUSTOM-'):
+                custom_completed_ids.add(r.test_id)
+
+        def _coverage(completed_n, total_n):
+            return {'completed': completed_n, 'total': total_n,
+                    'pct': round((completed_n / total_n) * 100, 1) if total_n else 0}
+
+        coverage = {
+            'wstg': _coverage(len(wstg_completed_ids), wstg_total),
+            'llm': _coverage(len(llm_completed_ids), llm_total),
+            'custom': _coverage(len(custom_completed_ids), custom_total),
+        }
+
+        # --- Findings by Category (Finding.test_id önekinden WSTG kategorisi) ---
+        pro_findings = Finding.query.filter_by(project_id=project_id).all()
+        findings_by_category = {}
+        for f in pro_findings:
+            cat_name = f.owasp_category
+            if not cat_name and f.test_id:
+                meta = report_builder.WSTG_INDEX.get(f.test_id)
+                cat_name = meta['category_name'] if meta else None
+            cat_name = cat_name or 'Diğer / Kategorisiz'
+            findings_by_category[cat_name] = findings_by_category.get(cat_name, 0) + 1
+
+        # --- Most Tested Endpoints (Finding.endpoint sıklığı) ---
+        endpoint_counts = {}
+        for f in pro_findings:
+            if f.endpoint:
+                endpoint_counts[f.endpoint] = endpoint_counts.get(f.endpoint, 0) + 1
+        top_endpoints = sorted(endpoint_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+
+        return jsonify({
+            'project': project.to_dict(),
+            'session_count': len(sessions),
+            'total_tests': total_tests,
+            'completed_tests': completed_tests,
+            'progress_pct': round((completed_tests / total_tests) * 100, 1) if total_tests else 0,
+            'finding_count': len(findings),
+            'severity_counts': severity_counts,
+            'asset_count': len(asset_set),
+            'recon_run_count': len(recon_runs),
+            'coverage': coverage,
+            'findings_by_category': findings_by_category,
+            'top_endpoints': [{'endpoint': e, 'count': c} for e, c in top_endpoints],
+            'pro_finding_count': len(pro_findings),
+        }), 200
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/projects/<project_id>/assets', methods=['GET'])
+def project_assets(project_id):
+    try:
+        _project_or_404(project_id)
+        runs = ReconRun.query.filter_by(project_id=project_id).order_by(ReconRun.created_at.desc()).all()
+        subdomains, technologies, endpoints = set(), set(), set()
+        for run in runs:
+            try:
+                subdomains.update(json.loads(run.subdomains or '[]'))
+                technologies.update(json.loads(run.technologies or '[]'))
+                endpoints.update(json.loads(run.endpoints or '[]'))
+            except Exception:
+                pass
+        return jsonify({
+            'subdomains': sorted(subdomains),
+            'technologies': sorted(technologies),
+            'endpoints': sorted(endpoints),
+            'runs': [r.to_dict() for r in runs]
+        }), 200
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/projects/<project_id>/scope', methods=['GET'])
+def get_scope(project_id):
+    try:
+        _project_or_404(project_id)
+        items = ScopeItem.query.filter_by(project_id=project_id).order_by(ScopeItem.created_at.desc()).all()
+        return jsonify([i.to_dict() for i in items]), 200
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/projects/<project_id>/scope', methods=['POST'])
+def add_scope_item(project_id):
+    try:
+        _project_or_404(project_id)
+        data = request.json or {}
+        value = (data.get('value') or '').strip()
+        scope_type = data.get('type', 'domain')
+        if not value:
+            return jsonify({'error': 'Değer zorunludur'}), 400
+        if scope_type not in VALID_SCOPE_TYPES:
+            return jsonify({'error': 'Geçersiz kapsam türü'}), 400
+
+        item = ScopeItem(
+            project_id=project_id,
+            type=scope_type,
+            value=value,
+            description=data.get('description', ''),
+            in_scope=bool(data.get('in_scope', True))
+        )
+        db.session.add(item)
+        db.session.commit()
+        log_event(project_id, 'scope_updated', f"Kapsama eklendi: {value} ({'in-scope' if item.in_scope else 'out-of-scope'})")
+        return jsonify(item.to_dict()), 201
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/projects/<project_id>/scope/<int:scope_id>', methods=['DELETE'])
+def delete_scope_item(project_id, scope_id):
+    try:
+        # IDOR koruması: kayıt hem id hem de bu project_id'ye ait olmalı —
+        # başka bir projenin scope kaydı bu URL üzerinden silinemez. Bilinçli
+        # olarak first_or_404() KULLANILMADI: Werkzeug'un fırlattığı NotFound
+        # istisnası aşağıdaki 'except Exception' bloğuna düşüp 500'e
+        # dönüşüyordu — bunun yerine 404'ü açıkça döndürüyoruz.
+        item = ScopeItem.query.filter_by(id=scope_id, project_id=project_id).first()
+        if not item:
+            return jsonify({'error': 'Kapsam kaydı bulunamadı'}), 404
+        db.session.delete(item)
+        db.session.commit()
+        return jsonify({'message': 'Kapsam kaydı silindi'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/projects/<project_id>/timeline', methods=['GET'])
+def get_timeline(project_id):
+    try:
+        _project_or_404(project_id)
+        events = TimelineEvent.query.filter_by(project_id=project_id).order_by(TimelineEvent.created_at.desc()).limit(200).all()
+        return jsonify([e.to_dict() for e in events]), 200
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/projects/<project_id>/attack-chains', methods=['GET'])
+def get_attack_chains(project_id):
+    try:
+        _project_or_404(project_id)
+        sessions = Session.query.filter_by(project_id=project_id).all()
+        findings = []
+        for s in sessions:
+            for r in s.results:
+                if r.finding and r.finding.strip():
+                    findings.append({'test_id': r.test_id, 'severity': r.severity})
+        chains = attack_chains.detect_chains(findings)
+        return jsonify({'chains': chains, 'finding_count': len(findings)}), 200
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/projects/<project_id>/lifecycle', methods=['GET'])
+def get_lifecycle(project_id):
+    """Vulnerability Lifecycle özeti: bulguların remediation durumuna göre
+    dağılımı (open/retesting/fixed/resolved/wont_fix/accepted_risk),
+    aktif risk kalan (open+retesting) bulguların severity dağılımı, ve
+    remediation oranı (resolved / toplam bulgu)."""
+    try:
+        _project_or_404(project_id)
+        sessions = Session.query.filter_by(project_id=project_id).all()
+        findings = []
+        for s in sessions:
+            for r in s.results:
+                if r.finding and r.finding.strip():
+                    findings.append(r)
+
+        status_counts = {k: 0 for k in VALID_FINDING_STATUSES}
+        active_severity_counts = {'critical': 0, 'high': 0, 'medium': 0, 'low': 0, 'info': 0}
+
+        for r in findings:
+            st = r.finding_status if r.finding_status in VALID_FINDING_STATUSES else 'open'
+            status_counts[st] += 1
+            if st in ('open', 'retesting'):
+                sev = (r.severity or 'info').lower()
+                if sev in active_severity_counts:
+                    active_severity_counts[sev] += 1
+
+        total = len(findings)
+        resolved = status_counts['resolved']
+        remediation_rate = round((resolved / total) * 100, 1) if total else 0
+
+        events = TimelineEvent.query.filter_by(
+            project_id=project_id, event_type='finding_status_changed'
+        ).order_by(TimelineEvent.created_at.desc()).limit(50).all()
+
+        return jsonify({
+            'total_findings': total,
+            'status_counts': status_counts,
+            'active_severity_counts': active_severity_counts,
+            'remediation_rate': remediation_rate,
+            'recent_transitions': [e.to_dict() for e in events]
+        }), 200
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+VALID_REPORT_TYPES = {'technical', 'executive', 'developer'}
+
+
+@app.route('/api/projects/<project_id>/reports/<report_type>', methods=['GET'])
+def generate_project_report(project_id, report_type):
+    """Profesyonel DOCX rapor üretir: technical | executive | developer.
+    Projedeki TÜM oturumların bulgularını ve test sonuçlarını birleştirir."""
+    try:
+        project = _project_or_404(project_id)
+        if report_type not in VALID_REPORT_TYPES:
+            return jsonify({'error': 'Geçersiz rapor türü'}), 400
+
+        sessions = Session.query.filter_by(project_id=project_id).all()
+        all_results = []
+        for s in sessions:
+            all_results.extend(s.results)
+
+        findings = [r.to_dict() for r in all_results if r.finding and r.finding.strip()]
+        results_dicts = [r.to_dict() for r in all_results]
+
+        builder = report_builder.REPORT_BUILDERS[report_type]
+        buf = builder(project.to_dict(), [s.to_dict() for s in sessions], findings, results_dicts)
+
+        safe_name = ''.join(c if c.isalnum() or c in ' -_' else '_' for c in project.name)[:60]
+        filename = f"{safe_name}_{report_type}_report.docx"
+
         return send_file(
             buf,
-            mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            as_attachment=True, download_name=f"{session_name}.docx"
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
         )
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# ========================
-# FAZ 5: DENEYSEL A/B KARŞILAŞTIRMA
-# ========================
 
-@app.route('/api/study/metrics', methods=['GET'])
-def study_metrics_endpoint():
-    """
-    Çalışma grubuna ('ai_assisted' / 'control') atanmış tüm oturumların
-    metriklerini ve iki grup arası karşılaştırmayı döner. Etiketlenmemiş
-    oturumlar (study_group=None) hesaplamaya dahil edilmez ama şeffaflık
-    için 'unassigned_sessions_count' alanında sayısı belirtilir.
-    """
+# ========================
+# EVIDENCE INTELLIGENCE
+# ========================
+#
+# Guvenlik notlari (bilerek boyle tasarlandi):
+# - Diskteki dosya adi HICBIR ZAMAN kullanicinin yukledigi dosya adindan
+#   turetilmez -- her zaman sunucu tarafinda uretilen bir UUID kullanilir.
+#   Bu, path traversal / dosya adi enjeksiyonunu yapisal olarak engeller.
+# - Sadece bilinen imaj MIME turlerine izin verilir (evidence_intel.
+#   SUPPORTED_MIME_TYPES).
+# - AI analizi TAMAMEN OPSIYONELDIR (bkz. evidence_intel.py docstring).
+
+def _evidence_dir(project_id):
+    path = os.path.join(app.config['UPLOAD_FOLDER'], 'evidence', project_id)
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
+EXT_BY_MIME = {'image/png': '.png', 'image/jpeg': '.jpg', 'image/webp': '.webp', 'image/gif': '.gif'}
+
+
+@app.route('/api/projects/<project_id>/evidence', methods=['GET'])
+def list_evidence(project_id):
     try:
-        all_sessions = Session.query.all()
-        per_session = []
-        unassigned_count = 0
-
-        for session in all_sessions:
-            if not session.study_group:
-                unassigned_count += 1
-                continue
-            results = TestResult.query.filter_by(session_id=session.id).all()
-            notes = Note.query.filter_by(session_id=session.id).all()
-            ai_logs = AIInteractionLog.query.filter_by(session_id=session.id).all()
-            per_session.append(study_metrics.compute_session_metrics(
-                session.to_dict(),
-                [r.to_dict() for r in results],
-                [n.to_dict() for n in notes],
-                [l.to_dict() for l in ai_logs],
-            ))
-
-        comparison = study_metrics.compare_groups(per_session)
-        return jsonify({
-            'sessions': per_session,
-            'comparison': comparison,
-            'unassigned_sessions_count': unassigned_count,
-        }), 200
+        _project_or_404(project_id)
+        items = Evidence.query.filter_by(project_id=project_id).order_by(Evidence.created_at.desc()).all()
+        return jsonify([e.to_dict() for e in items]), 200
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/projects/<project_id>/evidence', methods=['POST'])
+def upload_evidence(project_id):
+    try:
+        _project_or_404(project_id)
+
+        if 'file' not in request.files:
+            return jsonify({'error': 'Dosya bulunamadı (form alanı: file)'}), 400
+        file = request.files['file']
+        if not file or not file.filename:
+            return jsonify({'error': 'Geçersiz dosya'}), 400
+
+        mime_type = file.mimetype
+        if mime_type not in evidence_intel.SUPPORTED_MIME_TYPES:
+            return jsonify({'error': f'Desteklenmeyen dosya türü: {mime_type}. Sadece PNG/JPEG/WEBP/GIF kabul edilir.'}), 400
+
+        file_bytes = file.read()
+        if len(file_bytes) == 0:
+            return jsonify({'error': 'Dosya boş'}), 400
+
+        stored_filename = f"{uuid.uuid4().hex}{EXT_BY_MIME.get(mime_type, '')}"
+        dest_path = os.path.join(_evidence_dir(project_id), stored_filename)
+        with open(dest_path, 'wb') as f:
+            f.write(file_bytes)
+
+        original_name = secure_filename(file.filename) or 'evidence'
+
+        evidence = Evidence(
+            project_id=project_id,
+            filename=original_name,
+            stored_filename=stored_filename,
+            mime_type=mime_type,
+            size_bytes=len(file_bytes),
+            linked_session_id=request.form.get('linked_session_id') or None,
+            linked_test_id=request.form.get('linked_test_id') or None,
+            review_status='manual' if request.form.get('linked_test_id') else 'pending'
+        )
+        db.session.add(evidence)
+        db.session.commit()
+
+        # AI Vision analizi -- SADECE ANTHROPIC_API_KEY ayarlıysa denenir.
+        api_key = app.config.get('ANTHROPIC_API_KEY')
+        if evidence_intel.is_configured(api_key):
+            valid_ids = set(report_builder.WSTG_INDEX.keys())
+            analysis, error = evidence_intel.analyze_screenshot(api_key, file_bytes, mime_type, valid_ids)
+            if analysis:
+                evidence.ai_analysis = analysis['description']
+                evidence.ai_suggested_test_ids = json.dumps(analysis['suggested_test_ids'])
+                evidence.ai_confidence = analysis['confidence']
+            else:
+                evidence.ai_error = error
+            db.session.commit()
+
+        log_event(project_id, 'evidence_uploaded', f"Kanıt yüklendi: {original_name}")
+
+        return jsonify(evidence.to_dict()), 201
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/evidence/<int:evidence_id>/file', methods=['GET'])
+def get_evidence_file(evidence_id):
+    try:
+        evidence = Evidence.query.get(evidence_id)
+        if not evidence:
+            return jsonify({'error': 'Kanıt bulunamadı'}), 404
+        if evidence.evidence_type != 'image':
+            return jsonify({'error': 'Bu kanıt bir dosya değil (http_transaction)'}), 400
+        path = os.path.join(_evidence_dir(evidence.project_id), evidence.stored_filename)
+        if not os.path.isfile(path):
+            return jsonify({'error': 'Dosya diskte bulunamadı'}), 404
+        return send_file(path, mimetype=evidence.mime_type)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/projects/<project_id>/evidence/http', methods=['POST'])
+def create_http_evidence(project_id):
+    """HTTP Request/Response Evidence (roadmap: 'HTTP Request/Response Evidence').
+    Ham metin HER ZAMAN saklanır, ama redakte edilmiş versiyon da hesaplanıp
+    ayrıca saklanır -- varsayılan görüntüleme/export bunu kullanır (bkz.
+    backend/redaction.py). Dosya yükleme YOK, salt metin girişi."""
+    try:
+        _project_or_404(project_id)
+        data = request.json or {}
+        http_request = data.get('http_request', '').strip()
+        http_response = data.get('http_response', '').strip()
+        if not http_request and not http_response:
+            return jsonify({'error': 'En az bir request veya response girilmelidir'}), 400
+
+        label = data.get('label') or f"HTTP Transaction {datetime.utcnow().strftime('%Y-%m-%d %H:%M')}"
+
+        evidence = Evidence(
+            project_id=project_id,
+            evidence_type='http_transaction',
+            filename=label,
+            stored_filename='',  # http_transaction tipinde kullanılmaz; eski DB'lerdeki NOT NULL kısıtlamasını (SQLite ALTER TABLE ile kaldırılamıyor) aşmak için placeholder
+            http_request=http_request,
+            http_response=http_response,
+            http_request_redacted=redaction.redact(http_request),
+            http_response_redacted=redaction.redact(http_response),
+            linked_session_id=data.get('linked_session_id') or None,
+            linked_test_id=data.get('linked_test_id') or None,
+            linked_finding_id=data.get('linked_finding_id') or None,
+            review_status='manual' if data.get('linked_test_id') or data.get('linked_finding_id') else 'pending',
+        )
+        db.session.add(evidence)
+        db.session.commit()
+
+        log_event(project_id, 'evidence_uploaded', f"HTTP kanıtı eklendi: {label}")
+
+        return jsonify(evidence.to_dict()), 201
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/evidence/<int:evidence_id>/raw', methods=['GET'])
+def get_evidence_raw(evidence_id):
+    """Ham (redakte edilmemiş) HTTP request/response metnini döner. Bu,
+    açık bir kullanıcı eylemi gerektirir (varsayılan liste endpoint'i bu
+    alanları döndürmez) -- bkz. redaction.py tasarım notu."""
+    try:
+        evidence = Evidence.query.get(evidence_id)
+        if not evidence:
+            return jsonify({'error': 'Kanıt bulunamadı'}), 404
+        if evidence.evidence_type != 'http_transaction':
+            return jsonify({'error': 'Bu kanıt bir HTTP transaction değil'}), 400
+        return jsonify(evidence.to_dict(include_raw=True)), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/evidence/<int:evidence_id>', methods=['PUT'])
+def update_evidence(evidence_id):
+    try:
+        evidence = Evidence.query.get(evidence_id)
+        if not evidence:
+            return jsonify({'error': 'Kanıt bulunamadı'}), 404
+        data = request.json or {}
+
+        if 'review_status' in data:
+            if data['review_status'] not in {'pending', 'accepted', 'rejected', 'manual'}:
+                return jsonify({'error': 'Geçersiz review_status'}), 400
+            evidence.review_status = data['review_status']
+        if 'linked_session_id' in data:
+            evidence.linked_session_id = data['linked_session_id'] or None
+        if 'linked_test_id' in data:
+            evidence.linked_test_id = data['linked_test_id'] or None
+        if 'linked_finding_id' in data:
+            evidence.linked_finding_id = data['linked_finding_id'] or None
+
+        db.session.commit()
+
+        if evidence.review_status == 'accepted' and evidence.linked_test_id:
+            log_event(evidence.project_id, 'evidence_linked',
+                      f"Kanıt {evidence.filename} → {evidence.linked_test_id} ile ilişkilendirildi")
+        if evidence.linked_finding_id:
+            log_event(evidence.project_id, 'evidence_linked',
+                      f"Kanıt {evidence.filename} → FND-{evidence.linked_finding_id:04d} ile ilişkilendirildi")
+
+        return jsonify(evidence.to_dict()), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/evidence/<int:evidence_id>', methods=['DELETE'])
+def delete_evidence(evidence_id):
+    try:
+        evidence = Evidence.query.get(evidence_id)
+        if not evidence:
+            return jsonify({'error': 'Kanıt bulunamadı'}), 404
+        path = os.path.join(_evidence_dir(evidence.project_id), evidence.stored_filename)
+        if os.path.isfile(path):
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+        db.session.delete(evidence)
+        db.session.commit()
+        return jsonify({'message': 'Kanıt silindi'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+# ========================
+# CUSTOM TESTS (kuruluşa özel test maddeleri)
+#
+# WSTG 5.0 henüz yayınlanmadığı için (bkz. proje geçmişi) resmi bir 5.0
+# içeriği eklenemez; bunun yerine roadmap'in "Custom -> Organization-
+# specific tests" düğümü burada gerçekleniyor. Bir kuruluşun kendi
+# checklist maddelerini eklemesini sağlar; bu maddeler frontend'de resmi
+# WSTG kategorileriyle birlikte, ayrı bir "Custom Tests" kategorisi
+# altında normal bir test gibi işaretlenebilir/bulgu eklenebilir olur.
+# ========================
+
+@app.route('/api/projects/<project_id>/custom-tests', methods=['GET'])
+def get_custom_tests(project_id):
+    try:
+        _project_or_404(project_id)
+        items = CustomTest.query.filter_by(project_id=project_id).order_by(CustomTest.created_at.asc()).all()
+        return jsonify([i.to_dict() for i in items]), 200
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/projects/<project_id>/custom-tests', methods=['POST'])
+def add_custom_test(project_id):
+    try:
+        _project_or_404(project_id)
+        data = request.json or {}
+        title = (data.get('title') or '').strip()
+        if not title:
+            return jsonify({'error': 'Başlık zorunludur'}), 400
+
+        item = CustomTest(
+            project_id=project_id,
+            test_id=f"CUSTOM-{uuid.uuid4().hex[:8]}",
+            title=title,
+            description=data.get('description', '')
+        )
+        db.session.add(item)
+        db.session.commit()
+        log_event(project_id, 'custom_test_added', f"Özel test eklendi: {title}")
+        return jsonify(item.to_dict()), 201
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/projects/<project_id>/custom-tests/<test_id>', methods=['DELETE'])
+def delete_custom_test(project_id, test_id):
+    try:
+        # IDOR koruması: kayıt hem test_id hem de bu project_id'ye ait olmalı.
+        item = CustomTest.query.filter_by(test_id=test_id, project_id=project_id).first()
+        if not item:
+            return jsonify({'error': 'Özel test bulunamadı'}), 404
+        db.session.delete(item)
+        db.session.commit()
+        return jsonify({'message': 'Özel test silindi'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+# ========================
+# TOOL INTEGRATION (nmap / httpx / whatweb / subfinder / dnsx)
+#
+# Guvenlik notlari (bkz. tool_runner.py docstring'i icin tam detay):
+# - Komutlar HER ZAMAN argv listesi olarak calistirilir, shell=True
+#   ASLA kullanilmadi -- shell injection yapisal olarak imkansiz.
+# - Her aracin komut sablonu SABIT; kullanici keyfi flag veremez.
+# - Hedef, recon.py'nin SSRF korumali normalize_target() fonksiyonuyla
+#   dogrulanir (private/loopback/link-local IP'ler reddedilir).
+# - confirm_authorized olmadan hicbir arac calistirilmaz.
+# - nuclei ve ffuf BILINCLI OLARAK burada YOK (bkz. tool_runner.py).
+# ========================
+
+@app.route('/api/tools', methods=['GET'])
+def list_tools():
+    try:
+        return jsonify(tool_runner.list_tools()), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/tools/preview', methods=['POST'])
+def preview_tool_command():
+    """Onay ekraninda gosterilecek TAM komutu doner -- HICBIR SEY calistirmaz."""
+    try:
+        data = request.json or {}
+        preview = tool_runner.preview_command(data.get('tool'), data.get('target', ''))
+        return jsonify(preview), 200
+    except (tool_runner.ToolError, recon.ReconError) as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/projects/<project_id>/tools/run', methods=['POST'])
+def run_project_tool(project_id):
+    try:
+        _project_or_404(project_id)
+        data = request.json or {}
+
+        if not data.get('confirm_authorized'):
+            return jsonify({'error': 'Bu hedefi test etmeye yetkili olduğunuzu onaylamalısınız (confirm_authorized).'}), 400
+
+        tool = data.get('tool')
+        target = data.get('target', '')
+
+        try:
+            result = tool_runner.run_tool(tool, target)
+        except tool_runner.ToolError as e:
+            return jsonify({'error': str(e)}), 400
+        except recon.ReconError as e:
+            return jsonify({'error': str(e)}), 400
+
+        run = ToolRun(
+            project_id=project_id,
+            tool=tool,
+            target=result['target'],
+            command=result['command'],
+            status=result['status'],
+            exit_code=result['exit_code'],
+            stdout=result['stdout'],
+            stderr=result['stderr'],
+        )
+        db.session.add(run)
+        db.session.commit()
+
+        log_event(project_id, 'tool_run',
+                  f"{tool} çalıştırıldı: {result['target']} ({result['status']})",
+                  {'tool': tool, 'target': result['target'], 'status': result['status']})
+
+        return jsonify(run.to_dict()), 201
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/projects/<project_id>/tools/runs', methods=['GET'])
+def list_project_tool_runs(project_id):
+    try:
+        _project_or_404(project_id)
+        runs = ToolRun.query.filter_by(project_id=project_id).order_by(ToolRun.created_at.desc()).limit(50).all()
+        return jsonify([r.to_dict() for r in runs]), 200
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ========================
+# CVSS v3.1 CALCULATOR (stateless)
+# ========================
+
+@app.route('/api/cvss/calculate', methods=['POST'])
+def calculate_cvss():
+    try:
+        data = request.json or {}
+        metrics = {k: data.get(k) for k in ('AV', 'AC', 'PR', 'UI', 'S', 'C', 'I', 'A')}
+        result = cvss.compute(metrics)
+        return jsonify(result), 200
+    except cvss.CvssError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ========================
+# FINDINGS (profesyonel Finding nesneleri — roadmap: 'Findings sistemi + CVSS')
+#
+# Bilinçli tasarım: TestResult.finding (basit metin) HİÇ değiştirilmedi.
+# Finding, üzerine katman olarak eklenen daha zengin bir yapı. IDOR
+# koruması: her endpoint hem finding_id hem project_id ile filtreler.
+# ========================
+
+VALID_FINDING_STATUS_VALUES = {'open', 'confirmed', 'fixed', 'retest_pending', 'resolved', 'wont_fix', 'accepted_risk'}
+VALID_RETEST_RESULTS = {'not_tested', 'fixed', 'not_fixed'}
+
+
+@app.route('/api/projects/<project_id>/findings', methods=['GET'])
+def list_findings(project_id):
+    try:
+        _project_or_404(project_id)
+        items = Finding.query.filter_by(project_id=project_id).order_by(Finding.created_at.desc()).all()
+        return jsonify([f.to_dict() for f in items]), 200
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/projects/<project_id>/findings', methods=['POST'])
+def create_finding(project_id):
+    try:
+        _project_or_404(project_id)
+        data = request.json or {}
+        title = (data.get('title') or '').strip()
+        if not title:
+            return jsonify({'error': 'Başlık zorunludur'}), 400
+
+        severity = data.get('severity', 'info')
+        cvss_score = data.get('cvss_score')
+        # CVSS skoru varsa severity'yi ondan türet (tutarlılık için)
+        if cvss_score is not None:
+            try:
+                severity = cvss.severity_label(float(cvss_score))
+            except Exception:
+                pass
+
+        finding = Finding(
+            project_id=project_id,
+            session_id=data.get('session_id') or None,
+            test_id=data.get('test_id') or None,
+            title=title,
+            severity=severity,
+            cvss_score=cvss_score,
+            cvss_vector=data.get('cvss_vector'),
+            cwe=data.get('cwe'),
+            owasp_category=data.get('owasp_category'),
+            endpoint=data.get('endpoint'),
+            parameter=data.get('parameter'),
+            description=data.get('description', ''),
+            impact=data.get('impact'),
+            remediation=data.get('remediation'),
+            references=data.get('references'),
+            status=data.get('status', 'open') if data.get('status') in VALID_FINDING_STATUS_VALUES else 'open',
+            assigned_to=data.get('assigned_to'),
+        )
+        db.session.add(finding)
+        db.session.commit()
+
+        log_event(project_id, 'finding_record_created',
+                  f"Finding oluşturuldu: FND-{finding.id:04d} — {title} ({severity})",
+                  {'finding_id': finding.id, 'severity': severity})
+
+        return jsonify(finding.to_dict()), 201
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/projects/<project_id>/findings/<int:finding_id>', methods=['GET'])
+def get_finding(project_id, finding_id):
+    try:
+        _project_or_404(project_id)
+        finding = Finding.query.filter_by(id=finding_id, project_id=project_id).first()
+        if not finding:
+            return jsonify({'error': 'Finding bulunamadı'}), 404
+        return jsonify(finding.to_dict()), 200
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/projects/<project_id>/findings/<int:finding_id>', methods=['PUT'])
+def update_finding(project_id, finding_id):
+    try:
+        _project_or_404(project_id)
+        finding = Finding.query.filter_by(id=finding_id, project_id=project_id).first()
+        if not finding:
+            return jsonify({'error': 'Finding bulunamadı'}), 404
+        data = request.json or {}
+        old_status = finding.status
+
+        simple_fields = ['test_id', 'session_id', 'cvss_vector', 'cwe', 'owasp_category',
+                          'endpoint', 'parameter', 'description', 'impact', 'remediation',
+                          'references', 'assigned_to', 'retest_notes']
+        for field in simple_fields:
+            if field in data:
+                setattr(finding, field, data[field])
+
+        if 'title' in data:
+            title = (data['title'] or '').strip()
+            if not title:
+                return jsonify({'error': 'Başlık boş olamaz'}), 400
+            finding.title = title
+
+        if 'cvss_score' in data:
+            finding.cvss_score = data['cvss_score']
+            if data['cvss_score'] is not None:
+                try:
+                    finding.severity = cvss.severity_label(float(data['cvss_score']))
+                except Exception:
+                    pass
+        if 'severity' in data and data.get('cvss_score') is None:
+            finding.severity = data['severity']
+
+        if 'status' in data:
+            if data['status'] not in VALID_FINDING_STATUS_VALUES:
+                return jsonify({'error': 'Geçersiz status değeri'}), 400
+            finding.status = data['status']
+
+        if 'retest_result' in data:
+            if data['retest_result'] not in VALID_RETEST_RESULTS:
+                return jsonify({'error': 'Geçersiz retest_result değeri'}), 400
+            finding.retest_result = data['retest_result']
+            finding.retested_at = datetime.utcnow()
+
+        finding.updated_at = datetime.utcnow()
+        db.session.commit()
+
+        if finding.status != old_status:
+            log_event(project_id, 'finding_status_changed',
+                      f"FND-{finding.id:04d}: {old_status} → {finding.status}",
+                      {'finding_id': finding.id, 'from': old_status, 'to': finding.status})
+
+        return jsonify(finding.to_dict()), 200
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/projects/<project_id>/findings/<int:finding_id>', methods=['DELETE'])
+def delete_finding(project_id, finding_id):
+    try:
+        _project_or_404(project_id)
+        finding = Finding.query.filter_by(id=finding_id, project_id=project_id).first()
+        if not finding:
+            return jsonify({'error': 'Finding bulunamadı'}), 404
+        db.session.delete(finding)
+        db.session.commit()
+        return jsonify({'message': 'Finding silindi'}), 200
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
 
 # ========================
 # VERİTABANI BAŞLATMA
@@ -839,10 +1419,6 @@ def study_metrics_endpoint():
 
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all()
+        ensure_schema()
         print('✅ Veritabanı oluşturuldu!')
-    # Debug modu ve dış ağa açık bind (0.0.0.0) birlikte AÇIK OLURSA Werkzeug'un
-    # interaktif debugger'ı ağdan erişilebilir hale gelir (bilinen bir RCE riski).
-    # Bu yüzden ikisi de config/env'den okunuyor; varsayılan sadece localhost'a bind eder.
-    host = os.getenv('FLASK_RUN_HOST', '127.0.0.1')
-    app.run(host=host, port=5000, debug=app.config['DEBUG'])
+    app.run(host='0.0.0.0', port=5000, debug=True)
