@@ -39,6 +39,13 @@
     </nav>
 
     <div class="sidebar-footer">
+      <div class="session-chip" id="projectChip" style="display:none">
+        <span class="session-chip-dot" style="background:#a855f7"></span>
+        <div class="session-chip-info">
+          <span class="session-chip-name" id="projectChipName">-</span>
+          <span class="session-chip-sub" id="projectChipSub">-</span>
+        </div>
+      </div>
       <div class="session-chip" id="sessionChip" style="display:none">
         <span class="session-chip-dot"></span>
         <div class="session-chip-info">
@@ -46,14 +53,23 @@
           <span class="session-chip-sub" id="sessionChipSub">0/0</span>
         </div>
       </div>
+      <button class="nav-item" id="projectsNavBtn"><span class="dot"></span><span data-i18n="navProjects">Projeler</span></button>
       <button class="nav-item" id="sessionsNavBtn"><span class="dot"></span><span data-i18n="navSessions">Test Oturumları</span></button>
-      <button class="nav-item" id="notebookNavBtn"><span class="dot"></span><span data-i18n="navNotebook">Not Defteri</span></button>
-      <button class="nav-item" id="aiSuggestNavBtn"><span class="dot"></span><span data-i18n="navAiSuggest">AI: Sırada Ne Var?</span></button>
-      <button class="nav-item" id="reportNavBtn"><span class="dot"></span><span data-i18n="navReport">Rapor Oluştur</span></button>
-      <button class="nav-item" id="studyMetricsNavBtn"><span class="dot"></span><span data-i18n="navStudyMetrics">Çalışma Metrikleri</span></button>
+      <button class="nav-item" id="reconNavBtn"><span class="dot"></span><span data-i18n="navRecon">Attack Surface Discovery</span></button>
+      <button class="nav-item" id="plannerNavBtn"><span class="dot"></span><span data-i18n="navPlanner">Test Planı</span></button>
       <button class="nav-item" id="importNavBtn"><span class="dot"></span><span data-i18n="navImport">Bulgu İçe Aktar</span></button>
       <button class="nav-item" id="exportBtn"><span class="dot"></span><span data-i18n="exportReport">Raporu Dışa Aktar</span></button>
       <button class="nav-item" id="resetBtn"><span class="dot"></span><span data-i18n="resetProgress">İlerlemeyi Sıfırla</span></button>
+
+      <div class="settings-block">
+        <span class="settings-label" data-i18n="frameworkLabel">Checklist</span>
+        <div class="lang-select">
+          <select id="frameworkSelect">
+            <option value="wstg" data-i18n="frameworkWstg">OWASP WSTG (Web)</option>
+            <option value="llm-security" data-i18n="frameworkLlm">OWASP LLM Top 10 (AI Security)</option>
+          </select>
+        </div>
+      </div>
 
       <div class="settings-block">
         <span class="settings-label" data-i18n="langLabel">Dil</span>
@@ -251,17 +267,251 @@
         <input type="text" id="testerNameInput" data-i18n-placeholder="testerNamePlaceholder" placeholder="Adınız">
         <label data-i18n="targetUrlLabel">Hedef URL</label>
         <input type="text" id="targetUrlInput" placeholder="https://example.com">
-        <label data-i18n="studyGroupLabel">Çalışma Grubu (opsiyonel)</label>
-        <select id="studyGroupSelect">
-          <option value="" data-i18n="studyGroupNone">— Seçilmedi —</option>
-          <option value="ai_assisted" data-i18n="studyGroupAi">AI Destekli</option>
-          <option value="control" data-i18n="studyGroupControl">Kontrol (Sadece Checklist)</option>
-        </select>
-        <p class="report-findings-note" id="studyGroupHint" style="margin:-4px 0 4px"></p>
         <div class="hero-actions" style="margin-top:8px">
           <button type="button" class="btn btn-primary" id="createSessionBtn" data-i18n="startSession">Oturumu Başlat</button>
         </div>
       </form>
+    </div>
+  </div>
+</div>
+
+<!-- Projeler (Project / Engagement Management) -->
+<div class="overlay" id="projectsOverlay">
+  <div class="panel" style="max-width:820px">
+    <div class="panel-header">
+      <div>
+        <h3 data-i18n="projectsModalTitle">Projeler</h3>
+        <p data-i18n="projectsModalDesc">Her pentest çalışmasını bir Project/Engagement altında yönetin: kapsam, recon, test planı, WSTG testleri, bulgular ve timeline tek yerde.</p>
+      </div>
+      <button class="close-btn" id="closeProjectsOverlay">&times;</button>
+    </div>
+    <div class="panel-body">
+      <div class="filter-bar" style="padding:0 0 14px">
+        <span style="color:var(--muted);font-size:.85rem" id="projectsCountLabel"></span>
+        <button type="button" class="btn btn-primary btn-sm" id="newProjectBtn" data-i18n="newProjectBtn">+ Yeni Proje</button>
+      </div>
+      <div id="projectListBody"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Yeni / Düzenle Proje -->
+<div class="overlay" id="newProjectOverlay">
+  <div class="panel" style="max-width:520px">
+    <div class="panel-header">
+      <div><h3 id="newProjectTitle" data-i18n="newProjectModalTitle">Yeni Proje</h3></div>
+      <button class="close-btn" id="closeNewProjectOverlay">&times;</button>
+    </div>
+    <div class="panel-body">
+      <div class="session-form">
+        <label data-i18n="projectNameLabel">Proje Adı *</label>
+        <input type="text" id="projectNameInput" placeholder="Acme Corp — Web Uygulama Pentesti">
+        <label data-i18n="projectClientLabel">Müşteri / Kurum</label>
+        <input type="text" id="projectClientInput" placeholder="Acme Corp">
+        <label data-i18n="projectDescLabel">Açıklama</label>
+        <input type="text" id="projectDescInput" placeholder="">
+        <label data-i18n="projectStatusLabel">Durum</label>
+        <select id="projectStatusInput">
+          <option value="planning" data-i18n="projectStatus_planning">Planlama</option>
+          <option value="active" data-i18n="projectStatus_active">Aktif</option>
+          <option value="paused" data-i18n="projectStatus_paused">Duraklatıldı</option>
+          <option value="completed" data-i18n="projectStatus_completed">Tamamlandı</option>
+          <option value="archived" data-i18n="projectStatus_archived">Arşivlendi</option>
+        </select>
+        <label data-i18n="projectStartLabel">Başlangıç Tarihi</label>
+        <input type="date" id="projectStartInput">
+        <label data-i18n="projectEndLabel">Bitiş Tarihi</label>
+        <input type="date" id="projectEndInput">
+        <div class="hero-actions" style="margin-top:14px">
+          <button type="button" class="btn btn-primary" id="submitProjectBtn" data-i18n="saveBtn">Kaydet</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Project Workspace -->
+<div class="overlay" id="projectWorkspaceOverlay">
+  <div class="panel project-workspace-panel">
+    <div class="panel-header">
+      <div>
+        <h3 id="pwName">-</h3>
+        <p><span id="pwClient" class="import-preview-source"></span> <span id="pwStatusPill" class="session-status-pill active"></span></p>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button type="button" class="btn btn-secondary btn-sm" id="pwEditBtn" data-i18n="editBtn">Düzenle</button>
+        <button class="close-btn" id="closeProjectWorkspace">&times;</button>
+      </div>
+    </div>
+    <div class="panel-body project-workspace-body">
+      <div class="pw-tabs" id="pwTabs">
+        <button class="pw-tab active" data-tab="overview" data-i18n="pwTabOverview">Overview</button>
+        <button class="pw-tab" data-tab="scope" data-i18n="pwTabScope">Scope</button>
+        <button class="pw-tab" data-tab="assets" data-i18n="pwTabAssets">Assets</button>
+        <button class="pw-tab" data-tab="recon" data-i18n="pwTabRecon">Recon</button>
+        <button class="pw-tab" data-tab="tools" data-i18n="pwTabTools">Tools</button>
+        <button class="pw-tab" data-tab="testplan" data-i18n="pwTabTestPlan">Test Plan</button>
+        <button class="pw-tab" data-tab="wstg" data-i18n="pwTabWstg">WSTG Tests</button>
+        <button class="pw-tab" data-tab="findings" data-i18n="pwTabFindings">Findings</button>
+        <button class="pw-tab" data-tab="evidence" data-i18n="pwTabEvidence">Evidence</button>
+        <button class="pw-tab" data-tab="chains" data-i18n="pwTabChains">Attack Chains</button>
+        <button class="pw-tab" data-tab="timeline" data-i18n="pwTabTimeline">Timeline</button>
+        <button class="pw-tab" data-tab="reports" data-i18n="pwTabReports">Reports</button>
+      </div>
+      <div class="pw-content" id="pwContent"></div>
+    </div>
+  </div>
+</div>
+
+<!-- AI Pentest Planner (kural tabanlı, şeffaf skorlama) -->
+<div class="overlay" id="plannerOverlay">
+  <div class="panel" style="max-width:760px">
+    <div class="panel-header">
+      <div>
+        <h3 data-i18n="plannerModalTitle">Test Planı</h3>
+        <p data-i18n="plannerModalDesc">Attack Surface Discovery'den gelen önceliklendirilmiş maddeler; kanıt sayısı ve WSTG metodoloji sırasına göre şeffaf bir skorla sıralanır. Her önerinin yanında nedeni gösterilir.</p>
+      </div>
+      <button class="close-btn" id="closePlannerOverlay">&times;</button>
+    </div>
+    <div class="panel-body">
+      <div id="plannerList" class="planner-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Finding Detail / Edit (Professional Finding + CVSS v3.1) -->
+<div class="overlay" id="findingModalOverlay">
+  <div class="panel finding-modal-panel">
+    <div class="panel-header">
+      <div>
+        <h3 id="findingModalTitle" data-i18n="findingModalTitleNew">Yeni Finding</h3>
+        <p data-i18n="findingModalDesc">Profesyonel bulgu kaydı: CVSS v3.1, CWE, endpoint/parametre, remediation ve retest takibi.</p>
+      </div>
+      <button class="close-btn" id="closeFindingModal">&times;</button>
+    </div>
+    <div class="panel-body finding-modal-body">
+      <div class="finding-form-col">
+        <label data-i18n="findingTitleLabel">Başlık *</label>
+        <input type="text" id="findingTitleInput" placeholder="IDOR - Unauthorized Object Access">
+        <label data-i18n="findingTestIdLabel">İlişkili WSTG/LLM Test ID (opsiyonel)</label>
+        <input type="text" id="findingTestIdInput" placeholder="WSTG-ATHZ-04">
+        <div class="finding-form-row">
+          <div>
+            <label data-i18n="findingEndpointLabel">Endpoint</label>
+            <input type="text" id="findingEndpointInput" placeholder="/api/users/{id}">
+          </div>
+          <div>
+            <label data-i18n="findingParameterLabel">Parametre</label>
+            <input type="text" id="findingParameterInput" placeholder="id">
+          </div>
+        </div>
+        <div class="finding-form-row">
+          <div>
+            <label data-i18n="findingCweLabel">CWE</label>
+            <input type="text" id="findingCweInput" placeholder="CWE-639">
+          </div>
+          <div>
+            <label data-i18n="findingOwaspCatLabel">OWASP Kategorisi</label>
+            <input type="text" id="findingOwaspCatInput" placeholder="A01:2021 Broken Access Control">
+          </div>
+        </div>
+        <label data-i18n="findingDescLabel">Açıklama</label>
+        <textarea id="findingDescInput" rows="3" placeholder=""></textarea>
+        <label data-i18n="findingImpactLabel">Etki</label>
+        <textarea id="findingImpactInput" rows="2" placeholder=""></textarea>
+        <label data-i18n="findingRemediationLabel">Remediation</label>
+        <textarea id="findingRemediationInput" rows="2" placeholder=""></textarea>
+        <label data-i18n="findingReferencesLabel">Referanslar (her satıra bir URL)</label>
+        <textarea id="findingReferencesInput" rows="2" placeholder="https://..."></textarea>
+        <div class="finding-form-row">
+          <div>
+            <label data-i18n="findingStatusLabel">Durum</label>
+            <select id="findingStatusInput">
+              <option value="open" data-i18n="findingStatus_open">Open</option>
+              <option value="confirmed" data-i18n="findingStatus_confirmed">Confirmed</option>
+              <option value="fixed" data-i18n="findingStatus_fixed">Fixed</option>
+              <option value="retest_pending" data-i18n="findingStatus_retest_pending">Retest Pending</option>
+              <option value="resolved" data-i18n="findingStatus_resolved">Resolved</option>
+              <option value="wont_fix" data-i18n="findingStatus_wont_fix">Won't Fix</option>
+              <option value="accepted_risk" data-i18n="findingStatus_accepted_risk">Accepted Risk</option>
+            </select>
+          </div>
+          <div>
+            <label data-i18n="findingAssignedLabel">Atanan Kişi</label>
+            <input type="text" id="findingAssignedInput" placeholder="">
+          </div>
+        </div>
+        <div id="findingRetestSection" style="display:none">
+          <label data-i18n="findingRetestResultLabel">Retest Sonucu</label>
+          <select id="findingRetestResultInput">
+            <option value="not_tested" data-i18n="findingRetest_not_tested">Henüz test edilmedi</option>
+            <option value="fixed" data-i18n="findingRetest_fixed">Düzeltildi ✓</option>
+            <option value="not_fixed" data-i18n="findingRetest_not_fixed">Düzeltilmedi ✗</option>
+          </select>
+          <label data-i18n="findingRetestNotesLabel">Retest Notları</label>
+          <textarea id="findingRetestNotesInput" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="finding-form-col finding-cvss-col">
+        <h5 data-i18n="findingCvssTitle">CVSS v3.1 Hesaplayıcı</h5>
+        <div class="cvss-score-display">
+          <div class="cvss-score-value" id="cvssScoreValue">0.0</div>
+          <div class="cvss-score-severity" id="cvssScoreSeverity"></div>
+        </div>
+        <code class="cvss-vector-string" id="cvssVectorString"></code>
+        <div id="cvssCalcGrid" class="cvss-calc-grid"></div>
+        <div class="hero-actions" style="margin-top:16px">
+          <button type="button" class="btn btn-primary" id="submitFindingBtn" data-i18n="saveBtn">Kaydet</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Attack Surface Discovery -->
+<div class="overlay" id="reconOverlay">
+  <div class="panel" style="max-width:820px">
+    <div class="panel-header">
+      <div>
+        <h3 data-i18n="reconModalTitle">Attack Surface Discovery</h3>
+        <p data-i18n="reconModalDesc">Bir hedef domain girin: subdomain, endpoint, teknoloji ve API yüzeyi pasif/hafif yöntemlerle çıkarılır ve otomatik olarak ilgili WSTG testleriyle ilişkilendirilir.</p>
+      </div>
+      <button class="close-btn" id="closeReconOverlay">&times;</button>
+    </div>
+    <div class="panel-body">
+      <div class="import-form">
+        <label data-i18n="reconTargetLabel">Hedef Domain</label>
+        <input type="text" id="reconTargetInput" placeholder="example.com">
+        <label class="recon-auth-check">
+          <input type="checkbox" id="reconAuthCheck">
+          <span data-i18n="reconAuthLabel">Bu hedefi test etmeye yetkili olduğumu onaylıyorum.</span>
+        </label>
+        <div class="hero-actions" style="margin-top:8px">
+          <button type="button" class="btn btn-primary" id="reconRunBtn" data-i18n="reconRunBtn">Keşfet</button>
+        </div>
+        <div class="import-status" id="reconStatus"></div>
+      </div>
+      <div id="reconResultsWrap" style="display:none">
+        <div class="recon-section">
+          <h5 data-i18n="reconSubdomainsLabel">Subdomains</h5>
+          <div class="recon-chip-row" id="reconSubdomains"></div>
+        </div>
+        <div class="recon-section">
+          <h5 data-i18n="reconTechLabel">Technologies</h5>
+          <div class="recon-chip-row" id="reconTech"></div>
+        </div>
+        <div class="recon-section">
+          <h5 data-i18n="reconEndpointsLabel">Endpoints &amp; Interesting Paths</h5>
+          <div class="recon-chip-row" id="reconEndpoints"></div>
+        </div>
+        <div class="recon-section">
+          <div class="filter-bar" style="padding:8px 0">
+            <h5 style="margin:0" data-i18n="reconSuggestionsLabel">Önerilen Test Önceliği</h5>
+            <button type="button" class="btn btn-primary btn-sm" id="reconApplyBtn" data-i18n="reconApplyBtn">Checklist'i Önceliklendir</button>
+          </div>
+          <div id="reconSuggestionsList" class="import-preview-list"></div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -304,168 +554,8 @@
   </div>
 </div>
 
-<!-- Not Defteri -->
-<div class="overlay" id="notebookOverlay">
-  <div class="panel" style="max-width:920px">
-    <div class="panel-header">
-      <div>
-        <h3 data-i18n="notebookTitle">Not Defteri</h3>
-        <p id="notebookDesc" data-i18n="notebookDesc">Bu hedef için serbest notlarınızı ve zafiyet bulgularınızı, dilerseniz ilgili test maddesiyle ilişkilendirerek buraya kaydedin.</p>
-      </div>
-      <button class="close-btn" id="closeNotebookOverlay">&times;</button>
-    </div>
-    <div class="filter-bar">
-      <select id="notebookTestFilter" style="min-width:220px">
-        <option value="" data-i18n="notebookFilterAll">Tüm notlar</option>
-      </select>
-      <span style="flex:1"></span>
-      <button class="btn btn-primary btn-sm" id="newNoteBtn" data-i18n="newNote">+ Yeni Not</button>
-    </div>
-    <div class="panel-body">
-      <div id="notebookList" class="notebook-grid"><!-- JS ile doldurulur --></div>
-    </div>
-  </div>
-</div>
-
-<!-- Not Editörü -->
-<div class="overlay" id="noteEditorOverlay">
-  <div class="panel" style="max-width:640px">
-    <div class="panel-header">
-      <div>
-        <h3 id="noteEditorTitle" data-i18n="newNote">+ Yeni Not</h3>
-        <p data-i18n="noteEditorDesc">Bulgunuzu açık ve net biçimde yazın; isterseniz kanıt olarak ekran görüntüsü ekleyin.</p>
-      </div>
-      <button class="close-btn" id="closeNoteEditorOverlay">&times;</button>
-    </div>
-    <div class="panel-body">
-      <form id="noteEditorForm" class="session-form">
-        <input type="hidden" id="noteEditId" value="">
-        <label data-i18n="noteTitleLabel">Başlık</label>
-        <input type="text" id="noteTitleInput" data-i18n-placeholder="noteTitlePlaceholder" placeholder="Örn: Login formunda SQL Injection">
-        <label data-i18n="noteLinkedTestLabel">İlgili Test Maddesi (opsiyonel)</label>
-        <select id="noteTestSelect">
-          <option value="" data-i18n="noteGeneralOption">— Genel not (belirli bir maddeye bağlı değil) —</option>
-        </select>
-        <label data-i18n="severityLabel">Önem Derecesi</label>
-        <select id="noteSeveritySelect">
-          <option value="info" data-i18n="severity_info">Bilgi</option>
-          <option value="low" data-i18n="severity_low">Düşük</option>
-          <option value="medium" data-i18n="severity_medium">Orta</option>
-          <option value="high" data-i18n="severity_high">Yüksek</option>
-          <option value="critical" data-i18n="severity_critical">Kritik</option>
-        </select>
-        <label data-i18n="fpStatusLabel">Doğrulama Durumu (opsiyonel)</label>
-        <select id="noteFpStatusSelect">
-          <option value="" data-i18n="fpStatusUndetermined">— Henüz değerlendirilmedi —</option>
-          <option value="valid" data-i18n="fpStatusValid">✓ Gerçek/geçerli bulgu</option>
-          <option value="fp" data-i18n="fpStatusFp">✗ False positive</option>
-        </select>
-        <label data-i18n="noteContentLabel">Not / Bulgu</label>
-        <textarea id="noteContentInput" class="finding-textarea" style="min-height:120px" data-i18n-placeholder="noteContentPlaceholder" placeholder="Zafiyeti, adımları ve etkisini buraya yazın..."></textarea>
-
-        <div class="ai-analyze-row">
-          <button type="button" class="btn btn-secondary" id="aiAnalyzeBtn">🤖 <span data-i18n="aiAnalyzeBtn">AI ile Analiz Et</span></button>
-          <span class="ai-analyze-spinner" id="aiAnalyzeSpinner" style="display:none" data-i18n="aiAnalyzing">Analiz ediliyor...</span>
-        </div>
-        <div class="control-group-banner" id="noteEditorControlBanner" style="display:none" data-i18n="controlGroupBannerNote">Bu oturum "Kontrol" grubunda — AI destekli analiz bu oturumda devre dışı.</div>
-        <div class="ai-analysis-panel" id="aiAnalysisPanel" style="display:none"></div>
-
-        <label data-i18n="cweLabel">CWE (opsiyonel)</label>
-        <div class="cwe-row">
-          <input type="text" id="noteCweIdInput" data-i18n-placeholder="cwePlaceholder" placeholder="Örn: CWE-89" style="max-width:130px">
-          <input type="text" id="noteCweNameInput" data-i18n-placeholder="cweNamePlaceholder" placeholder="Örn: SQL Injection">
-        </div>
-        <div class="cwe-suggestions" id="cweSuggestions"></div>
-
-        <label data-i18n="cvssLabel">CVSS 3.1 Skoru (opsiyonel)</label>
-        <div class="cvss-builder" id="cvssBuilder">
-          <div class="cvss-field"><span data-i18n="cvssAV">Saldırı Vektörü (AV)</span><select data-cvss="AV"></select></div>
-          <div class="cvss-field"><span data-i18n="cvssAC">Saldırı Karmaşıklığı (AC)</span><select data-cvss="AC"></select></div>
-          <div class="cvss-field"><span data-i18n="cvssPR">Gereken Yetki (PR)</span><select data-cvss="PR"></select></div>
-          <div class="cvss-field"><span data-i18n="cvssUI">Kullanıcı Etkileşimi (UI)</span><select data-cvss="UI"></select></div>
-          <div class="cvss-field"><span data-i18n="cvssS">Kapsam (S)</span><select data-cvss="S"></select></div>
-          <div class="cvss-field"><span data-i18n="cvssC">Gizlilik Etkisi (C)</span><select data-cvss="C"></select></div>
-          <div class="cvss-field"><span data-i18n="cvssI">Bütünlük Etkisi (I)</span><select data-cvss="I"></select></div>
-          <div class="cvss-field"><span data-i18n="cvssA">Erişilebilirlik Etkisi (A)</span><select data-cvss="A"></select></div>
-        </div>
-        <div class="cvss-result-row">
-          <span class="cvss-result-badge" id="cvssResultBadge" data-i18n="cvssNone">— Hesaplanmadı —</span>
-          <button type="button" class="copy-btn" id="cvssClearBtn" data-i18n="cvssClear">Temizle</button>
-        </div>
-
-        <label data-i18n="noteImagesLabel">Kanıt Görselleri</label>
-        <div class="note-image-drop" id="noteImageDrop">
-          <span data-i18n="noteImageDropText">Görselleri buraya sürükleyin, yapıştırın (Ctrl+V) ya da seçin</span>
-          <input type="file" id="noteImageInput" accept="image/*" multiple>
-        </div>
-        <div class="note-image-thumbs" id="noteImageThumbs"></div>
-        <div class="hero-actions" style="margin-top:8px">
-          <button type="button" class="btn btn-primary" id="saveNoteBtn" data-i18n="saveNote">Notu Kaydet</button>
-          <button type="button" class="btn btn-secondary" id="deleteNoteBtn" style="display:none" data-i18n="deleteNote">Notu Sil</button>
-        </div>
-        <div class="import-status" id="noteEditorStatus"></div>
-      </form>
-    </div>
-  </div>
-</div>
-
-<!-- Görsel Büyütme (Lightbox) -->
-<div class="overlay" id="imageLightbox">
-  <img id="lightboxImg" src="" alt="" />
-  <button class="close-btn" id="closeLightbox" style="position:fixed;top:24px;right:28px">&times;</button>
-</div>
-
-<!-- AI: Sıradaki Test Önerisi -->
-<div class="overlay" id="aiSuggestOverlay">
-  <div class="panel" style="max-width:640px">
-    <div class="panel-header">
-      <div>
-        <h3 data-i18n="aiSuggestTitle">AI: Sırada Ne Var?</h3>
-        <p data-i18n="aiSuggestDesc">Tamamladığınız testlere ve bulgularınıza bakarak sırada hangi WSTG testinin yapılmasının en mantıklı olacağını önerir.</p>
-      </div>
-      <button class="close-btn" id="closeAiSuggestOverlay">&times;</button>
-    </div>
-    <div class="panel-body">
-      <div id="aiSuggestContent"></div>
-    </div>
-  </div>
-</div>
-
-<!-- Rapor Oluştur -->
-<div class="overlay" id="reportOverlay">
-  <div class="panel" style="max-width:720px">
-    <div class="panel-header">
-      <div>
-        <h3 data-i18n="reportTitle">Rapor Oluştur</h3>
-        <p data-i18n="reportDesc">Toplanan bulgulardan (CVSS/CWE dahil) indirilebilir bir pentest raporu oluşturun.</p>
-      </div>
-      <button class="close-btn" id="closeReportOverlay">&times;</button>
-    </div>
-    <div class="panel-body">
-      <div id="reportContent"></div>
-    </div>
-  </div>
-</div>
-
-<!-- Çalışma Metrikleri (Faz 5: A/B Karşılaştırma) -->
-<div class="overlay" id="studyMetricsOverlay">
-  <div class="panel" style="max-width:800px">
-    <div class="panel-header">
-      <div>
-        <h3 data-i18n="studyMetricsTitle">Çalışma Metrikleri</h3>
-        <p data-i18n="studyMetricsDesc">"AI Destekli" ve "Kontrol" grubuna etiketlenen oturumları karşılaştırır.</p>
-      </div>
-      <button class="close-btn" id="closeStudyMetricsOverlay">&times;</button>
-    </div>
-    <div class="panel-body">
-      <div id="studyMetricsContent"></div>
-    </div>
-  </div>
-</div>
-
 <div class="toast" id="toast"></div>
 
-<script src="js/cvss.js"></script>
 <script src="js/import-parsers.js"></script>
 <script src="js/app.js"></script>
 </body>

@@ -1,130 +1,96 @@
 """
-CVSS v3.1 Temel (Base) Skor Hesaplayıcı (Faz 1).
+CVSS v3.1 Calculator -- resmi FIRST.org / NVD formulune dayanir.
 
-Resmi FIRST.org CVSS v3.1 spesifikasyonundaki formüllere birebir uyar:
-https://www.first.org/cvss/v3-1/specification-document
+DURUSTLUK NOTU: CVSS v4.0 kasitli olarak UYGULANMADI. v4.0'in skorlama
+sistemi basit bir formul degil; 15 milyon vektorden turetilmis 270
+"equivalence set"e dayanan buyuk bir lookup-table (MacroVector) sistemi
+(bkz. FIRST.org CVSS v4.0 Specification). Bu tabloyu bellekten dogru
+sekilde yeniden uretmek guvenilir degildir ve yanlis risk skorlari
+uretme riski tasir -- bu nedenle CVSS v3.1 (kapali-form, dogrulanabilir
+formul) tercih edildi. v4.0 istenirse, FIRST'in resmi referans
+uygulamasindan alinan gercek lookup-table verisiyle ayri bir asamada
+eklenebilir.
 
-Bu modül sadece matematiksel bir yardımcıdır, herhangi bir saldırı/istismar
-kodu içermez — pentest bulgularının risk seviyesini standardize bir
-şekilde puanlamak için kullanılır (tıpkı ticari pentest araçlarındaki
-CVSS hesaplayıcılar gibi).
+Formul kaynagi: https://www.first.org/cvss/v3.1/specification-document
+(NVD "CVSS v3.1 Equations" sayfasindan dogrudan alinmis, 9.8 CRITICAL
+textbook ornegiyle manuel olarak dogrulanmistir.)
 """
 
-import math
+AV_VALUES = {'N': 0.85, 'A': 0.62, 'L': 0.55, 'P': 0.20}
+AC_VALUES = {'L': 0.77, 'H': 0.44}
+PR_VALUES_UNCHANGED = {'N': 0.85, 'L': 0.62, 'H': 0.27}
+PR_VALUES_CHANGED = {'N': 0.85, 'L': 0.68, 'H': 0.50}
+UI_VALUES = {'N': 0.85, 'R': 0.62}
+CIA_VALUES = {'H': 0.56, 'L': 0.22, 'N': 0.0}
 
-_AV = {"N": 0.85, "A": 0.62, "L": 0.55, "P": 0.20}
-_AC = {"L": 0.77, "H": 0.44}
-_PR_UNCHANGED = {"N": 0.85, "L": 0.62, "H": 0.27}
-_PR_CHANGED = {"N": 0.85, "L": 0.68, "H": 0.50}
-_UI = {"N": 0.85, "R": 0.62}
-_CIA = {"N": 0.0, "L": 0.22, "H": 0.56}
-_SCOPE = {"U", "C"}
-
-REQUIRED_METRICS = ["AV", "AC", "PR", "UI", "S", "C", "I", "A"]
+VALID_VALUES = {
+    'AV': set(AV_VALUES), 'AC': set(AC_VALUES), 'PR': set(PR_VALUES_UNCHANGED),
+    'UI': set(UI_VALUES), 'S': {'U', 'C'}, 'C': set(CIA_VALUES),
+    'I': set(CIA_VALUES), 'A': set(CIA_VALUES),
+}
 
 
-class CVSSError(ValueError):
+class CvssError(Exception):
     pass
 
 
-def _roundup(value: float) -> float:
-    """CVSS spesifikasyonundaki resmi Roundup fonksiyonu (kayan nokta
-    hatalarından kaçınmak için tamsayı aritmetiği kullanır)."""
-    int_value = round(value * 100000)
-    if int_value % 10000 == 0:
-        return int_value / 100000
-    return (math.floor(int_value / 10000) + 1) / 10
+def _roundup(x):
+    """CVSS spesifikasyonunun resmi roundup fonksiyonu: girdiden buyuk veya
+    esit, tek ondalikli en kucuk sayiyi doner."""
+    int_input = round(x * 100000)
+    if int_input % 10000 == 0:
+        return int_input / 100000
+    return (int_input // 10000 + 1) / 10
 
 
-def parse_vector(vector: str) -> dict:
-    """
-    'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H' formatındaki bir
-    vektör string'ini {'AV':'N', 'AC':'L', ...} sözlüğüne çevirir.
-    """
-    if not vector or not isinstance(vector, str):
-        raise CVSSError("CVSS vektörü boş olamaz")
-
-    vector = vector.strip()
-    parts = vector.split("/")
-    if parts and parts[0].upper().startswith("CVSS:"):
-        parts = parts[1:]
-
-    metrics = {}
-    for part in parts:
-        if not part:
-            continue
-        if ":" not in part:
-            raise CVSSError(f"Geçersiz vektör parçası: '{part}'")
-        key, value = part.split(":", 1)
-        metrics[key.upper()] = value.upper()
-
-    missing = [m for m in REQUIRED_METRICS if m not in metrics]
-    if missing:
-        raise CVSSError(f"Vektörde eksik metrik(ler): {', '.join(missing)}")
-
-    if metrics["AV"] not in _AV:
-        raise CVSSError(f"Geçersiz AV değeri: {metrics['AV']}")
-    if metrics["AC"] not in _AC:
-        raise CVSSError(f"Geçersiz AC değeri: {metrics['AC']}")
-    if metrics["S"] not in _SCOPE:
-        raise CVSSError(f"Geçersiz S (Scope) değeri: {metrics['S']}")
-    pr_table = _PR_CHANGED if metrics["S"] == "C" else _PR_UNCHANGED
-    if metrics["PR"] not in pr_table:
-        raise CVSSError(f"Geçersiz PR değeri: {metrics['PR']}")
-    if metrics["UI"] not in _UI:
-        raise CVSSError(f"Geçersiz UI değeri: {metrics['UI']}")
-    for m in ("C", "I", "A"):
-        if metrics[m] not in _CIA:
-            raise CVSSError(f"Geçersiz {m} değeri: {metrics[m]}")
-
-    return metrics
-
-
-def rating_for_score(score: float) -> str:
+def severity_label(score):
     if score <= 0:
-        return "none"
+        return 'info'
     if score < 4.0:
-        return "low"
+        return 'low'
     if score < 7.0:
-        return "medium"
+        return 'medium'
     if score < 9.0:
-        return "high"
-    return "critical"
+        return 'high'
+    return 'critical'
 
 
-def calculate(vector: str) -> dict:
-    """
-    Vektör string'inden CVSS 3.1 taban (base) skorunu hesaplar.
-    Döner: {'vector': normalized, 'score': float, 'rating': str, 'metrics': {...}}
-    """
-    m = parse_vector(vector)
+def compute(metrics):
+    """metrics: {'AV':'N','AC':'L','PR':'N','UI':'N','S':'U','C':'H','I':'H','A':'H'}
+    Doner: {'base_score', 'severity', 'vector', 'impact_subscore', 'exploitability_subscore'}"""
+    for key in ('AV', 'AC', 'PR', 'UI', 'S', 'C', 'I', 'A'):
+        if key not in metrics:
+            raise CvssError(f'Eksik metrik: {key}')
+        if metrics[key] not in VALID_VALUES[key]:
+            raise CvssError(f'Gecersiz {key} degeri: {metrics[key]}')
 
-    av, ac = _AV[m["AV"]], _AC[m["AC"]]
-    pr_table = _PR_CHANGED if m["S"] == "C" else _PR_UNCHANGED
-    pr, ui = pr_table[m["PR"]], _UI[m["UI"]]
-    c, i, a = _CIA[m["C"]], _CIA[m["I"]], _CIA[m["A"]]
+    av, ac, pr, ui, s, c, i, a = (metrics[k] for k in ('AV', 'AC', 'PR', 'UI', 'S', 'C', 'I', 'A'))
 
-    iss = 1 - ((1 - c) * (1 - i) * (1 - a))
+    av_v, ac_v, ui_v = AV_VALUES[av], AC_VALUES[ac], UI_VALUES[ui]
+    pr_v = PR_VALUES_CHANGED[pr] if s == 'C' else PR_VALUES_UNCHANGED[pr]
+    c_v, i_v, a_v = CIA_VALUES[c], CIA_VALUES[i], CIA_VALUES[a]
 
-    if m["S"] == "U":
-        impact = 6.42 * iss
+    isc_base = 1 - (1 - c_v) * (1 - i_v) * (1 - a_v)
+    if s == 'C':
+        impact = 7.52 * (isc_base - 0.029) - 3.25 * ((isc_base - 0.02) ** 15)
     else:
-        impact = 7.52 * (iss - 0.029) - 3.25 * ((iss - 0.02) ** 15)
+        impact = 6.42 * isc_base
 
-    exploitability = 8.22 * av * ac * pr * ui
+    exploitability = 8.22 * av_v * ac_v * pr_v * ui_v
 
     if impact <= 0:
         base_score = 0.0
-    elif m["S"] == "U":
-        base_score = _roundup(min(impact + exploitability, 10))
-    else:
+    elif s == 'C':
         base_score = _roundup(min(1.08 * (impact + exploitability), 10))
+    else:
+        base_score = _roundup(min(impact + exploitability, 10))
 
-    normalized_vector = "CVSS:3.1/" + "/".join(f"{k}:{m[k]}" for k in REQUIRED_METRICS)
+    vector = f"CVSS:3.1/AV:{av}/AC:{ac}/PR:{pr}/UI:{ui}/S:{s}/C:{c}/I:{i}/A:{a}"
 
     return {
-        "vector": normalized_vector,
-        "score": round(base_score, 1),
-        "rating": rating_for_score(base_score),
-        "metrics": m,
+        'base_score': round(base_score, 1),
+        'severity': severity_label(base_score),
+        'vector': vector,
+        'impact_subscore': round(max(impact, 0), 1),
+        'exploitability_subscore': round(exploitability, 1),
     }
