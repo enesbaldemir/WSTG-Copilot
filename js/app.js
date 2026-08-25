@@ -252,7 +252,7 @@
 
       pwTabOverview: "Overview", pwTabScope: "Scope", pwTabAssets: "Assets", pwTabRecon: "Recon",
       pwTabTestPlan: "Test Plan", pwTabWstg: "WSTG Tests", pwTabFindings: "Findings",
-      pwTabTimeline: "Timeline", pwTabReports: "Reports",
+      pwTabTimeline: "Timeline", pwTabKanban: "Kanban", pwTabReports: "Reports",
 
       pwStatAssets: "Assets", pwStatTests: "Tests", pwStatCompleted: "Completed", pwStatFindings: "Findings",
       pwSeverityDistLabel: "Severity Dağılımı",
@@ -328,6 +328,33 @@
       findingStatus_wont_fix: "Won't Fix", findingStatus_accepted_risk: "Accepted Risk",
       findingTitleRequired: "Başlık zorunludur.",
       findingSaved: "Finding kaydedildi",
+
+      aiAssistantTitle: "AI Asistanı",
+      aiGenDescBtn: "Açıklama Oluştur",
+      aiGenRemediationBtn: "Remediation Oluştur",
+      aiRewriteBtn: "Daha Profesyonel Yap",
+      aiFindSimilarBtn: "Benzer Bulguları Bul",
+      aiSuggestCweBtn: "CWE/Severity Öner",
+      aiWorking: "AI çalışıyor…",
+      aiDone: "Tamamlandı",
+      aiSaveFirst: "AI asistanını kullanmadan önce finding'i bir kez kaydedin.",
+      aiNotConfigured: "AI sağlayıcısı yapılandırılmamış (.env dosyasını kontrol edin).",
+      aiNoTextToRewrite: "Önce bir açıklama metni girin.",
+
+      dupAlertTitle: "⚠️ Olası Tekrarlanan Bulgu Tespit Edildi",
+      dupAlertDesc: "Bu bulguya benzer, projede zaten kayıtlı bulgular var.",
+      dupMergeBtn: "Seçilenleri Birleştir",
+      dupCreateAnywayBtn: "Yine de Oluştur",
+      dupSelectAtLeastTwo: "Birleştirmek için en az 2 bulgu seçin.",
+      dupMergeSuccess: "Bulgular birleştirildi",
+      dupNoneFound: "Benzer bir bulgu bulunamadı.",
+      dupReasonSimilarTitle: "benzer başlık",
+      dupReasonSimilarDescription: "benzer açıklama",
+      dupReasonSameEndpoint: "aynı endpoint",
+      dupReasonSameCwe: "aynı CWE",
+      dupReasonSameTestId: "aynı test ID",
+      dupReasonSameRootCause: "muhtemelen aynı kök neden",
+      viewDetailsBtn: "Detayları Gör",
       findingDeleteConfirm: "Bu finding'i silmek istediğinize emin misiniz?",
       findingDeleted: "Finding silindi",
       newFindingBtn: "+ Yeni Finding",
@@ -422,6 +449,41 @@
       pwReportTypeDeveloper: "Developer Remediation",
       pwReportTypeDeveloperDesc: "Problem / Neden Önemli / Nasıl Düzeltilir formatında somut aksiyon rehberi.",
       pwReportsSessionExportLabel: "Basit JSON Dışa Aktarım (oturum bazlı)",
+
+      reportBuilderTitle: "HTML Rapor Oluşturucu",
+      reportBuilderDesc: "Özelleştirilebilir, tek dosyalık HTML rapor — tarayıcıdan doğrudan yazdır / PDF olarak kaydet.",
+      reportTitleLabel: "Rapor Başlığı",
+      reportClientLabel: "Müşteri Adı",
+      reportPentesterLabel: "Test Uzmanı",
+      reportDateRangeLabel: "Tarih Aralığı",
+      reportIncludeLabel: "Dahil Edilecek Bulgular",
+      reportIncludeAll: "Tümü",
+      reportIncludeCriticalHigh: "Sadece Kritik + Yüksek",
+      reportTemplateLabel: "Şablon",
+      reportTemplateStandard: "Standart",
+      reportTemplateExecutive: "Yönetici Özeti",
+      reportTemplateDetailed: "Detaylı",
+      reportConfidentialLabel: "Gizli (rapora 'CONFIDENTIAL' etiketi ekle)",
+      reportExecSummaryLabel: "Yönetici Özeti (opsiyonel, AI ile oluşturulabilir)",
+      reportExecSummaryPlaceholder: "Boş bırakılırsa rapor istatistik tabanlı sade bir özet kullanır.",
+      reportGenSummaryBtn: "AI ile Özet Oluştur",
+      reportOpenHtmlBtn: "HTML Raporu Aç",
+
+      pwTabKanbanDesc: "WSTG testlerini kanban panosunda sürükle-bırak ile takip edin.",
+      kanbanFilterTestId: "WSTG ID filtrele...",
+      kanbanFilterAllSeverity: "Tüm Önem Dereceleri",
+      kanbanFilterAssignee: "Atanan kişi filtrele...",
+      kanbanMyTasks: "Sadece Görevlerim",
+      kanbanMyName: "Adım (filtre için)",
+      kanbanAssignPlaceholder: "Ata...",
+      kanbanMinutesShort: "dk",
+      kanbanColumnEmpty: "Kart yok",
+      kanbanCardUpdated: "Kart güncellendi",
+      kanbanCol_todo: "Yapılacak",
+      kanbanCol_testing: "Test Ediliyor",
+      kanbanCol_review: "İncelemede",
+      kanbanCol_confirmed: "Onaylandı",
+      kanbanCol_done: "Tamamlandı",
 
       pwEventType_project_created: "🆕 Proje oluşturuldu",
       pwEventType_session_created: "📋 Oturum oluşturuldu",
@@ -626,7 +688,7 @@
 
       pwTabOverview: "Overview", pwTabScope: "Scope", pwTabAssets: "Assets", pwTabRecon: "Recon",
       pwTabTestPlan: "Test Plan", pwTabWstg: "WSTG Tests", pwTabFindings: "Findings",
-      pwTabTimeline: "Timeline", pwTabReports: "Reports",
+      pwTabTimeline: "Timeline", pwTabKanban: "Kanban", pwTabReports: "Reports",
 
       pwStatAssets: "Assets", pwStatTests: "Tests", pwStatCompleted: "Completed", pwStatFindings: "Findings",
       pwSeverityDistLabel: "Severity Distribution",
@@ -702,6 +764,33 @@
       findingStatus_wont_fix: "Won't Fix", findingStatus_accepted_risk: "Accepted Risk",
       findingTitleRequired: "Title is required.",
       findingSaved: "Finding saved",
+
+      aiAssistantTitle: "AI Assistant",
+      aiGenDescBtn: "Generate Description",
+      aiGenRemediationBtn: "Generate Remediation",
+      aiRewriteBtn: "Make More Professional",
+      aiFindSimilarBtn: "Find Similar Findings",
+      aiSuggestCweBtn: "Suggest CWE/Severity",
+      aiWorking: "AI is working…",
+      aiDone: "Done",
+      aiSaveFirst: "Save the finding once before using the AI assistant.",
+      aiNotConfigured: "No AI provider configured (check your .env file).",
+      aiNoTextToRewrite: "Enter a description first.",
+
+      dupAlertTitle: "⚠️ Potential Duplicate Finding Detected",
+      dupAlertDesc: "Findings similar to this one already exist in the project.",
+      dupMergeBtn: "Merge Selected",
+      dupCreateAnywayBtn: "Create Anyway",
+      dupSelectAtLeastTwo: "Select at least 2 findings to merge.",
+      dupMergeSuccess: "Findings merged",
+      dupNoneFound: "No similar findings found.",
+      dupReasonSimilarTitle: "similar title",
+      dupReasonSimilarDescription: "similar description",
+      dupReasonSameEndpoint: "same endpoint",
+      dupReasonSameCwe: "same CWE",
+      dupReasonSameTestId: "same test ID",
+      dupReasonSameRootCause: "likely same root cause",
+      viewDetailsBtn: "View Details",
       findingDeleteConfirm: "Are you sure you want to delete this finding?",
       findingDeleted: "Finding deleted",
       newFindingBtn: "+ New Finding",
@@ -796,6 +885,41 @@
       pwReportTypeDeveloper: "Developer Remediation",
       pwReportTypeDeveloperDesc: "Problem / Why It Matters / How To Fix format with concrete action steps.",
       pwReportsSessionExportLabel: "Simple JSON Export (per session)",
+
+      reportBuilderTitle: "HTML Report Builder",
+      reportBuilderDesc: "Customizable, single-file HTML report — print / save as PDF directly from the browser.",
+      reportTitleLabel: "Report Title",
+      reportClientLabel: "Client Name",
+      reportPentesterLabel: "Pentester",
+      reportDateRangeLabel: "Date Range",
+      reportIncludeLabel: "Findings to Include",
+      reportIncludeAll: "All",
+      reportIncludeCriticalHigh: "Critical + High Only",
+      reportTemplateLabel: "Template",
+      reportTemplateStandard: "Standard",
+      reportTemplateExecutive: "Executive",
+      reportTemplateDetailed: "Detailed",
+      reportConfidentialLabel: "Confidential (adds a 'CONFIDENTIAL' label to the report)",
+      reportExecSummaryLabel: "Executive Summary (optional, can be AI-generated)",
+      reportExecSummaryPlaceholder: "If left empty, the report uses a plain statistics-based summary.",
+      reportGenSummaryBtn: "Generate Summary with AI",
+      reportOpenHtmlBtn: "Open HTML Report",
+
+      pwTabKanbanDesc: "Track WSTG tests on a drag-and-drop kanban board.",
+      kanbanFilterTestId: "Filter WSTG ID...",
+      kanbanFilterAllSeverity: "All Severities",
+      kanbanFilterAssignee: "Filter assignee...",
+      kanbanMyTasks: "My Tasks Only",
+      kanbanMyName: "My name (for filter)",
+      kanbanAssignPlaceholder: "Assign...",
+      kanbanMinutesShort: "min",
+      kanbanColumnEmpty: "No cards",
+      kanbanCardUpdated: "Card updated",
+      kanbanCol_todo: "To Do",
+      kanbanCol_testing: "Testing",
+      kanbanCol_review: "Review",
+      kanbanCol_confirmed: "Confirmed",
+      kanbanCol_done: "Done",
 
       pwEventType_project_created: "🆕 Project created",
       pwEventType_session_created: "📋 Session created",
@@ -1466,8 +1590,11 @@
     }, options || {})).then(async res => {
       if(!res.ok){
         let msg = res.statusText;
-        try{ const j = await res.json(); msg = j.error || msg; }catch(e){}
-        throw new Error(msg);
+        let body = null;
+        try{ body = await res.json(); msg = body.error || msg; }catch(e){}
+        const err = new Error(msg);
+        err.body = body;
+        throw err;
       }
       if(res.status === 204) return null;
       return res.json();
@@ -2199,7 +2326,7 @@
       overview: renderPwOverview, scope: renderPwScope, assets: renderPwAssets,
       recon: renderPwRecon, tools: renderPwTools, testplan: renderPwTestPlan, wstg: renderPwWstg,
       findings: renderPwFindings, evidence: renderPwEvidence, chains: renderPwChains,
-      timeline: renderPwTimeline, reports: renderPwReports
+      timeline: renderPwTimeline, kanban: renderPwKanban, reports: renderPwReports
     };
     const fn = map[activePwTab];
     if(fn) fn();
@@ -2777,9 +2904,9 @@
     document.getElementById('findingModalOverlay').classList.remove('open');
   }
 
-  function submitFindingForm(){
+  function buildFindingPayload(){
     const title = document.getElementById('findingTitleInput').value.trim();
-    if(!title){ showToast(t('findingTitleRequired')); return; }
+    if(!title){ showToast(t('findingTitleRequired')); return null; }
     const cvssResult = computeCvss(currentCvssMetrics);
     const payload = {
       title,
@@ -2801,16 +2928,166 @@
       payload.retest_result = document.getElementById('findingRetestResultInput').value;
       payload.retest_notes = document.getElementById('findingRetestNotesInput').value.trim();
     }
+    return payload;
+  }
 
+  let pendingFindingPayload = null;
+  let dupCandidates = [];
+
+  function submitFindingForm(){
+    const payload = buildFindingPayload();
+    if(!payload) return;
+
+    apiRequest(`/projects/${currentProjectId}/findings/check-duplicates`, {
+      method: 'POST',
+      body: JSON.stringify({
+        title: payload.title, description: payload.description,
+        endpoint: payload.endpoint, cwe: payload.cwe, test_id: payload.test_id,
+        exclude_id: editingFindingId
+      })
+    }).then(res => {
+      if(res.matches && res.matches.length){
+        openDuplicateAlert(res.matches, payload);
+      } else {
+        actuallySaveFinding(payload);
+      }
+    }).catch(()=> actuallySaveFinding(payload)); // duplicate kontrolu basarisiz olursa kaydetmeyi ENGELLEMEZ
+  }
+
+  function actuallySaveFinding(payload){
     const req = editingFindingId
       ? apiRequest(`/projects/${currentProjectId}/findings/${editingFindingId}`, { method: 'PUT', body: JSON.stringify(payload) })
       : apiRequest(`/projects/${currentProjectId}/findings`, { method: 'POST', body: JSON.stringify(payload) });
 
     req.then(()=>{
       showToast(t('findingSaved'));
+      closeDuplicateAlert();
       closeFindingModal();
       renderPwFindings();
     }).catch(err => showToast(err.message || t('resultSaveError')));
+  }
+
+  const DUP_REASON_KEYS = {
+    similar_title: 'dupReasonSimilarTitle',
+    similar_description: 'dupReasonSimilarDescription',
+    same_endpoint: 'dupReasonSameEndpoint',
+    same_cwe: 'dupReasonSameCwe',
+    same_test_id: 'dupReasonSameTestId',
+    likely_same_root_cause: 'dupReasonSameRootCause',
+  };
+
+  function openDuplicateAlert(matches, payload){
+    pendingFindingPayload = payload;
+    dupCandidates = matches;
+    document.getElementById('dupAlertList').innerHTML = matches.map((m, i) => `
+      <div class="import-preview-item">
+        <label class="dup-candidate-row">
+          <input type="checkbox" class="dup-candidate-check" data-idx="${i}">
+          <div class="import-preview-body">
+            <div class="import-preview-top">
+              <span class="import-preview-title">${escapeHtml(m.finding.finding_code || '')} — ${escapeHtml(m.finding.title)}</span>
+              <span class="severity-badge sev-${m.finding.severity}">${t('severity_'+m.finding.severity)}</span>
+              <span class="dup-score-badge">${Math.round(m.score)}%</span>
+            </div>
+            <div class="import-preview-detail">${m.reasons.map(r => t(DUP_REASON_KEYS[r] || r)).join(' · ')}</div>
+          </div>
+        </label>
+        <button type="button" class="planner-goto-btn dup-view-btn" data-idx="${i}" data-i18n="viewDetailsBtn">${t('viewDetailsBtn')}</button>
+      </div>`).join('');
+    document.getElementById('duplicateAlertOverlay').classList.add('open');
+  }
+
+  function closeDuplicateAlert(){
+    document.getElementById('duplicateAlertOverlay').classList.remove('open');
+    pendingFindingPayload = null;
+    dupCandidates = [];
+  }
+
+  // --- AI Report Assistant (finding modal butonlari) ---
+  // Ilke: AI hicbir alani DOGRUDAN kaydetmez -- sadece ilgili textarea'yi
+  // doldurur, kullanici gozden gecirip "Kaydet"e basmadan hicbir sey
+  // veritabanina yazilmaz.
+  function setAiAssistantBusy(busy, message){
+    const statusEl = document.getElementById('aiAssistantStatus');
+    statusEl.textContent = message || (busy ? t('aiWorking') : '');
+    document.querySelectorAll('.ai-assistant-actions button').forEach(b => b.disabled = busy);
+  }
+
+  function handleAiError(err){
+    if(err && err.body && err.body.ai_configured === false){
+      setAiAssistantBusy(false, t('aiNotConfigured'));
+    } else {
+      setAiAssistantBusy(false, '');
+    }
+    showToast((err && err.message) || t('resultSaveError'));
+  }
+
+  function runFindingAiAction(endpoint, onSuccess){
+    if(!editingFindingId){
+      showToast(t('aiSaveFirst'));
+      return;
+    }
+    setAiAssistantBusy(true);
+    apiRequest(`/projects/${currentProjectId}/findings/${editingFindingId}/ai/${endpoint}`, {
+      method: 'POST', body: JSON.stringify({ lang: currentLang })
+    }).then(res => {
+      setAiAssistantBusy(false, t('aiDone'));
+      onSuccess(res);
+    }).catch(handleAiError);
+  }
+
+  function initAiAssistantButtons(){
+    document.getElementById('aiGenDescBtn').addEventListener('click', ()=>{
+      runFindingAiAction('description', res => {
+        document.getElementById('findingDescInput').value = res.description;
+      });
+    });
+    document.getElementById('aiGenRemediationBtn').addEventListener('click', ()=>{
+      runFindingAiAction('remediation', res => {
+        document.getElementById('findingRemediationInput').value = res.remediation;
+      });
+    });
+    document.getElementById('aiSuggestCweBtn').addEventListener('click', ()=>{
+      runFindingAiAction('analyze', res => {
+        if(res.suggested_cwe_id) document.getElementById('findingCweInput').value = res.suggested_cwe_id;
+        if(res.suggested_cvss_vector){
+          const parsed = parseCvssVector(res.suggested_cvss_vector);
+          if(parsed){ currentCvssMetrics = parsed; renderCvssCalculator(); }
+        }
+        showToast(res.rationale || t('aiDone'));
+      });
+    });
+    document.getElementById('aiRewriteDescBtn').addEventListener('click', ()=>{
+      const textEl = document.getElementById('findingDescInput');
+      const text = textEl.value.trim();
+      if(!text){ showToast(t('aiNoTextToRewrite')); return; }
+      setAiAssistantBusy(true);
+      apiRequest('/ai/rewrite', { method: 'POST', body: JSON.stringify({ text, lang: currentLang }) })
+        .then(res => {
+          setAiAssistantBusy(false, t('aiDone'));
+          textEl.value = res.text;
+        }).catch(handleAiError);
+    });
+    document.getElementById('aiFindSimilarBtn').addEventListener('click', ()=>{
+      const payload = buildFindingPayload();
+      if(!payload) return;
+      setAiAssistantBusy(true);
+      apiRequest(`/projects/${currentProjectId}/findings/check-duplicates`, {
+        method: 'POST',
+        body: JSON.stringify({
+          title: payload.title, description: payload.description,
+          endpoint: payload.endpoint, cwe: payload.cwe, test_id: payload.test_id,
+          exclude_id: editingFindingId
+        })
+      }).then(res => {
+        setAiAssistantBusy(false, '');
+        if(res.matches && res.matches.length){
+          openDuplicateAlert(res.matches, payload);
+        } else {
+          showToast(t('dupNoneFound'));
+        }
+      }).catch(handleAiError);
+    });
   }
 
   function deleteFindingUI(id){
@@ -2953,6 +3230,266 @@
     });
   }
 
+  // --- Pentest Kanban ---
+  // Tasarim karari: ayri bir 'kanban card' veri modeli YOK -- kartlar dogrudan
+  // TestResult'lar (bkz. backend app.py /kanban rotalari). Surukle-birak icin
+  // harici bir kutuphane (orn. SortableJS) EKLENMEDI: bu proje su ana kadar
+  // hicbir CDN/harici JS bagimliligi kullanmiyor, native HTML5 Drag and Drop
+  // API'si bu olcek icin yeterli.
+  const KANBAN_COLUMNS = ['todo', 'testing', 'review', 'confirmed', 'done'];
+  let kanbanBoardData = { todo: [], testing: [], review: [], confirmed: [], done: [] };
+  let kanbanFilters = { testIdPrefix: '', severity: '', assignee: '', myTasksOnly: false };
+
+  function renderPwKanban(){
+    const content = document.getElementById('pwContent');
+    content.innerHTML = `<div class="search-empty">${t('loadingSessions')}</div>`;
+    apiRequest(`/projects/${currentProjectId}/kanban/board`).then(data => {
+      kanbanBoardData = data.columns;
+      content.innerHTML = renderKanbanFilterBarHtml() + '<div class="kanban-board" id="kanbanBoard"></div>';
+      renderKanbanBoardOnly();
+      wireKanbanFilterEvents();
+      wireKanbanBoardEvents();
+    }).catch(err => {
+      content.innerHTML = `<div class="search-empty">${escapeHtml(String(err.message || err))}</div>`;
+    });
+  }
+
+  function renderKanbanFilterBarHtml(){
+    return `
+    <div class="filter-bar kanban-filter-bar">
+      <input type="text" id="kanbanFilterTestId" placeholder="${t('kanbanFilterTestId')}" value="${escapeHtml(kanbanFilters.testIdPrefix)}">
+      <select id="kanbanFilterSeverity">
+        <option value="">${t('kanbanFilterAllSeverity')}</option>
+        ${SEVERITIES.map(s => `<option value="${s}" ${kanbanFilters.severity===s?'selected':''}>${t('severity_'+s)}</option>`).join('')}
+      </select>
+      <input type="text" id="kanbanFilterAssignee" placeholder="${t('kanbanFilterAssignee')}" value="${escapeHtml(kanbanFilters.assignee)}">
+      <label class="kanban-mytasks-toggle">
+        <input type="checkbox" id="kanbanMyTasksToggle" ${kanbanFilters.myTasksOnly ? 'checked' : ''}>
+        ${t('kanbanMyTasks')}
+      </label>
+      <input type="text" id="kanbanMyName" placeholder="${t('kanbanMyName')}" value="${escapeHtml(localStorage.getItem('wstg_kanban_me_v1') || '')}" style="max-width:140px">
+    </div>`;
+  }
+
+  function kanbanCardMatchesFilters(card){
+    if(kanbanFilters.testIdPrefix && !(card.test_id || '').toUpperCase().includes(kanbanFilters.testIdPrefix.toUpperCase())) return false;
+    if(kanbanFilters.severity && (card.severity || 'info') !== kanbanFilters.severity) return false;
+    if(kanbanFilters.assignee && !(card.assigned_to || '').toLowerCase().includes(kanbanFilters.assignee.toLowerCase())) return false;
+    if(kanbanFilters.myTasksOnly){
+      const me = (localStorage.getItem('wstg_kanban_me_v1') || '').trim().toLowerCase();
+      if(!me || (card.assigned_to || '').trim().toLowerCase() !== me) return false;
+    }
+    return true;
+  }
+
+  function renderKanbanCard(card){
+    return `<div class="kanban-card" draggable="true" data-id="${card.id}">
+      <div class="kanban-card-top">
+        <span class="kanban-card-testid">${escapeHtml(card.test_id)}</span>
+        ${card.findings_count ? `<span class="kanban-badge kanban-badge-finding">🔴 ${card.findings_count}</span>` : ''}
+      </div>
+      <div class="kanban-card-title">${escapeHtml(card.test_title || '')}</div>
+      <div class="kanban-card-meta">
+        ${card.evidence_count ? `<span>📎 ${card.evidence_count}</span>` : ''}
+        <span class="kanban-time-row">⏱ <input type="number" min="0" class="kanban-time-input" data-id="${card.id}" value="${card.time_spent_minutes || 0}"> ${t('kanbanMinutesShort')}</span>
+      </div>
+      <input type="text" class="kanban-assignee-input" data-id="${card.id}" placeholder="${t('kanbanAssignPlaceholder')}" value="${escapeHtml(card.assigned_to || '')}">
+    </div>`;
+  }
+
+  function renderKanbanBoardOnly(){
+    const board = document.getElementById('kanbanBoard');
+    if(!board) return;
+    board.innerHTML = KANBAN_COLUMNS.map(col => {
+      const cards = (kanbanBoardData[col] || []).filter(kanbanCardMatchesFilters);
+      return `<div class="kanban-column">
+        <div class="kanban-column-header">
+          <span>${t('kanbanCol_' + col)}</span>
+          <span class="kanban-column-count">${cards.length}</span>
+        </div>
+        <div class="kanban-column-body" data-status="${col}">
+          ${cards.map(renderKanbanCard).join('') || `<div class="kanban-empty">${t('kanbanColumnEmpty')}</div>`}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function wireKanbanFilterEvents(){
+    document.getElementById('kanbanFilterTestId').addEventListener('input', e=>{ kanbanFilters.testIdPrefix = e.target.value; renderKanbanBoardOnly(); });
+    document.getElementById('kanbanFilterSeverity').addEventListener('change', e=>{ kanbanFilters.severity = e.target.value; renderKanbanBoardOnly(); });
+    document.getElementById('kanbanFilterAssignee').addEventListener('input', e=>{ kanbanFilters.assignee = e.target.value; renderKanbanBoardOnly(); });
+    document.getElementById('kanbanMyTasksToggle').addEventListener('change', e=>{ kanbanFilters.myTasksOnly = e.target.checked; renderKanbanBoardOnly(); });
+    document.getElementById('kanbanMyName').addEventListener('input', e=>{
+      localStorage.setItem('wstg_kanban_me_v1', e.target.value);
+      if(kanbanFilters.myTasksOnly) renderKanbanBoardOnly();
+    });
+  }
+
+  function moveKanbanCard(cardId, newStatus){
+    cardId = Number(cardId);
+    let card = null;
+    for(const col of KANBAN_COLUMNS){
+      const idx = (kanbanBoardData[col] || []).findIndex(c => c.id === cardId);
+      if(idx !== -1){ card = kanbanBoardData[col].splice(idx, 1)[0]; break; }
+    }
+    if(!card) return;
+    const oldStatus = card.kanban_status;
+    card.kanban_status = newStatus;
+    kanbanBoardData[newStatus] = kanbanBoardData[newStatus] || [];
+    kanbanBoardData[newStatus].push(card);
+    renderKanbanBoardOnly();
+
+    apiRequest(`/kanban/card/${cardId}/move`, { method: 'PUT', body: JSON.stringify({ kanban_status: newStatus }) })
+      .catch(err => {
+        showToast(err.message || t('resultSaveError'));
+        card.kanban_status = oldStatus; // basarisiz olursa iyimser guncellemeyi geri al
+        renderPwKanban();
+      });
+  }
+
+  function updateKanbanCard(cardId, patch){
+    apiRequest(`/kanban/card/${cardId}`, { method: 'PUT', body: JSON.stringify(patch) })
+      .catch(err => showToast(err.message || t('resultSaveError')));
+  }
+
+  function wireKanbanBoardEvents(){
+    const board = document.getElementById('kanbanBoard');
+    if(!board) return;
+
+    board.addEventListener('dragstart', e=>{
+      const card = e.target.closest('.kanban-card');
+      if(!card) return;
+      e.dataTransfer.setData('text/plain', card.dataset.id);
+      setTimeout(()=> card.classList.add('dragging'), 0);
+    });
+    board.addEventListener('dragend', e=>{
+      const card = e.target.closest('.kanban-card');
+      if(card) card.classList.remove('dragging');
+    });
+    board.addEventListener('dragover', e=>{
+      const colBody = e.target.closest('.kanban-column-body');
+      if(!colBody) return;
+      e.preventDefault();
+      colBody.classList.add('drag-over');
+    });
+    board.addEventListener('dragleave', e=>{
+      const colBody = e.target.closest('.kanban-column-body');
+      if(colBody) colBody.classList.remove('drag-over');
+    });
+    board.addEventListener('drop', e=>{
+      const colBody = e.target.closest('.kanban-column-body');
+      if(!colBody) return;
+      e.preventDefault();
+      colBody.classList.remove('drag-over');
+      const cardId = e.dataTransfer.getData('text/plain');
+      if(cardId) moveKanbanCard(cardId, colBody.dataset.status);
+    });
+    board.addEventListener('change', e=>{
+      if(e.target.classList.contains('kanban-time-input')){
+        updateKanbanCard(e.target.dataset.id, { time_spent_minutes: Number(e.target.value) || 0 });
+      }
+      if(e.target.classList.contains('kanban-assignee-input')){
+        updateKanbanCard(e.target.dataset.id, { assigned_to: e.target.value.trim() });
+      }
+    });
+  }
+
+  function renderHtmlReportBuilderHtml(){
+    const defaultTitle = currentProjectObj ? `${currentProjectObj.name} Security Assessment` : '';
+    return `
+      <div class="pro-reports-section">
+        <h5>${t('reportBuilderTitle')}</h5>
+        <p class="import-preview-source" style="margin-bottom:14px">${t('reportBuilderDesc')}</p>
+        <div class="report-builder-form">
+          <div class="finding-form-row">
+            <div><label>${t('reportTitleLabel')}</label><input type="text" id="reportTitleInput" placeholder="${escapeHtml(defaultTitle)}"></div>
+            <div><label>${t('reportClientLabel')}</label><input type="text" id="reportClientInput" value="${escapeHtml((currentProjectObj && currentProjectObj.client) || '')}"></div>
+          </div>
+          <div class="finding-form-row">
+            <div><label>${t('reportPentesterLabel')}</label><input type="text" id="reportPentesterInput"></div>
+            <div><label>${t('reportDateRangeLabel')}</label><input type="text" id="reportDateRangeInput" placeholder="2026-08-01 – 2026-08-20"></div>
+          </div>
+          <div class="finding-form-row">
+            <div>
+              <label>${t('reportIncludeLabel')}</label>
+              <select id="reportIncludeSelect">
+                <option value="all">${t('reportIncludeAll')}</option>
+                <option value="critical_high">${t('reportIncludeCriticalHigh')}</option>
+              </select>
+            </div>
+            <div>
+              <label>${t('reportTemplateLabel')}</label>
+              <select id="reportTemplateSelect">
+                <option value="standard">${t('reportTemplateStandard')}</option>
+                <option value="executive">${t('reportTemplateExecutive')}</option>
+                <option value="detailed">${t('reportTemplateDetailed')}</option>
+              </select>
+            </div>
+          </div>
+          <label class="recon-auth-check">
+            <input type="checkbox" id="reportConfidentialCheck">
+            <span>${t('reportConfidentialLabel')}</span>
+          </label>
+          <label data-i18n="reportExecSummaryLabel">${t('reportExecSummaryLabel')}</label>
+          <textarea id="reportExecSummaryInput" rows="3" placeholder="${t('reportExecSummaryPlaceholder')}"></textarea>
+          <div class="hero-actions" style="margin-top:8px">
+            <button type="button" class="btn btn-sm" id="reportGenSummaryBtn">🤖 ${t('reportGenSummaryBtn')}</button>
+            <button type="button" class="btn btn-primary btn-sm" id="openHtmlReportBtn">🌐 ${t('reportOpenHtmlBtn')}</button>
+          </div>
+          <div class="import-status" id="reportBuilderStatus"></div>
+        </div>
+      </div>`;
+  }
+
+  function wireHtmlReportBuilder(){
+    document.getElementById('reportGenSummaryBtn').addEventListener('click', ()=>{
+      const statusEl = document.getElementById('reportBuilderStatus');
+      statusEl.textContent = t('aiWorking');
+      apiRequest(`/projects/${currentProjectId}/ai/executive-summary`, { method: 'POST', body: JSON.stringify({ lang: currentLang }) })
+        .then(res => {
+          statusEl.textContent = '';
+          document.getElementById('reportExecSummaryInput').value = res.summary;
+        }).catch(err => {
+          statusEl.textContent = (err.body && err.body.ai_configured === false) ? t('aiNotConfigured') : '';
+          showToast(err.message || t('resultSaveError'));
+        });
+    });
+
+    document.getElementById('openHtmlReportBtn').addEventListener('click', ()=>{
+      const payload = {
+        title: document.getElementById('reportTitleInput').value.trim() || undefined,
+        client_name: document.getElementById('reportClientInput').value.trim(),
+        pentester_name: document.getElementById('reportPentesterInput').value.trim(),
+        date_range: document.getElementById('reportDateRangeInput').value.trim(),
+        include: document.getElementById('reportIncludeSelect').value,
+        template: document.getElementById('reportTemplateSelect').value,
+        confidential: document.getElementById('reportConfidentialCheck').checked,
+        executive_summary: document.getElementById('reportExecSummaryInput').value.trim() || undefined,
+        lang: currentLang,
+      };
+      // Yeni sekme kullanici tiklamasiyla AYNI ANDA acilir (popup engelleyiciyi
+      // atlamak icin) -- icerik fetch tamamlaninca dolduruluyor.
+      const reportWindow = window.open('', '_blank');
+      fetch(`${API_BASE}/projects/${currentProjectId}/reports/html`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).then(res => {
+        if(!res.ok) throw new Error('report generation failed');
+        return res.text();
+      }).then(html => {
+        if(reportWindow){
+          reportWindow.document.open();
+          reportWindow.document.write(html);
+          reportWindow.document.close();
+        }
+      }).catch(()=>{
+        if(reportWindow) reportWindow.close();
+        showToast(t('resultSaveError'));
+      });
+    });
+  }
+
   function renderPwReports(){
     const content = document.getElementById('pwContent');
     content.innerHTML = `<div class="search-empty">${t('loadingSessions')}</div>`;
@@ -2978,10 +3515,11 @@
               <div class="pro-report-desc">${t('pwReportTypeDeveloperDesc')}</div>
             </a>
           </div>
-        </div>`;
+        </div>` + renderHtmlReportBuilderHtml();
 
       if(!sessions.length){
         content.innerHTML = proReportsHtml + `<div class="search-empty">${t('pwReportsNoSession')}</div>`;
+        wireHtmlReportBuilder();
         return;
       }
       content.innerHTML = proReportsHtml +
@@ -3010,6 +3548,7 @@
           });
         });
       });
+      wireHtmlReportBuilder();
     });
   }
 
@@ -3342,6 +3881,35 @@
       if(e.target.id === 'findingModalOverlay') closeFindingModal();
     });
     document.getElementById('submitFindingBtn').addEventListener('click', submitFindingForm);
+    initAiAssistantButtons();
+
+    document.getElementById('closeDuplicateAlert').addEventListener('click', closeDuplicateAlert);
+    document.getElementById('duplicateAlertOverlay').addEventListener('click', e=>{
+      if(e.target.id === 'duplicateAlertOverlay') closeDuplicateAlert();
+    });
+    document.getElementById('dupCreateAnywayBtn').addEventListener('click', ()=>{
+      if(pendingFindingPayload) actuallySaveFinding(pendingFindingPayload);
+    });
+    document.getElementById('dupMergeBtn').addEventListener('click', ()=>{
+      const checked = Array.from(document.querySelectorAll('.dup-candidate-check:checked'))
+        .map(cb => dupCandidates[Number(cb.dataset.idx)].finding.id);
+      if(checked.length < 2){ showToast(t('dupSelectAtLeastTwo')); return; }
+      const [primary_id, ...merge_ids] = checked;
+      apiRequest(`/projects/${currentProjectId}/findings/merge`, { method: 'POST', body: JSON.stringify({ primary_id, merge_ids }) })
+        .then(()=>{
+          showToast(t('dupMergeSuccess'));
+          closeDuplicateAlert();
+          renderPwFindings();
+        }).catch(err => showToast(err.message || t('resultSaveError')));
+    });
+    document.getElementById('dupAlertList').addEventListener('click', e=>{
+      const btn = e.target.closest('.dup-view-btn');
+      if(!btn) return;
+      const m = dupCandidates[Number(btn.dataset.idx)];
+      closeDuplicateAlert();
+      openFindingModal(m.finding, null);
+    });
+
     document.getElementById('pwTabs').addEventListener('click', e=>{
       const btn = e.target.closest('.pw-tab');
       if(!btn) return;
@@ -3368,7 +3936,7 @@
     document.addEventListener('keydown', e=>{
       if(e.key === 'Escape'){
         closeCategory(); closeThemeModal(); closeNewSessionOverlay(); closeTop10Detail(); closeImportModal(); closeReconModal(); closePlannerModal();
-        closeProjectsModal(); closeNewProjectModal(); closeProjectWorkspace(); closeFindingModal();
+        closeProjectsModal(); closeNewProjectModal(); closeProjectWorkspace(); closeFindingModal(); closeDuplicateAlert();
         if(document.getElementById('closeSessionGate').style.display !== 'none') closeSessionGate();
       }
     });

@@ -7,14 +7,20 @@ import uuid
 from werkzeug.utils import secure_filename
 from sqlalchemy import text
 from config import DevelopmentConfig, ProductionConfig
-from models import db, Session, TestResult, Project, ScopeItem, TimelineEvent, ReconRun, Evidence, CustomTest, ToolRun, Finding
+from models import db, Session, TestResult, Project, ScopeItem, TimelineEvent, ReconRun, Evidence, CustomTest, ToolRun, Finding, AIInteractionLog
 import recon
 import attack_chains
 import report_builder
+import report_html
 import evidence_intel
 import tool_runner
 import cvss
 import redaction
+import duplicate_detector
+import ai_report_assistant
+import finding_analysis
+from ai.factory import get_ai_provider
+from ai.base import AIConfigError, AIRequestError
 
 app = Flask(__name__)
 
@@ -77,6 +83,28 @@ def ensure_schema():
         # ile mevcut NOT NULL kısıtlaması kaldırılamaz -- yeni satırlar zaten
         # models.py üzerinden nullable olarak ekleniyor, sorun teşkil etmez.
         db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+    try:
+        cols = [row[1] for row in db.session.execute(text("PRAGMA table_info(test_results)")).fetchall()]
+        kanban_cols = {
+            'kanban_status': "VARCHAR(20) DEFAULT 'todo'",
+            'assigned_to': "VARCHAR(100)",
+            'time_spent_minutes': "INTEGER DEFAULT 0",
+        }
+        for col, coltype in kanban_cols.items():
+            if col not in cols:
+                db.session.execute(text(f"ALTER TABLE test_results ADD COLUMN {col} {coltype}"))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+    try:
+        cols = [row[1] for row in db.session.execute(text("PRAGMA table_info(findings)")).fetchall()]
+        if 'merged_finding_ids' not in cols:
+            db.session.execute(text("ALTER TABLE findings ADD COLUMN merged_finding_ids TEXT"))
+            db.session.commit()
     except Exception:
         db.session.rollback()
 
@@ -1410,6 +1438,446 @@ def delete_finding(project_id, finding_id):
         return jsonify({'error': str(e)}), 404
     except Exception as e:
         db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+# ========================
+# DUPLICATE FINDING DETECTION
+# ========================
+
+@app.route('/api/projects/<project_id>/findings/check-duplicates', methods=['POST'])
+def check_duplicate_findings(project_id):
+    """Taslak bir bulguyu (henuz kaydedilmemis veya duzenlenmekte olan) projedeki
+    mevcut bulgularla karsilastirir. Salt hesaplama duplicate_detector.py'de --
+    burada sadece DB sorgusu ve JSON sozlesmesi var."""
+    try:
+        _project_or_404(project_id)
+        data = request.json or {}
+        draft = {
+            'title': data.get('title'),
+            'description': data.get('description'),
+            'endpoint': data.get('endpoint'),
+            'cwe': data.get('cwe'),
+            'test_id': data.get('test_id'),
+        }
+        exclude_id = data.get('exclude_id')
+        exclude_id = int(exclude_id) if exclude_id not in (None, '') else None
+
+        candidates = [f.to_dict() for f in Finding.query.filter_by(project_id=project_id).all()]
+        matches = duplicate_detector.find_similar_findings(candidates, draft, exclude_id=exclude_id)
+        return jsonify({'matches': matches}), 200
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/projects/<project_id>/findings/merge', methods=['POST'])
+def merge_findings(project_id):
+    """Birden fazla bulguyu tek bir 'primary' bulguda birlestirir:
+    - endpoint/parameter birlestirilir (virgulle ayrilmis, tekillestirilmis)
+    - description/impact/remediation icin EN UZUN (en kapsamli) metin korunur
+    - merge edilen bulgulara bagli Evidence kayitlari primary'ye yeniden baglanir
+    - merge edilen bulgular silinir, ID'leri primary.merged_finding_ids'e yazilir"""
+    try:
+        _project_or_404(project_id)
+        data = request.json or {}
+        primary_id = data.get('primary_id')
+        merge_ids = data.get('merge_ids') or []
+        if not primary_id or not merge_ids:
+            return jsonify({'error': 'primary_id ve merge_ids zorunludur'}), 400
+
+        primary = Finding.query.filter_by(id=primary_id, project_id=project_id).first()
+        if not primary:
+            return jsonify({'error': 'Primary finding bulunamadı'}), 404
+
+        merge_ids = [int(i) for i in merge_ids if int(i) != int(primary_id)]
+        to_merge = Finding.query.filter(
+            Finding.id.in_(merge_ids), Finding.project_id == project_id
+        ).all()
+        if not to_merge:
+            return jsonify({'error': 'Birleştirilecek geçerli bulgu bulunamadı'}), 400
+
+        def _union_csv(a, b):
+            items = [x.strip() for x in (a or '').split(',') if x.strip()]
+            for x in (b or '').split(','):
+                x = x.strip()
+                if x and x not in items:
+                    items.append(x)
+            return ', '.join(items)
+
+        def _longest(a, b):
+            a, b = (a or ''), (b or '')
+            return a if len(a) >= len(b) else b
+
+        merged_ids_seen = []
+        try:
+            merged_ids_seen = json.loads(primary.merged_finding_ids) if primary.merged_finding_ids else []
+        except Exception:
+            merged_ids_seen = []
+
+        for other in to_merge:
+            primary.endpoint = _union_csv(primary.endpoint, other.endpoint)
+            primary.parameter = _union_csv(primary.parameter, other.parameter)
+            primary.description = _longest(primary.description, other.description)
+            primary.impact = _longest(primary.impact, other.impact)
+            primary.remediation = _longest(primary.remediation, other.remediation)
+            primary.references = _union_csv(primary.references, other.references)
+
+            Evidence.query.filter_by(linked_finding_id=other.id).update({'linked_finding_id': primary.id})
+            merged_ids_seen.append(other.id)
+            db.session.delete(other)
+
+        primary.merged_finding_ids = json.dumps(merged_ids_seen)
+        primary.updated_at = datetime.utcnow()
+        db.session.commit()
+
+        log_event(project_id, 'findings_merged',
+                  f"FND-{primary.id:04d} içine {len(to_merge)} bulgu birleştirildi",
+                  {'primary_id': primary.id, 'merged_ids': [o.id for o in to_merge]})
+
+        return jsonify(primary.to_dict()), 200
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+# ========================
+# AI REPORT ASSISTANT
+# ========================
+#
+# Tasarim ilkesi (mevcut finding_analysis.py / evidence_intel.py ile ayni):
+# saglayici yapilandirilmamissa (.env'de ilgili API key yoksa) ozellik
+# SESSIZCE degil ama ACIKCA basarisiz olur -- 503 + net bir hata mesaji
+# doner, ASLA sahte/uydurma icerik uretilmez. Uretilen metin DOGRUDAN
+# hicbir alana yazilmaz; frontend kullaniciya gosterir, kullanici isterse
+# mevcut PUT /findings/<id> ile kaydeder.
+
+def _handle_ai_error(e):
+    if isinstance(e, AIConfigError):
+        return jsonify({'error': str(e), 'ai_configured': False}), 503
+    if isinstance(e, AIRequestError):
+        return jsonify({'error': str(e)}), 502
+    return jsonify({'error': str(e)}), 500
+
+
+def _log_ai_interaction(purpose, ai_result=None, error=None, project_id=None, finding_id=None):
+    try:
+        log = AIInteractionLog(
+            project_id=project_id,
+            finding_id=finding_id,
+            purpose=purpose,
+            provider=getattr(ai_result, 'provider', None),
+            model=getattr(ai_result, 'model', None),
+            success=error is None,
+            error_message=str(error) if error else None,
+            latency_ms=getattr(ai_result, 'latency_ms', None) if ai_result else getattr(error, 'latency_ms', None),
+        )
+        db.session.add(log)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+
+@app.route('/api/projects/<project_id>/findings/<int:finding_id>/ai/description', methods=['POST'])
+def ai_generate_description(project_id, finding_id):
+    try:
+        _project_or_404(project_id)
+        finding = Finding.query.filter_by(id=finding_id, project_id=project_id).first()
+        if not finding:
+            return jsonify({'error': 'Finding bulunamadı'}), 404
+        lang = (request.json or {}).get('lang', 'tr')
+        provider = get_ai_provider(app.config)
+        try:
+            text, ai_result = ai_report_assistant.generate_description(provider, finding.to_dict(), lang)
+        except (AIConfigError, AIRequestError) as e:
+            _log_ai_interaction('finding_description', error=e, project_id=project_id, finding_id=finding_id)
+            raise
+        _log_ai_interaction('finding_description', ai_result=ai_result, project_id=project_id, finding_id=finding_id)
+        return jsonify({'description': text, 'provider': ai_result.provider}), 200
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except (AIConfigError, AIRequestError) as e:
+        return _handle_ai_error(e)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/projects/<project_id>/findings/<int:finding_id>/ai/remediation', methods=['POST'])
+def ai_generate_remediation(project_id, finding_id):
+    try:
+        _project_or_404(project_id)
+        finding = Finding.query.filter_by(id=finding_id, project_id=project_id).first()
+        if not finding:
+            return jsonify({'error': 'Finding bulunamadı'}), 404
+        lang = (request.json or {}).get('lang', 'tr')
+        provider = get_ai_provider(app.config)
+        try:
+            text, ai_result = ai_report_assistant.generate_remediation(provider, finding.to_dict(), lang)
+        except (AIConfigError, AIRequestError) as e:
+            _log_ai_interaction('finding_remediation', error=e, project_id=project_id, finding_id=finding_id)
+            raise
+        _log_ai_interaction('finding_remediation', ai_result=ai_result, project_id=project_id, finding_id=finding_id)
+        return jsonify({'remediation': text, 'provider': ai_result.provider}), 200
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except (AIConfigError, AIRequestError) as e:
+        return _handle_ai_error(e)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/projects/<project_id>/findings/<int:finding_id>/ai/analyze', methods=['POST'])
+def ai_analyze_finding(project_id, finding_id):
+    """Mevcut (daha once app.py'den kopmus) finding_analysis.py'yi Finding modeline
+    baglar: CWE/severity/CVSS/false-positive onerisi. Kaynak: 1261b55 'AI entagration'."""
+    try:
+        _project_or_404(project_id)
+        finding = Finding.query.filter_by(id=finding_id, project_id=project_id).first()
+        if not finding:
+            return jsonify({'error': 'Finding bulunamadı'}), 404
+        lang = (request.json or {}).get('lang', 'tr')
+        provider = get_ai_provider(app.config)
+        content = finding.description or finding.impact or ''
+        try:
+            analysis, ai_result = finding_analysis.analyze_finding(
+                provider, finding.title, content, test_id=finding.test_id, lang=lang
+            )
+        except (AIConfigError, AIRequestError) as e:
+            _log_ai_interaction('finding_analysis', error=e, project_id=project_id, finding_id=finding_id)
+            raise
+        except finding_analysis.FindingAnalysisError as e:
+            return jsonify({'error': str(e)}), 502
+        _log_ai_interaction('finding_analysis', ai_result=ai_result, project_id=project_id, finding_id=finding_id)
+        analysis['provider'] = ai_result.provider
+        return jsonify(analysis), 200
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except (AIConfigError, AIRequestError) as e:
+        return _handle_ai_error(e)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/ai/rewrite', methods=['POST'])
+def ai_rewrite_text():
+    try:
+        data = request.json or {}
+        text = data.get('text', '')
+        lang = data.get('lang', 'tr')
+        if not text.strip():
+            return jsonify({'error': 'text zorunludur'}), 400
+        provider = get_ai_provider(app.config)
+        try:
+            rewritten, ai_result = ai_report_assistant.rewrite_professional(provider, text, lang)
+        except (AIConfigError, AIRequestError) as e:
+            _log_ai_interaction('rewrite_professional', error=e)
+            raise
+        _log_ai_interaction('rewrite_professional', ai_result=ai_result)
+        return jsonify({'text': rewritten, 'provider': ai_result.provider}), 200
+    except (AIConfigError, AIRequestError) as e:
+        return _handle_ai_error(e)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/projects/<project_id>/ai/executive-summary', methods=['POST'])
+def ai_project_executive_summary(project_id):
+    try:
+        project = _project_or_404(project_id)
+        lang = (request.json or {}).get('lang', 'tr')
+        findings = [f.to_dict() for f in Finding.query.filter_by(project_id=project_id).all()]
+        provider = get_ai_provider(app.config)
+        try:
+            summary, ai_result = ai_report_assistant.generate_project_executive_summary(
+                provider, project.to_dict(), findings, lang
+            )
+        except (AIConfigError, AIRequestError) as e:
+            _log_ai_interaction('executive_summary', error=e, project_id=project_id)
+            raise
+        _log_ai_interaction('executive_summary', ai_result=ai_result, project_id=project_id)
+        return jsonify({'summary': summary, 'provider': ai_result.provider}), 200
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except (AIConfigError, AIRequestError) as e:
+        return _handle_ai_error(e)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ========================
+# HTML PROFESSIONAL REPORT
+# ========================
+
+@app.route('/api/projects/<project_id>/reports/html', methods=['GET', 'POST'])
+def generate_html_report(project_id):
+    """GET: query string ile basit secenekler (link olarak yeni sekmede acilabilsin diye).
+    POST: logo_data_uri gibi buyuk/karmasik secenekler icin JSON body (opsiyonel)."""
+    try:
+        project = _project_or_404(project_id)
+        sessions = Session.query.filter_by(project_id=project_id).all()
+        all_results = []
+        for s in sessions:
+            all_results.extend([r.to_dict() for r in s.results])
+
+        findings = [f.to_dict() for f in Finding.query.filter_by(project_id=project_id).all()]
+
+        if request.method == 'POST':
+            body = request.json or {}
+        else:
+            body = {}
+        args = request.args
+        include = body.get('include') or args.get('include') or 'all'
+        if include not in ('all', 'critical_high'):
+            try:
+                include = [int(x) for x in include.split(',')] if isinstance(include, str) else include
+            except Exception:
+                include = 'all'
+
+        options = {
+            'title': body.get('title') or args.get('title'),
+            'client_name': body.get('client_name') or args.get('client_name'),
+            'pentester_name': body.get('pentester_name') or args.get('pentester_name'),
+            'date_range': body.get('date_range') or args.get('date_range'),
+            'logo_data_uri': body.get('logo_data_uri'),
+            'include': include,
+            'template': body.get('template') or args.get('template') or 'standard',
+            'confidential': str(body.get('confidential') or args.get('confidential') or '').lower() in ('1', 'true', 'yes'),
+        }
+        lang = body.get('lang') or args.get('lang') or 'tr'
+        executive_summary = body.get('executive_summary')
+
+        html_doc = report_html.build_html_report(
+            project.to_dict(), findings, all_results, options=options,
+            executive_summary=executive_summary, lang=lang
+        )
+        return html_doc, 200, {'Content-Type': 'text/html; charset=utf-8'}
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ========================
+# PENTEST KANBAN
+# ========================
+#
+# Tasarim karari: ayri bir 'kanban_cards' tablosu YOK. Kanban, mevcut
+# TestResult uzerine bir GORUNUM katmani -- bir testin durumu icin TEK
+# dogru kaynak hep TestResult kalir (kanban_status alani onun uzerine
+# eklendi). findings_count/evidence_count her istekte hesaplanir, DB'de
+# saklanmaz (bayatlama riski olmasin diye).
+
+VALID_KANBAN_STATUSES = {'todo', 'testing', 'review', 'confirmed', 'done'}
+
+
+def _kanban_card_dict(result, test_index):
+    d = result.to_dict()
+    meta = test_index.get(result.test_id, {})
+    d['test_title'] = meta.get('title', '')
+    d['findings_count'] = Finding.query.filter_by(session_id=result.session_id, test_id=result.test_id).count()
+    d['evidence_count'] = Evidence.query.filter_by(
+        linked_session_id=result.session_id, linked_test_id=result.test_id
+    ).count()
+    return d
+
+
+@app.route('/api/projects/<project_id>/kanban/board', methods=['GET'])
+def get_kanban_board(project_id):
+    try:
+        _project_or_404(project_id)
+        sessions = Session.query.filter_by(project_id=project_id).all()
+        session_ids = [s.id for s in sessions]
+        results = TestResult.query.filter(TestResult.session_id.in_(session_ids)).all() if session_ids else []
+
+        test_index = dict(report_builder.WSTG_INDEX)
+
+        board = {status: [] for status in VALID_KANBAN_STATUSES}
+        for r in results:
+            board.setdefault(r.kanban_status or 'todo', []).append(_kanban_card_dict(r, test_index))
+
+        return jsonify({'columns': board}), 200
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/kanban/card/<int:test_result_id>/move', methods=['PUT'])
+def move_kanban_card(test_result_id):
+    try:
+        result = TestResult.query.get(test_result_id)
+        if not result:
+            return jsonify({'error': 'Test sonucu bulunamadı'}), 404
+        data = request.json or {}
+        new_status = data.get('kanban_status')
+        if new_status not in VALID_KANBAN_STATUSES:
+            return jsonify({'error': 'Geçersiz kanban_status değeri'}), 400
+
+        old_status = result.kanban_status or 'todo'
+        result.kanban_status = new_status
+        result.updated_at = datetime.utcnow()
+        db.session.commit()
+
+        session = Session.query.get(result.session_id)
+        if session and session.project_id and old_status != new_status:
+            log_event(session.project_id, 'kanban_card_moved',
+                      f"{result.test_id}: {old_status} → {new_status}",
+                      {'test_result_id': result.id, 'from': old_status, 'to': new_status})
+
+        return jsonify(result.to_dict()), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/kanban/card/<int:test_result_id>', methods=['PUT'])
+def update_kanban_card(test_result_id):
+    try:
+        result = TestResult.query.get(test_result_id)
+        if not result:
+            return jsonify({'error': 'Test sonucu bulunamadı'}), 404
+        data = request.json or {}
+        if 'assigned_to' in data:
+            result.assigned_to = data['assigned_to']
+        if 'time_spent_minutes' in data:
+            try:
+                result.time_spent_minutes = max(0, int(data['time_spent_minutes']))
+            except (TypeError, ValueError):
+                return jsonify({'error': 'time_spent_minutes bir tam sayı olmalı'}), 400
+        if 'kanban_status' in data:
+            if data['kanban_status'] not in VALID_KANBAN_STATUSES:
+                return jsonify({'error': 'Geçersiz kanban_status değeri'}), 400
+            result.kanban_status = data['kanban_status']
+        result.updated_at = datetime.utcnow()
+        db.session.commit()
+        return jsonify(result.to_dict()), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/projects/<project_id>/kanban/stats', methods=['GET'])
+def get_kanban_stats(project_id):
+    try:
+        _project_or_404(project_id)
+        sessions = Session.query.filter_by(project_id=project_id).all()
+        session_ids = [s.id for s in sessions]
+        results = TestResult.query.filter(TestResult.session_id.in_(session_ids)).all() if session_ids else []
+
+        status_counts = {status: 0 for status in VALID_KANBAN_STATUSES}
+        assignee_counts = {}
+        for r in results:
+            status_counts[r.kanban_status or 'todo'] = status_counts.get(r.kanban_status or 'todo', 0) + 1
+            if r.assigned_to:
+                assignee_counts[r.assigned_to] = assignee_counts.get(r.assigned_to, 0) + 1
+
+        return jsonify({'status_counts': status_counts, 'assignee_counts': assignee_counts, 'total': len(results)}), 200
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 

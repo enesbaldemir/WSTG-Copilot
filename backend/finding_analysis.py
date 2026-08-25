@@ -41,6 +41,25 @@ class FindingAnalysisError(Exception):
     pass
 
 
+def _parse_cvss_vector(vector):
+    """'AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H' (istege bagli 'CVSS:3.1/' onekiyle)
+    -> cvss.compute()'un beklediği {'AV':'N', 'AC':'L', ...} sozlugu.
+    NOT: cvss.py'nin API'si vektor STRING'i degil, DOGRUDAN metrik sozlugu
+    kabul ediyor (bkz. cvss.compute) -- bu yuzden burada kucuk bir adaptor
+    gerekiyor; modelin urettigi serbest-metin vektoru compute()'a uydurmak
+    icin."""
+    vector = vector.strip()
+    if vector.upper().startswith("CVSS:3.1/"):
+        vector = vector.split("/", 1)[1]
+    metrics = {}
+    for part in vector.split("/"):
+        if ":" not in part:
+            continue
+        key, value = part.split(":", 1)
+        metrics[key.strip().upper()] = value.strip().upper()
+    return metrics
+
+
 def _build_prompt(title, content, test_id, lang):
     test_info = mapping_lib.get_test_info(test_id, lang) if test_id else None
     owasp_matches = mapping_lib.get_mapping_for_test(test_id, lang) if test_id else []
@@ -138,11 +157,12 @@ def _validate_and_normalize(parsed, candidate_cwe_ids):
     vector = parsed.get("suggested_cvss_vector")
     if isinstance(vector, str) and vector.strip():
         try:
-            calc = cvss_lib.calculate(vector.strip())
+            metrics = _parse_cvss_vector(vector)
+            calc = cvss_lib.compute(metrics)
             result["suggested_cvss_vector"] = calc["vector"]
-            result["suggested_cvss_score"] = calc["score"]
-            result["suggested_cvss_rating"] = calc["rating"]
-        except cvss_lib.CVSSError:
+            result["suggested_cvss_score"] = calc["base_score"]
+            result["suggested_cvss_rating"] = calc["severity"]
+        except cvss_lib.CvssError:
             pass  # gecersiz vektor sessizce atlanir, diger alanlar korunur
 
     fp = parsed.get("false_positive_likelihood")

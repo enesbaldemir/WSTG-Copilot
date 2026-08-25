@@ -1076,4 +1076,83 @@ body::after{
   .finding-modal-body{ flex-direction:column; }
   .finding-cvss-col{ flex:1; border-left:none; border-top:1px solid var(--border); padding-left:0; padding-top:18px; }
   .asm-branches{ flex-direction:column; align-items:stretch; }
+  .kanban-board{ grid-auto-flow:column; grid-auto-columns:80vw; }
 }
+
+/* ===================== AI ASSISTANT (Finding Modal) ===================== */
+.ai-assistant-box{
+  background:rgba(255,255,255,.02); border:1px solid var(--border); border-radius:14px; padding:12px;
+}
+.ai-assistant-actions{ display:flex; flex-wrap:wrap; gap:8px; }
+.ai-assistant-actions button{
+  background:var(--surface2); border:1px solid var(--border); color:var(--text); border-radius:10px;
+  padding:7px 11px; font-size:.76rem; cursor:pointer; transition:var(--transition);
+}
+.ai-assistant-actions button:hover:not(:disabled){ border-color:rgba(var(--primary-rgb),.4); color:var(--primary); }
+.ai-assistant-actions button:disabled{ opacity:.5; cursor:not-allowed; }
+.ai-assistant-status{ font-size:.75rem; color:var(--muted); margin-top:8px; min-height:1em; }
+
+/* ===================== DUPLICATE FINDING ALERT ===================== */
+.dup-candidate-row{ display:flex; gap:12px; align-items:flex-start; flex:1; min-width:0; cursor:pointer; }
+.dup-score-badge{
+  background:rgba(var(--primary-rgb),.15); color:var(--primary); font-size:.72rem; font-weight:700;
+  padding:2px 8px; border-radius:20px; margin-left:auto;
+}
+.dup-view-btn{ align-self:center; flex-shrink:0; }
+
+/* ===================== REPORT BUILDER ===================== */
+.report-builder-form{ display:flex; flex-direction:column; gap:10px; max-width:640px; }
+.report-builder-form label{ font-size:.78rem; color:var(--muted); margin-bottom:-4px; }
+.report-builder-form input[type="text"], .report-builder-form select, .report-builder-form textarea{
+  background:var(--surface2); border:1px solid var(--border); color:var(--text); border-radius:10px;
+  padding:9px 11px; font-size:.85rem; font-family:inherit; width:100%;
+}
+.report-builder-form input:focus, .report-builder-form select:focus, .report-builder-form textarea:focus{
+  outline:none; border-color:rgba(var(--primary-rgb),.4);
+}
+
+/* ===================== PENTEST KANBAN ===================== */
+.kanban-filter-bar select{
+  background:var(--surface2); border:1px solid var(--border); color:var(--text); border-radius:10px;
+  padding:9px 12px; font-size:.82rem;
+}
+.kanban-mytasks-toggle{ display:flex; align-items:center; gap:6px; font-size:.82rem; color:var(--muted); cursor:pointer; white-space:nowrap; }
+.kanban-mytasks-toggle input{ width:15px; height:15px; accent-color:var(--primary); }
+.kanban-board{
+  display:grid; grid-template-columns:repeat(5, minmax(220px, 1fr)); gap:14px; padding:18px 28px; overflow-x:auto;
+}
+.kanban-column{ display:flex; flex-direction:column; min-width:0; }
+.kanban-column-header{
+  display:flex; justify-content:space-between; align-items:center; font-size:.78rem; font-weight:700;
+  text-transform:uppercase; letter-spacing:.03em; color:var(--muted); padding:0 4px 10px;
+}
+.kanban-column-count{
+  background:rgba(255,255,255,.06); border-radius:20px; padding:1px 8px; font-size:.72rem;
+}
+.kanban-column-body{
+  background:rgba(255,255,255,.02); border:1px solid var(--border); border-radius:14px; padding:10px;
+  display:flex; flex-direction:column; gap:10px; min-height:120px; flex:1; transition:background .15s ease, border-color .15s ease;
+}
+.kanban-column-body.drag-over{ background:rgba(var(--primary-rgb),.08); border-color:rgba(var(--primary-rgb),.4); }
+.kanban-empty{ font-size:.75rem; color:var(--muted); text-align:center; padding:18px 0; opacity:.6; }
+.kanban-card{
+  background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:11px 12px;
+  cursor:grab; transition:transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+}
+.kanban-card:hover{ border-color:rgba(var(--primary-rgb),.35); }
+.kanban-card.dragging{ opacity:.4; }
+.kanban-card-top{ display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:4px; }
+.kanban-card-testid{ font-family:monospace; font-size:.72rem; color:var(--muted); }
+.kanban-badge{ font-size:.7rem; }
+.kanban-card-title{ font-size:.85rem; font-weight:600; margin-bottom:8px; line-height:1.35; }
+.kanban-card-meta{ display:flex; justify-content:space-between; align-items:center; font-size:.72rem; color:var(--muted); margin-bottom:8px; }
+.kanban-time-row{ display:flex; align-items:center; gap:4px; }
+.kanban-time-input{
+  width:44px; background:var(--surface); border:1px solid var(--border); color:var(--text); border-radius:6px;
+  padding:2px 4px; font-size:.72rem; text-align:center;
+}
+.kanban-assignee-input{
+  width:100%; background:var(--surface); border:1px solid var(--border); color:var(--text); border-radius:8px;
+  padding:6px 8px; font-size:.75rem; font-family:inherit;
+}
+.kanban-assignee-input:focus, .kanban-time-input:focus{ outline:none; border-color:rgba(var(--primary-rgb),.4); }
