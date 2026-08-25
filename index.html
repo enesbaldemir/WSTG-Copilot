@@ -356,6 +356,7 @@
         <button class="pw-tab" data-tab="evidence" data-i18n="pwTabEvidence">Evidence</button>
         <button class="pw-tab" data-tab="chains" data-i18n="pwTabChains">Attack Chains</button>
         <button class="pw-tab" data-tab="timeline" data-i18n="pwTabTimeline">Timeline</button>
+        <button class="pw-tab" data-tab="kanban" data-i18n="pwTabKanban">Kanban</button>
         <button class="pw-tab" data-tab="reports" data-i18n="pwTabReports">Reports</button>
       </div>
       <div class="pw-content" id="pwContent"></div>
@@ -460,9 +461,42 @@
         </div>
         <code class="cvss-vector-string" id="cvssVectorString"></code>
         <div id="cvssCalcGrid" class="cvss-calc-grid"></div>
+
+        <h5 style="margin-top:20px" data-i18n="aiAssistantTitle">AI Assistant</h5>
+        <div class="ai-assistant-box">
+          <div class="ai-assistant-actions">
+            <button type="button" class="btn btn-sm" id="aiGenDescBtn" data-i18n="aiGenDescBtn">Generate Description</button>
+            <button type="button" class="btn btn-sm" id="aiGenRemediationBtn" data-i18n="aiGenRemediationBtn">Generate Remediation</button>
+            <button type="button" class="btn btn-sm" id="aiRewriteDescBtn" data-i18n="aiRewriteBtn">Make More Professional</button>
+            <button type="button" class="btn btn-sm" id="aiFindSimilarBtn" data-i18n="aiFindSimilarBtn">Find Similar Findings</button>
+            <button type="button" class="btn btn-sm" id="aiSuggestCweBtn" data-i18n="aiSuggestCweBtn">Suggest CWE/Severity</button>
+          </div>
+          <div class="ai-assistant-status" id="aiAssistantStatus"></div>
+        </div>
+
         <div class="hero-actions" style="margin-top:16px">
           <button type="button" class="btn btn-primary" id="submitFindingBtn" data-i18n="saveBtn">Kaydet</button>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Duplicate Finding Alert -->
+<div class="overlay" id="duplicateAlertOverlay">
+  <div class="panel" style="max-width:640px">
+    <div class="panel-header">
+      <div>
+        <h3 data-i18n="dupAlertTitle">⚠️ Potential Duplicate Finding Detected</h3>
+        <p data-i18n="dupAlertDesc">Bu bulguya benzer, projede zaten kayıtlı bulgular var.</p>
+      </div>
+      <button class="close-btn" id="closeDuplicateAlert">&times;</button>
+    </div>
+    <div class="panel-body">
+      <div id="dupAlertList" class="import-preview-list"></div>
+      <div class="hero-actions" style="margin-top:14px">
+        <button type="button" class="btn" id="dupMergeBtn" data-i18n="dupMergeBtn">Merge Selected</button>
+        <button type="button" class="btn btn-primary" id="dupCreateAnywayBtn" data-i18n="dupCreateAnywayBtn">Create Anyway</button>
       </div>
     </div>
   </div>

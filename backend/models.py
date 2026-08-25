@@ -136,10 +136,21 @@ class Finding(db.Model):
     retest_notes = db.Column(db.Text)
     retested_at = db.Column(db.DateTime)
 
+    # Merge Findings ozelligi: bu bulgu baska bulgu(lar)in icine birlestirildiyse
+    # (bkz. duplicate_detector.py + POST /findings/merge), birlestirilen orijinal
+    # ID'lerin JSON listesi -- denetim/izlenebilirlik icin. Silinmez, sadece kayit.
+    merged_finding_ids = db.Column(db.Text)
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def to_dict(self):
+        merged_ids = []
+        if self.merged_finding_ids:
+            try:
+                merged_ids = json.loads(self.merged_finding_ids)
+            except Exception:
+                merged_ids = []
         return {
             'id': self.id,
             'finding_code': f'FND-{self.id:04d}' if self.id else None,
@@ -163,6 +174,7 @@ class Finding(db.Model):
             'retest_result': self.retest_result,
             'retest_notes': self.retest_notes,
             'retested_at': self.retested_at.isoformat() if self.retested_at else None,
+            'merged_finding_ids': merged_ids,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }
@@ -389,10 +401,19 @@ class TestResult(db.Model):
     started_at = db.Column(db.DateTime)
     completed_at = db.Column(db.DateTime)
     progress = db.Column(db.Integer, default=0)
-    
+
+    # --- Kanban (bkz. backend/app.py /kanban rotalari) ---
+    # Mevcut TestResult'a katman olarak eklendi -- ayri bir KanbanCard tablosu
+    # YOK, ciftli kaynak-of-truth riskini onlemek icin (bir testin "bitti mi"
+    # sorusunun tek cevabi hep TestResult olmali). findings_count/evidence_count
+    # to_dict()'te route katmaninda hesaplanir, burada saklanmaz (bayatlamasin diye).
+    kanban_status = db.Column(db.String(20), default='todo')  # todo|testing|review|confirmed|done
+    assigned_to = db.Column(db.String(100))
+    time_spent_minutes = db.Column(db.Integer, default=0)
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+
     def to_dict(self):
         return {
             'id': self.id,
@@ -405,9 +426,59 @@ class TestResult(db.Model):
             'evidence': self.evidence,
             'finding': self.finding,
             'finding_status': self.finding_status,
+            'kanban_status': self.kanban_status or 'todo',
+            'assigned_to': self.assigned_to,
+            'time_spent_minutes': self.time_spent_minutes or 0,
             'started_at': self.started_at.isoformat() if self.started_at else None,
             'completed_at': self.completed_at.isoformat() if self.completed_at else None,
             'progress': self.progress,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+
+
+class AIInteractionLog(db.Model):
+    """Her AI cagrisinin kaydi (denetlenebilirlik + Faz 5 metrikleri icin).
+
+    Bu tablo daha once 'AI entagration' commit'inde eklenmisti ama app.py'nin
+    gelistirme-branch ile yeniden yazilmasi sirasinda rotalari kaybolmustu.
+    AI Report Assistant (ai_report_assistant.py) ve finding_analysis.py'nin
+    her cagrisi burada loglanir: hangi projede/bulguda, hangi amacla, hangi
+    saglayici/modelle, ne kadar surede basarili/basarisiz oldugu."""
+    __tablename__ = 'ai_interaction_logs'
+
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.String(36), db.ForeignKey('projects.id'), nullable=True)
+    finding_id = db.Column(db.Integer, db.ForeignKey('findings.id'), nullable=True)
+    session_id = db.Column(db.String(36), db.ForeignKey('sessions.id'), nullable=True)
+
+    # 'finding_description' | 'finding_remediation' | 'rewrite_professional' |
+    # 'executive_summary' | 'finding_analysis' ...
+    purpose = db.Column(db.String(50), nullable=False)
+
+    provider = db.Column(db.String(30))
+    model = db.Column(db.String(80))
+
+    prompt = db.Column(db.Text)
+    response = db.Column(db.Text)
+
+    success = db.Column(db.Boolean, default=True)
+    error_message = db.Column(db.Text)
+    latency_ms = db.Column(db.Integer)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'project_id': self.project_id,
+            'finding_id': self.finding_id,
+            'session_id': self.session_id,
+            'purpose': self.purpose,
+            'provider': self.provider,
+            'model': self.model,
+            'success': self.success,
+            'error_message': self.error_message,
+            'latency_ms': self.latency_ms,
+            'created_at': self.created_at.isoformat() if self.created_at else None
         }
