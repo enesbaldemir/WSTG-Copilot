@@ -341,6 +341,28 @@
       aiNotConfigured: "AI sağlayıcısı yapılandırılmamış (.env dosyasını kontrol edin).",
       aiNoTextToRewrite: "Önce bir açıklama metni girin.",
 
+      navAiSettings: "🔑 AI Ayarları",
+      aiSettingsTitle: "🔑 AI Ayarları",
+      aiSettingsDesc: "API key'lerinizi buradan ekleyin, düzenleyin, test edin ve hangi sağlayıcının aktif olacağını seçin. Key'ler şifreli saklanır ve hiçbir zaman tam olarak gösterilmez.",
+      aiApiKeyLabel: "API Key",
+      aiModelLabel: "Model",
+      aiBaseUrlLabel: "Base URL",
+      aiKeySavedPlaceholder: "Kayıtlı: {key} — değiştirmek için yeni bir key girin",
+      aiKeyEmptyPlaceholder: "API key girin...",
+      aiToggleVisibility: "Göster/Gizle",
+      aiActiveLabel: "Aktif",
+      aiTestBtn: "Test Et",
+      aiActivateBtn: "Aktif Yap",
+      aiDeleteBtn: "Sil",
+      aiSettingsSaved: "AI ayarı kaydedildi",
+      aiSettingsDeleted: "AI ayarı silindi",
+      aiProviderActivated: "Sağlayıcı aktif edildi",
+      aiDeleteConfirm: "Bu sağlayıcının kayıtlı key'ini silmek istediğinize emin misiniz?",
+      aiTestSuccess: "Bağlantı başarılı",
+      aiTestFailed: "Bağlantı başarısız",
+      aiStatusWorkingWith: "ile çalışıyor",
+      aiStatusNotConfigured: "AI yapılandırılmamış",
+
       dupAlertTitle: "⚠️ Olası Tekrarlanan Bulgu Tespit Edildi",
       dupAlertDesc: "Bu bulguya benzer, projede zaten kayıtlı bulgular var.",
       dupMergeBtn: "Seçilenleri Birleştir",
@@ -776,6 +798,28 @@
       aiSaveFirst: "Save the finding once before using the AI assistant.",
       aiNotConfigured: "No AI provider configured (check your .env file).",
       aiNoTextToRewrite: "Enter a description first.",
+
+      navAiSettings: "🔑 AI Settings",
+      aiSettingsTitle: "🔑 AI Settings",
+      aiSettingsDesc: "Add, edit, and test your API keys here, and choose which provider is active. Keys are stored encrypted and never shown in full.",
+      aiApiKeyLabel: "API Key",
+      aiModelLabel: "Model",
+      aiBaseUrlLabel: "Base URL",
+      aiKeySavedPlaceholder: "Saved: {key} — enter a new key to change it",
+      aiKeyEmptyPlaceholder: "Enter API key...",
+      aiToggleVisibility: "Show/Hide",
+      aiActiveLabel: "Active",
+      aiTestBtn: "Test",
+      aiActivateBtn: "Activate",
+      aiDeleteBtn: "Delete",
+      aiSettingsSaved: "AI setting saved",
+      aiSettingsDeleted: "AI setting deleted",
+      aiProviderActivated: "Provider activated",
+      aiDeleteConfirm: "Are you sure you want to delete this provider's saved key?",
+      aiTestSuccess: "Connection successful",
+      aiTestFailed: "Connection failed",
+      aiStatusWorkingWith: "is active",
+      aiStatusNotConfigured: "AI not configured",
 
       dupAlertTitle: "⚠️ Potential Duplicate Finding Detected",
       dupAlertDesc: "Findings similar to this one already exist in the project.",
@@ -3090,6 +3134,156 @@
     });
   }
 
+  // --- AI Ayarları (API key yönetimi UI'dan) ---
+  // Key'ler ASLA tam olarak burada tutulmaz/gösterilmez -- backend sadece
+  // maskelenmiş hali (api_key_masked) döner, input placeholder'ı bunu
+  // gösterir. Kaydetme sırasında input boş bırakılırsa mevcut key korunur.
+  const AI_PROVIDERS_META = [
+    { id: 'gemini', label: 'Gemini', defaultModel: 'gemini-3.7-flash', needsKey: true, needsBaseUrl: false },
+    { id: 'openai', label: 'OpenAI', defaultModel: 'gpt-5.6-terra', needsKey: true, needsBaseUrl: false },
+    { id: 'anthropic', label: 'Anthropic', defaultModel: 'claude-sonnet-5', needsKey: true, needsBaseUrl: false },
+    { id: 'ollama', label: 'Ollama', defaultModel: 'llama3.1', needsKey: false, needsBaseUrl: true },
+  ];
+
+  function renderAiStatusBadge(){
+    const badge = document.getElementById('aiStatusBadge');
+    if(!badge) return;
+    apiRequest('/ai/status').then(res => {
+      if(res.configured){
+        badge.textContent = `⚡ ${res.provider} ${t('aiStatusWorkingWith')}`;
+        badge.className = 'ai-status-badge configured';
+      } else {
+        badge.textContent = `⚠️ ${t('aiStatusNotConfigured')}`;
+        badge.className = 'ai-status-badge not-configured';
+      }
+    }).catch(()=>{ badge.textContent = ''; });
+  }
+
+  function openAiSettingsModal(){
+    document.getElementById('aiSettingsOverlay').classList.add('open');
+    renderAiProviderList();
+  }
+  function closeAiSettingsModal(){
+    document.getElementById('aiSettingsOverlay').classList.remove('open');
+  }
+
+  function renderAiProviderList(){
+    const container = document.getElementById('aiProviderList');
+    container.innerHTML = `<div class="search-empty">${t('loadingSessions')}</div>`;
+    apiRequest('/ai/settings').then(settings => {
+      const byProvider = {};
+      settings.forEach(s => { byProvider[s.provider] = s; });
+      container.innerHTML = AI_PROVIDERS_META.map(meta => {
+        const s = byProvider[meta.id] || null;
+        const isActive = !!(s && s.is_active);
+        const hasKey = !!(s && s.has_key);
+        const maskedKey = (s && s.api_key_masked) || '';
+        const model = (s && s.model) || meta.defaultModel;
+        const baseUrl = (s && s.base_url) || 'http://localhost:11434';
+        const keyPlaceholder = hasKey ? t('aiKeySavedPlaceholder').replace('{key}', maskedKey) : t('aiKeyEmptyPlaceholder');
+        return `
+        <div class="ai-provider-row" data-provider="${meta.id}">
+          <div class="ai-provider-header">
+            <span class="ai-provider-name">${meta.label}</span>
+            ${isActive ? `<span class="ai-provider-active-badge">✓ ${t('aiActiveLabel')}</span>` : ''}
+          </div>
+          <div class="finding-form-row">
+            ${meta.needsKey ? `
+            <div>
+              <label>${t('aiApiKeyLabel')}</label>
+              <div class="ai-key-input-wrap">
+                <input type="password" class="ai-key-input" placeholder="${escapeHtml(keyPlaceholder)}">
+                <button type="button" class="ai-key-toggle-btn" title="${t('aiToggleVisibility')}">👁</button>
+              </div>
+            </div>` : ''}
+            <div>
+              <label>${t('aiModelLabel')}</label>
+              <input type="text" class="ai-model-input" value="${escapeHtml(model)}">
+            </div>
+          </div>
+          ${meta.needsBaseUrl ? `
+          <label>${t('aiBaseUrlLabel')}</label>
+          <input type="text" class="ai-baseurl-input" value="${escapeHtml(baseUrl)}">` : ''}
+          <div class="ai-provider-actions">
+            <button type="button" class="btn btn-sm ai-save-btn">${t('saveBtn')}</button>
+            <button type="button" class="btn btn-sm ai-test-btn">${t('aiTestBtn')}</button>
+            <button type="button" class="btn btn-sm ai-activate-btn" ${isActive ? 'disabled' : ''}>${t('aiActivateBtn')}</button>
+            ${s ? `<button type="button" class="btn btn-sm danger ai-delete-btn">${t('aiDeleteBtn')}</button>` : ''}
+          </div>
+          <div class="ai-provider-status"></div>
+        </div>`;
+      }).join('');
+    }).catch(err => {
+      container.innerHTML = `<div class="search-empty">${escapeHtml(err.message || String(err))}</div>`;
+    });
+  }
+
+  function wireAiSettingsModal(){
+    document.getElementById('aiSettingsNavBtn').addEventListener('click', openAiSettingsModal);
+    document.getElementById('closeAiSettingsOverlay').addEventListener('click', closeAiSettingsModal);
+    document.getElementById('aiSettingsOverlay').addEventListener('click', e=>{
+      if(e.target.id === 'aiSettingsOverlay') closeAiSettingsModal();
+    });
+
+    document.getElementById('aiProviderList').addEventListener('click', e=>{
+      const row = e.target.closest('.ai-provider-row');
+      if(!row) return;
+      const provider = row.dataset.provider;
+      const statusEl = row.querySelector('.ai-provider-status');
+      const keyInput = row.querySelector('.ai-key-input');
+      const modelInput = row.querySelector('.ai-model-input');
+      const baseUrlInput = row.querySelector('.ai-baseurl-input');
+
+      if(e.target.classList.contains('ai-key-toggle-btn')){
+        if(keyInput) keyInput.type = keyInput.type === 'password' ? 'text' : 'password';
+        return;
+      }
+
+      if(e.target.classList.contains('ai-save-btn')){
+        const payload = { provider };
+        if(modelInput) payload.model = modelInput.value.trim();
+        if(baseUrlInput) payload.base_url = baseUrlInput.value.trim();
+        if(keyInput && keyInput.value.trim()) payload.api_key = keyInput.value.trim();
+        apiRequest('/ai/settings', { method: 'POST', body: JSON.stringify(payload) })
+          .then(()=>{ showToast(t('aiSettingsSaved')); renderAiProviderList(); })
+          .catch(err => showToast(err.message || t('resultSaveError')));
+        return;
+      }
+
+      if(e.target.classList.contains('ai-activate-btn')){
+        apiRequest('/ai/settings/activate', { method: 'POST', body: JSON.stringify({ provider }) })
+          .then(()=>{ showToast(t('aiProviderActivated')); renderAiProviderList(); renderAiStatusBadge(); })
+          .catch(err => showToast(err.message || t('resultSaveError')));
+        return;
+      }
+
+      if(e.target.classList.contains('ai-delete-btn')){
+        if(!confirm(t('aiDeleteConfirm'))) return;
+        apiRequest(`/ai/settings/${provider}`, { method: 'DELETE' })
+          .then(()=>{ showToast(t('aiSettingsDeleted')); renderAiProviderList(); renderAiStatusBadge(); })
+          .catch(err => showToast(err.message || t('resultSaveError')));
+        return;
+      }
+
+      if(e.target.classList.contains('ai-test-btn')){
+        statusEl.textContent = t('aiWorking');
+        statusEl.className = 'ai-provider-status';
+        const payload = { provider };
+        if(keyInput && keyInput.value.trim()) payload.api_key = keyInput.value.trim();
+        if(baseUrlInput) payload.base_url = baseUrlInput.value.trim();
+        apiRequest('/ai/settings/test', { method: 'POST', body: JSON.stringify(payload) })
+          .then(res => {
+            statusEl.textContent = `✅ ${t('aiTestSuccess')} (${res.latency_ms}ms)`;
+            statusEl.className = 'ai-provider-status success';
+          })
+          .catch(err => {
+            statusEl.textContent = `❌ ${err.message || t('aiTestFailed')}`;
+            statusEl.className = 'ai-provider-status failure';
+          });
+      }
+    });
+  }
+
   function deleteFindingUI(id){
     if(!confirm(t('findingDeleteConfirm'))) return;
     apiRequest(`/projects/${currentProjectId}/findings/${id}`, { method: 'DELETE' })
@@ -3882,6 +4076,7 @@
     });
     document.getElementById('submitFindingBtn').addEventListener('click', submitFindingForm);
     initAiAssistantButtons();
+    wireAiSettingsModal();
 
     document.getElementById('closeDuplicateAlert').addEventListener('click', closeDuplicateAlert);
     document.getElementById('duplicateAlertOverlay').addEventListener('click', e=>{
@@ -3936,7 +4131,7 @@
     document.addEventListener('keydown', e=>{
       if(e.key === 'Escape'){
         closeCategory(); closeThemeModal(); closeNewSessionOverlay(); closeTop10Detail(); closeImportModal(); closeReconModal(); closePlannerModal();
-        closeProjectsModal(); closeNewProjectModal(); closeProjectWorkspace(); closeFindingModal(); closeDuplicateAlert();
+        closeProjectsModal(); closeNewProjectModal(); closeProjectWorkspace(); closeFindingModal(); closeDuplicateAlert(); closeAiSettingsModal();
         if(document.getElementById('closeSessionGate').style.display !== 'none') closeSessionGate();
       }
     });
@@ -4071,6 +4266,8 @@
       dbOnline = online;
       updateSessionUI();
       if(!online) return; // no backend -> behave exactly like the original local-only app
+
+      renderAiStatusBadge();
 
       const savedId = loadSavedSessionId();
       if(savedId){

@@ -22,7 +22,7 @@ import json
 import requests
 
 ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages'
-ANTHROPIC_MODEL = 'claude-sonnet-4-6'
+ANTHROPIC_MODEL = 'claude-sonnet-5'
 REQUEST_TIMEOUT = 30
 
 SUPPORTED_MIME_TYPES = {'image/png', 'image/jpeg', 'image/webp', 'image/gif'}

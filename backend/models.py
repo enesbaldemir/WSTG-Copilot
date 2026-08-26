@@ -482,3 +482,39 @@ class AIInteractionLog(db.Model):
             'latency_ms': self.latency_ms,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
+
+
+class AIProviderSetting(db.Model):
+    """Uygulama arayuzunden yonetilen AI sağlayici ayarlari.
+
+    Tasarim ilkesi: API key ASLA duz metin saklanmaz (bkz. crypto_utils.py'nin
+    Fernet ile sifrelemesi) ve to_dict() ASLA ham key donmez -- sadece
+    maskelenmis hali (crypto_utils.mask_key). Bu tablo bos/yoksa (hic
+    sağlayici eklenmemisse ya da hicbiri aktif degilse) ai/factory.py sessizce
+    .env / app.config fallback'ine doner -- geriye donuk uyumluluk bozulmaz.
+    'provider' unique'tir: her sağlayicinin tek bir kaydi olur, POST bu
+    kayda upsert yapar."""
+    __tablename__ = 'ai_provider_settings'
+
+    id = db.Column(db.Integer, primary_key=True)
+    provider = db.Column(db.String(30), nullable=False, unique=True)  # gemini|openai|anthropic|ollama
+    api_key_encrypted = db.Column(db.Text)  # Fernet ile sifreli; ollama icin bos olabilir
+    model = db.Column(db.String(100))
+    base_url = db.Column(db.String(300))  # sadece ollama icin anlamli
+    is_active = db.Column(db.Boolean, default=False)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self, masked_key=''):
+        return {
+            'id': self.id,
+            'provider': self.provider,
+            'api_key_masked': masked_key,
+            'has_key': bool(self.api_key_encrypted),
+            'model': self.model,
+            'base_url': self.base_url,
+            'is_active': self.is_active,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
