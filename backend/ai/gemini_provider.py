@@ -48,10 +48,12 @@ class GeminiProvider(BaseAIProvider):
         return session
 
     def _call(self, system_prompt: str, user_prompt: str, max_tokens: int) -> AIResult:
-        url = (
-            f"https://generativelanguage.googleapis.com/v1beta/models/"
-            f"{self.model}:generateContent?key={self.api_key}"
-        )
+        # API key URL query string'ine DEĞİL, 'x-goog-api-key' header'ına
+        # konur (Gemini API'nin resmi desteklediği alternatif) -- böylece
+        # key hiçbir zaman URL'nin parçası olarak exception mesajlarına,
+        # request loglarına veya proxy loglarına sızma riski taşımaz.
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent"
+        headers = {"Content-Type": "application/json", "x-goog-api-key": self.api_key}
         payload = {
             "contents": [{"role": "user", "parts": [{"text": user_prompt}]}],
             "generationConfig": {
@@ -78,7 +80,7 @@ class GeminiProvider(BaseAIProvider):
         for attempt in range(3):
             session = self._build_session()
             try:
-                resp = session.post(url, json=payload, timeout=self.timeout)
+                resp = session.post(url, json=payload, headers=headers, timeout=self.timeout)
                 break
             except requests.exceptions.SSLError as e:
                 last_error = e

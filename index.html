@@ -60,6 +60,8 @@
       <button class="nav-item" id="importNavBtn"><span class="dot"></span><span data-i18n="navImport">Bulgu İçe Aktar</span></button>
       <button class="nav-item" id="exportBtn"><span class="dot"></span><span data-i18n="exportReport">Raporu Dışa Aktar</span></button>
       <button class="nav-item" id="resetBtn"><span class="dot"></span><span data-i18n="resetProgress">İlerlemeyi Sıfırla</span></button>
+      <button class="nav-item" id="aiSettingsNavBtn"><span class="dot"></span><span data-i18n="navAiSettings">🔑 AI Ayarları</span></button>
+      <div class="ai-status-badge" id="aiStatusBadge"></div>
 
       <div class="settings-block">
         <span class="settings-label" data-i18n="frameworkLabel">Checklist</span>
@@ -478,6 +480,22 @@
           <button type="button" class="btn btn-primary" id="submitFindingBtn" data-i18n="saveBtn">Kaydet</button>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- AI Ayarları (API key yönetimi) -->
+<div class="overlay" id="aiSettingsOverlay">
+  <div class="panel" style="max-width:760px">
+    <div class="panel-header">
+      <div>
+        <h3 data-i18n="aiSettingsTitle">🔑 AI Ayarları</h3>
+        <p data-i18n="aiSettingsDesc">API key'lerinizi buradan ekleyin, düzenleyin, test edin ve hangi sağlayıcının aktif olacağını seçin. Key'ler şifreli saklanır ve hiçbir zaman tam olarak gösterilmez.</p>
+      </div>
+      <button class="close-btn" id="closeAiSettingsOverlay">&times;</button>
+    </div>
+    <div class="panel-body">
+      <div id="aiProviderList" class="ai-provider-list"></div>
     </div>
   </div>
 </div>

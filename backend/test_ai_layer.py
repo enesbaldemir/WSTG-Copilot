@@ -33,9 +33,14 @@ def test_gemini_happy_path():
         assert result.provider == "gemini"
         assert result.latency_ms >= 0
         assert mock_post.called
+        # Guvenlik: API key artik URL query string'inde DEGIL, header'da --
+        # boylece hicbir zaman exception mesajlarina/loglarina sizma riski
+        # tasimaz (bkz. crypto_utils.py / AI Ayarlari maskeleme gereksinimi).
         sent_url = mock_post.call_args[0][0]
-        assert "fake-key" in sent_url
-    print("OK: gemini happy path")
+        assert "fake-key" not in sent_url
+        sent_headers = mock_post.call_args.kwargs.get("headers", {})
+        assert sent_headers.get("x-goog-api-key") == "fake-key"
+    print("OK: gemini happy path (key header'da, URL'de degil)")
 
 
 def test_gemini_error_path():

@@ -26,15 +26,20 @@ def _client():
 
 
 def _setup_session_with_data(client):
+    # Eski 'Note' modeli (title/content/cwe_id) artik yok -- gunumuzdeki
+    # Finding modeli (description/cwe) session_id ile iliskilendirilerek
+    # ayni rolu oynuyor (bkz. app.py _session_findings_for_report adaptoru).
+    project = client.post('/api/projects', json={'name': 'Faz4 Route Test Project'}).get_json()
     sess = client.post('/api/sessions', json={
-        'name': 'Faz4 Route Test', 'tester_name': 'Test Tester', 'target_url': 'https://example.com'
+        'name': 'Faz4 Route Test', 'tester_name': 'Test Tester', 'target_url': 'https://example.com',
+        'project_id': project['id']
     }).get_json()
     sid = sess['id']
     client.post(f'/api/sessions/{sid}/results', json={'test_id': 'WSTG-ATHN-01', 'status': 'done'})
-    client.post(f'/api/sessions/{sid}/notes', json={
-        'title': 'Login SQLi', 'content': "' OR 1=1-- ile bypass", 'severity': 'critical',
-        'test_id': 'WSTG-ATHN-01', 'cwe_id': 'CWE-89', 'cwe_name': 'SQL Injection',
-        'cvss_vector': 'AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H'
+    client.post(f'/api/projects/{project["id"]}/findings', json={
+        'title': 'Login SQLi', 'description': "' OR 1=1-- ile bypass", 'severity': 'critical',
+        'session_id': sid, 'test_id': 'WSTG-ATHN-01', 'cwe': 'CWE-89',
+        'cvss_vector': 'AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H', 'cvss_score': 9.8
     })
     return sid
 

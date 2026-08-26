@@ -1156,3 +1156,33 @@ body::after{
   padding:6px 8px; font-size:.75rem; font-family:inherit;
 }
 .kanban-assignee-input:focus, .kanban-time-input:focus{ outline:none; border-color:rgba(var(--primary-rgb),.4); }
+
+/* ===================== AI AYARLARI ===================== */
+.ai-status-badge{
+  font-size:.72rem; padding:6px 10px; border-radius:10px; text-align:center;
+  background:rgba(255,255,255,.03); border:1px solid var(--border); color:var(--muted);
+}
+.ai-status-badge.configured{ color:#22c55e; border-color:rgba(34,197,94,.3); background:rgba(34,197,94,.08); }
+.ai-status-badge.not-configured{ color:#eab308; border-color:rgba(234,179,8,.3); background:rgba(234,179,8,.08); }
+
+.ai-provider-list{ display:flex; flex-direction:column; gap:16px; }
+.ai-provider-row{
+  background:rgba(255,255,255,.02); border:1px solid var(--border); border-radius:14px; padding:16px;
+}
+.ai-provider-header{ display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.ai-provider-name{ font-weight:700; font-size:1rem; }
+.ai-provider-active-badge{
+  font-size:.7rem; font-weight:700; color:#22c55e; background:rgba(34,197,94,.12);
+  border:1px solid rgba(34,197,94,.3); padding:2px 9px; border-radius:20px;
+}
+.ai-key-input-wrap{ display:flex; gap:6px; }
+.ai-key-input-wrap input{ flex:1; }
+.ai-key-toggle-btn{
+  background:var(--surface2); border:1px solid var(--border); border-radius:10px; cursor:pointer;
+  padding:0 12px; font-size:.9rem;
+}
+.ai-provider-actions{ display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+.ai-provider-actions .danger:hover{ background:rgba(239,68,68,.14); border-color:rgba(239,68,68,.35); color:#ef4444; }
+.ai-provider-status{ font-size:.78rem; margin-top:8px; min-height:1.1em; }
+.ai-provider-status.success{ color:#22c55e; }
+.ai-provider-status.failure{ color:#ef4444; }

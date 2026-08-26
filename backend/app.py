@@ -3,15 +3,17 @@ from flask_cors import CORS
 from datetime import datetime
 import os
 import json
+import re
 import uuid
 from werkzeug.utils import secure_filename
 from sqlalchemy import text
 from config import DevelopmentConfig, ProductionConfig
-from models import db, Session, TestResult, Project, ScopeItem, TimelineEvent, ReconRun, Evidence, CustomTest, ToolRun, Finding, AIInteractionLog
+from models import db, Session, TestResult, Project, ScopeItem, TimelineEvent, ReconRun, Evidence, CustomTest, ToolRun, Finding, AIInteractionLog, AIProviderSetting
 import recon
 import attack_chains
 import report_builder
 import report_html
+import report_generator
 import evidence_intel
 import tool_runner
 import cvss
@@ -19,7 +21,9 @@ import redaction
 import duplicate_detector
 import ai_report_assistant
 import finding_analysis
-from ai.factory import get_ai_provider
+import next_test_suggestion
+import crypto_utils
+from ai.factory import get_ai_provider, _build_provider, DEFAULT_MODELS
 from ai.base import AIConfigError, AIRequestError
 
 app = Flask(__name__)
@@ -1563,11 +1567,12 @@ def _handle_ai_error(e):
     return jsonify({'error': str(e)}), 500
 
 
-def _log_ai_interaction(purpose, ai_result=None, error=None, project_id=None, finding_id=None):
+def _log_ai_interaction(purpose, ai_result=None, error=None, project_id=None, finding_id=None, session_id=None):
     try:
         log = AIInteractionLog(
             project_id=project_id,
             finding_id=finding_id,
+            session_id=session_id,
             purpose=purpose,
             provider=getattr(ai_result, 'provider', None),
             model=getattr(ai_result, 'model', None),
@@ -1877,6 +1882,387 @@ def get_kanban_stats(project_id):
         return jsonify({'status_counts': status_counts, 'assignee_counts': assignee_counts, 'total': len(results)}), 200
     except NotFoundError as e:
         return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ========================
+# AI AYARLARI (API key yönetimi — .env yerine uygulama arayüzünden)
+# ========================
+#
+# Tasarim ilkesi: key'ler DB'de SADECE sifreli (crypto_utils/Fernet) saklanir
+# ve hicbir response/log ASLA ham key icermez -- sadece crypto_utils.mask_key
+# ile maskelenmis hali (orn. 'AIza...ab12'). ai/factory.py bu tablodaki aktif
+# kaydi .env/app.config'ten ONCE kontrol eder; kayit yoksa mevcut .env
+# davranisina sessizce doner (geriye donuk uyumluluk).
+
+VALID_AI_PROVIDERS = {'gemini', 'openai', 'anthropic', 'ollama'}
+
+
+def _masked_setting_dict(setting):
+    api_key = crypto_utils.decrypt(app.config, setting.api_key_encrypted) if setting.api_key_encrypted else ''
+    return setting.to_dict(masked_key=crypto_utils.mask_key(api_key))
+
+
+@app.route('/api/ai/settings', methods=['GET'])
+def list_ai_settings():
+    try:
+        settings = AIProviderSetting.query.order_by(AIProviderSetting.provider).all()
+        return jsonify([_masked_setting_dict(s) for s in settings]), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/ai/settings', methods=['POST'])
+def upsert_ai_setting():
+    try:
+        data = request.json or {}
+        provider = (data.get('provider') or '').strip().lower()
+        if provider not in VALID_AI_PROVIDERS:
+            return jsonify({'error': f"Geçersiz provider. Geçerli seçenekler: {', '.join(sorted(VALID_AI_PROVIDERS))}"}), 400
+
+        setting = AIProviderSetting.query.filter_by(provider=provider).first()
+        if not setting:
+            setting = AIProviderSetting(provider=provider)
+            db.session.add(setting)
+
+        api_key = data.get('api_key')
+        if api_key:  # boş/None ise mevcut key korunur (örn. sadece model değiştirmek için)
+            setting.api_key_encrypted = crypto_utils.encrypt(app.config, api_key.strip())
+        if 'model' in data:
+            setting.model = (data.get('model') or '').strip() or None
+        if 'base_url' in data:
+            setting.base_url = (data.get('base_url') or '').strip() or None
+        setting.updated_at = datetime.utcnow()
+        db.session.commit()
+
+        return jsonify(_masked_setting_dict(setting)), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/ai/settings/<provider>', methods=['DELETE'])
+def delete_ai_setting(provider):
+    try:
+        setting = AIProviderSetting.query.filter_by(provider=provider.lower()).first()
+        if not setting:
+            return jsonify({'error': 'Kayıtlı ayar bulunamadı'}), 404
+        db.session.delete(setting)
+        db.session.commit()
+        return jsonify({'message': 'Silindi'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/ai/settings/activate', methods=['POST'])
+def activate_ai_setting():
+    try:
+        data = request.json or {}
+        provider = (data.get('provider') or '').strip().lower()
+        setting = AIProviderSetting.query.filter_by(provider=provider).first()
+        if not setting:
+            return jsonify({'error': 'Bu sağlayıcı için önce ayar kaydedin'}), 404
+        AIProviderSetting.query.update({'is_active': False})
+        setting.is_active = True
+        db.session.commit()
+        return jsonify(_masked_setting_dict(setting)), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+def _classify_ai_error(message):
+    m = re.search(r'\((\d{3})\)', message or '')
+    if not m:
+        return 'network_error' if message else 'unknown'
+    code = int(m.group(1))
+    if code in (401, 403):
+        return 'auth_error'
+    if code == 429:
+        return 'rate_limited'
+    if code >= 500:
+        return 'server_error'
+    return 'request_failed'
+
+
+def _ping_provider(provider):
+    """Küçük bir test isteği atar; sonucu (ok, provider, model, latency_ms,
+    error, error_type) olarak döner. Ham API key ASLA döndürülmez."""
+    try:
+        ai_result = provider.chat(system_prompt="", user_prompt="ping — sadece 'ok' yanıtla", max_tokens=20)
+        return {'ok': True, 'provider': ai_result.provider, 'model': ai_result.model, 'latency_ms': ai_result.latency_ms}
+    except AIConfigError as e:
+        return {'ok': False, 'provider': getattr(provider, 'name', None), 'error': str(e), 'error_type': 'not_configured'}
+    except AIRequestError as e:
+        return {
+            'ok': False, 'provider': getattr(provider, 'name', None), 'error': str(e),
+            'error_type': _classify_ai_error(str(e)), 'latency_ms': e.latency_ms,
+        }
+    except Exception as e:
+        return {'ok': False, 'provider': getattr(provider, 'name', None), 'error': str(e), 'error_type': 'unknown'}
+
+
+@app.route('/api/ai/settings/test', methods=['POST'])
+def test_ai_setting():
+    try:
+        data = request.json or {}
+        provider = (data.get('provider') or '').strip().lower()
+        if provider not in VALID_AI_PROVIDERS:
+            return jsonify({'error': 'Geçersiz provider'}), 400
+
+        timeout = app.config.get('AI_REQUEST_TIMEOUT', 30)
+        if data.get('api_key') or data.get('base_url'):
+            # Kaydedilmemiş bir aday key/model'i doğrudan test et (UI'nin
+            # "kaydetmeden önce test et" akışı) -- DB'ye hiçbir şey yazılmaz.
+            test_provider = _build_provider(
+                provider, data.get('api_key', ''), data.get('model') or DEFAULT_MODELS.get(provider),
+                data.get('base_url'), timeout
+            )
+        else:
+            setting = AIProviderSetting.query.filter_by(provider=provider).first()
+            if not setting:
+                return jsonify({'error': 'Bu sağlayıcı için kayıtlı ayar yok'}), 404
+            api_key = crypto_utils.decrypt(app.config, setting.api_key_encrypted) if setting.api_key_encrypted else ''
+            test_provider = _build_provider(provider, api_key, setting.model, setting.base_url, timeout)
+
+        result = _ping_provider(test_provider)
+        return jsonify(result), 200 if result['ok'] else 503
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/ai/status', methods=['GET'])
+def ai_status():
+    """Ana ekrandaki 'hangi sağlayıcı aktif' rozeti için -- /api/ai/ping'in
+    aksine GERÇEK bir ağ isteği ATMAZ (sadece is_configured() kontrolü),
+    böylece her sayfa yüklemesinde gereksiz API kotası tüketilmez."""
+    try:
+        provider = get_ai_provider(app.config)
+        return jsonify({
+            'provider': getattr(provider, 'name', None),
+            'model': getattr(provider, 'model', None),
+            'configured': provider.is_configured(),
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/ai/ping', methods=['GET', 'POST'])
+def ai_ping():
+    try:
+        provider = get_ai_provider(app.config)
+        result = _ping_provider(provider)
+        return jsonify(result), 200 if result['ok'] else 503
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/ai/logs', methods=['GET'])
+def get_ai_logs():
+    try:
+        query = AIInteractionLog.query
+        if request.args.get('session_id'):
+            query = query.filter_by(session_id=request.args.get('session_id'))
+        if request.args.get('project_id'):
+            query = query.filter_by(project_id=request.args.get('project_id'))
+        if request.args.get('purpose'):
+            query = query.filter_by(purpose=request.args.get('purpose'))
+        logs = query.order_by(AIInteractionLog.created_at.desc()).limit(200).all()
+        return jsonify([l.to_dict() for l in logs]), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ========================
+# RESTORED AI ROUTES (Bölüm A.1)
+# ========================
+#
+# NOT: /api/ai/analyze-finding ve /api/ai/suggest-next-test, projedeki daha
+# yeni AI rotalarından (ai/description, ai/remediation, .../ai/analyze —
+# 503 dönen) FARKLI bir kontrat kullanır: yapılandırılmamış sağlayıcı için
+# 200 + {'error':...} döner. Bu, bu rotaların orijinal ('AI entagration'
+# commit'i) davranışıdır ve mevcut test dosyaları (test_ai_analyze_route.py,
+# test_next_test_route.py) bunu bekler -- bilinçli olarak korunmuştur,
+# yanlışlıkla tutarsızlık değildir.
+
+@app.route('/api/ai/analyze-finding', methods=['POST'])
+def ai_analyze_finding_generic():
+    data = request.json or {}
+    content = data.get('content', '')
+    if not (content or '').strip():
+        return jsonify({'error': 'content zorunludur'}), 400
+
+    title = data.get('title', '')
+    test_id = data.get('test_id')
+    session_id = data.get('session_id')
+    lang = data.get('lang', 'tr')
+
+    try:
+        provider = get_ai_provider(app.config)
+        analysis, ai_result = finding_analysis.analyze_finding(provider, title, content, test_id=test_id, lang=lang)
+    except AIConfigError as e:
+        return jsonify({'error': str(e)}), 200
+    except AIRequestError as e:
+        _log_ai_interaction('finding_analysis', error=e, session_id=session_id)
+        return jsonify({'error': str(e)}), 502
+    except finding_analysis.FindingAnalysisError as e:
+        _log_ai_interaction('finding_analysis', error=e, session_id=session_id)
+        return jsonify({'error': str(e)}), 502
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+    _log_ai_interaction('finding_analysis', ai_result=ai_result, session_id=session_id)
+    analysis['provider'] = ai_result.provider
+    return jsonify(analysis), 200
+
+
+@app.route('/api/ai/suggest-next-test', methods=['POST'])
+def ai_suggest_next_test():
+    data = request.json or {}
+    session_id = data.get('session_id')
+    lang = data.get('lang', 'tr')
+    completed_test_ids = data.get('completed_test_ids')
+    findings = data.get('findings')
+
+    # session_id verilip completed_test_ids/findings verilmediyse, mevcut
+    # oturum durumundan otomatik türet -- caller'ın bunları elle toplayıp
+    # göndermesi gerekmez (eski rotanın istediği ama pratikte can sıkıcı olan şey).
+    if session_id and completed_test_ids is None:
+        session = Session.query.get(session_id)
+        if session:
+            completed_test_ids = [r.test_id for r in session.results if r.status != 'pending']
+    if session_id and findings is None:
+        findings = [
+            {'title': f.title, 'severity': f.severity, 'cwe_id': f.cwe, 'test_id': f.test_id}
+            for f in Finding.query.filter_by(session_id=session_id).all()
+        ]
+
+    completed_test_ids = completed_test_ids or []
+    findings = findings or []
+
+    try:
+        provider = get_ai_provider(app.config)
+        suggestion, ai_result = next_test_suggestion.suggest_next_test(provider, completed_test_ids, findings, lang=lang)
+    except AIConfigError as e:
+        return jsonify({'error': str(e)}), 200
+    except AIRequestError as e:
+        _log_ai_interaction('next_test_suggestion', error=e, session_id=session_id)
+        return jsonify({'error': str(e)}), 502
+    except next_test_suggestion.NextTestSuggestionError as e:
+        _log_ai_interaction('next_test_suggestion', error=e, session_id=session_id)
+        return jsonify({'error': str(e)}), 502
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+    if ai_result is not None:
+        _log_ai_interaction('next_test_suggestion', ai_result=ai_result, session_id=session_id)
+        suggestion['provider'] = ai_result.provider
+    else:
+        suggestion['provider'] = None  # all_done=True kısayolu -- AI hiç çağrılmadı
+    return jsonify(suggestion), 200
+
+
+# ========================
+# SESSION RAPORU (Bölüm A.1 — report_generator.py'nin restore edilmesi)
+# ========================
+#
+# report_generator.py eski bir 'Note' şemasına göre yazılmıştı (content,
+# cwe_id/cwe_name). O model artık yok; onun yerine bu route'lar mevcut
+# Finding kayıtlarını (session_id ile ilişkili olanlar) report_generator'ın
+# beklediği sözlük şekline çeviriyor. report_generator.py'nin kendisi
+# DEĞİŞTİRİLMEDİ -- sadece bu adaptör.
+
+VALID_REPORT_DOWNLOAD_FORMATS = {'md', 'docx'}
+
+
+def _session_findings_for_report(session_id):
+    findings = Finding.query.filter_by(session_id=session_id).all()
+    return [
+        {
+            'id': f.id,
+            'title': f.title,
+            'content': f.description or '',
+            'severity': f.severity,
+            'test_id': f.test_id,
+            'cwe_id': f.cwe,
+            'cwe_name': None,
+            'cvss_score': f.cvss_score,
+            'cvss_vector': f.cvss_vector,
+        }
+        for f in findings
+    ]
+
+
+@app.route('/api/sessions/<session_id>/report/data', methods=['GET'])
+def get_session_report_data(session_id):
+    try:
+        session = Session.query.get(session_id)
+        if not session:
+            return jsonify({'error': 'Oturum bulunamadı'}), 404
+        lang = request.args.get('lang', 'tr')
+        results = [r.to_dict() for r in session.results]
+        notes = _session_findings_for_report(session_id)
+        report_data = report_generator.build_report_data(session.to_dict(), results, notes, lang=lang)
+        return jsonify(report_data), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/sessions/<session_id>/report/summary', methods=['POST'])
+def generate_session_report_summary(session_id):
+    try:
+        session = Session.query.get(session_id)
+        if not session:
+            return jsonify({'error': 'Oturum bulunamadı'}), 404
+        data = request.json or {}
+        lang = data.get('lang', 'tr')
+        results = [r.to_dict() for r in session.results]
+        notes = _session_findings_for_report(session_id)
+        report_data = report_generator.build_report_data(session.to_dict(), results, notes, lang=lang)
+
+        provider = get_ai_provider(app.config)
+        try:
+            summary, ai_result = report_generator.generate_executive_summary(provider, report_data, lang=lang)
+        except (AIConfigError, AIRequestError) as e:
+            _log_ai_interaction('report_generation', error=e, session_id=session_id)
+            raise
+        _log_ai_interaction('report_generation', ai_result=ai_result, session_id=session_id)
+        return jsonify({'summary': summary, 'provider': ai_result.provider}), 200
+    except (AIConfigError, AIRequestError) as e:
+        return _handle_ai_error(e)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/sessions/<session_id>/report/download', methods=['POST'])
+def download_session_report(session_id):
+    try:
+        session = Session.query.get(session_id)
+        if not session:
+            return jsonify({'error': 'Oturum bulunamadı'}), 404
+        data = request.json or {}
+        fmt = data.get('format', 'md')
+        if fmt not in VALID_REPORT_DOWNLOAD_FORMATS:
+            return jsonify({'error': 'Geçersiz format (md veya docx olmalı)'}), 400
+        lang = data.get('lang', 'tr')
+        executive_summary = data.get('executive_summary')
+
+        results = [r.to_dict() for r in session.results]
+        notes = _session_findings_for_report(session_id)
+        report_data = report_generator.build_report_data(session.to_dict(), results, notes, lang=lang)
+
+        if fmt == 'md':
+            text_body = report_generator.render_markdown(report_data, executive_summary=executive_summary, lang=lang)
+            return text_body, 200, {'Content-Type': 'text/markdown; charset=utf-8'}
+
+        buf = report_generator.render_docx(report_data, executive_summary=executive_summary, lang=lang)
+        safe_name = ''.join(c if c.isalnum() or c in ' -_' else '_' for c in (session.name or 'report'))[:60]
+        return send_file(
+            buf, as_attachment=True, download_name=f"{safe_name}.docx",
+            mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        )
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
