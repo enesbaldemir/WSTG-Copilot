@@ -14,6 +14,7 @@ import attack_chains
 import report_builder
 import report_html
 import report_generator
+import report_pdf
 import evidence_intel
 import tool_runner
 import cvss
@@ -109,6 +110,23 @@ def ensure_schema():
         if 'merged_finding_ids' not in cols:
             db.session.execute(text("ALTER TABLE findings ADD COLUMN merged_finding_ids TEXT"))
             db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+    try:
+        cols = [row[1] for row in db.session.execute(text("PRAGMA table_info(recon_runs)")).fetchall()]
+        recon_cols = {
+            'base_url': "VARCHAR(300)",
+            'apis': "TEXT",
+            'interesting_paths': "TEXT",
+            'forms': "TEXT",
+            'cookies_present': "BOOLEAN DEFAULT 0",
+            'suggestions': "TEXT",
+        }
+        for col, coltype in recon_cols.items():
+            if col not in cols:
+                db.session.execute(text(f"ALTER TABLE recon_runs ADD COLUMN {col} {coltype}"))
+        db.session.commit()
     except Exception:
         db.session.rollback()
 
@@ -437,11 +455,17 @@ def run_recon():
                 run = ReconRun(
                     project_id=project_id,
                     target=result.get('target'),
+                    base_url=result.get('baseUrl'),
                     subdomains=json.dumps(result.get('subdomains', [])),
                     technologies=json.dumps(result.get('technologies', [])),
                     endpoints=json.dumps(list(dict.fromkeys(
                         (result.get('endpoints') or []) + [p['path'] for p in (result.get('interestingPaths') or [])]
-                    )))
+                    ))),
+                    apis=json.dumps(result.get('apis', [])),
+                    interesting_paths=json.dumps(result.get('interestingPaths', [])),
+                    forms=json.dumps(result.get('forms', [])),
+                    cookies_present=bool(result.get('cookiesPresent')),
+                    suggestions=json.dumps(result.get('suggestions', {})),
                 )
                 db.session.add(run)
                 db.session.commit()
@@ -452,6 +476,41 @@ def run_recon():
 
         return jsonify(result), 200
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/projects/<project_id>/recon/latest', methods=['GET'])
+def get_latest_recon(project_id):
+    """Bir projenin en son Attack Surface Discovery taramasını döner.
+    Bu sayede kullanıcı Attack Surface Discovery penceresini kapatıp tekrar
+    açtığında (ya da proje değiştirdiğinde) daha önce bulduğu subdomain/
+    teknoloji/endpoint/öneri listesini yeniden taramadan görebilir. Hiç
+    tarama yapılmamışsa 'run': null döner (hata değildir)."""
+    try:
+        _project_or_404(project_id)
+        run = ReconRun.query.filter_by(project_id=project_id).order_by(ReconRun.created_at.desc()).first()
+        return jsonify({'run': run.to_dict() if run else None}), 200
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/projects/<project_id>/recon', methods=['DELETE'])
+def clear_project_recon(project_id):
+    """Bir projenin tüm recon geçmişini temizler -- kullanıcı farklı bir
+    hedefe karşı sıfırdan taramak istediğinde ('Sıfırla / Yeniden Tara')
+    kullanılır. Bulgu/oturum verisine dokunmaz."""
+    try:
+        _project_or_404(project_id)
+        ReconRun.query.filter_by(project_id=project_id).delete()
+        db.session.commit()
+        log_event(project_id, 'recon_cleared', 'Attack Surface Discovery geçmişi temizlendi')
+        return jsonify({'message': 'Recon geçmişi temizlendi'}), 200
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
 # ========================
@@ -1559,6 +1618,32 @@ def merge_findings(project_id):
 # hicbir alana yazilmaz; frontend kullaniciya gosterir, kullanici isterse
 # mevcut PUT /findings/<id> ile kaydeder.
 
+def _ai_overrides_from_request():
+    """BYOK (Bring Your Own Key): kullanıcı tarayıcıdan kendi API key'ini
+    girip 'bu oturum için kendi key'imle kullan' seçtiğinde, frontend bu
+    değerleri isteğe header olarak ekler:
+
+        X-AI-Provider: gemini | openai | anthropic | ollama
+        X-AI-Api-Key:  <kullanıcının kendi key'i>
+        X-AI-Model:    <opsiyonel, model adı>
+        X-AI-Base-Url: <opsiyonel, sadece ollama için>
+
+    Bu değerler HİÇBİR ZAMAN sunucuda saklanmaz/loglanmaz; sadece o anki
+    istek için ai/factory.get_ai_provider()'a iletilir ve orada, kayıtlı
+    hiçbir ayarı değiştirmeden, geçici bir sağlayıcı kurmak için kullanılır.
+    Header yoksa (veya boşsa) davranış tamamen eskisi gibi kalır -- paylaşılan
+    kurulum (DB ayarı / .env) devreye girer."""
+    provider = request.headers.get('X-AI-Provider')
+    if not provider:
+        return None
+    return {
+        'provider': provider,
+        'api_key': request.headers.get('X-AI-Api-Key'),
+        'model': request.headers.get('X-AI-Model'),
+        'base_url': request.headers.get('X-AI-Base-Url'),
+    }
+
+
 def _handle_ai_error(e):
     if isinstance(e, AIConfigError):
         return jsonify({'error': str(e), 'ai_configured': False}), 503
@@ -1594,7 +1679,7 @@ def ai_generate_description(project_id, finding_id):
         if not finding:
             return jsonify({'error': 'Finding bulunamadı'}), 404
         lang = (request.json or {}).get('lang', 'tr')
-        provider = get_ai_provider(app.config)
+        provider = get_ai_provider(app.config, overrides=_ai_overrides_from_request())
         try:
             text, ai_result = ai_report_assistant.generate_description(provider, finding.to_dict(), lang)
         except (AIConfigError, AIRequestError) as e:
@@ -1618,7 +1703,7 @@ def ai_generate_remediation(project_id, finding_id):
         if not finding:
             return jsonify({'error': 'Finding bulunamadı'}), 404
         lang = (request.json or {}).get('lang', 'tr')
-        provider = get_ai_provider(app.config)
+        provider = get_ai_provider(app.config, overrides=_ai_overrides_from_request())
         try:
             text, ai_result = ai_report_assistant.generate_remediation(provider, finding.to_dict(), lang)
         except (AIConfigError, AIRequestError) as e:
@@ -1644,7 +1729,7 @@ def ai_analyze_finding(project_id, finding_id):
         if not finding:
             return jsonify({'error': 'Finding bulunamadı'}), 404
         lang = (request.json or {}).get('lang', 'tr')
-        provider = get_ai_provider(app.config)
+        provider = get_ai_provider(app.config, overrides=_ai_overrides_from_request())
         content = finding.description or finding.impact or ''
         try:
             analysis, ai_result = finding_analysis.analyze_finding(
@@ -1674,7 +1759,7 @@ def ai_rewrite_text():
         lang = data.get('lang', 'tr')
         if not text.strip():
             return jsonify({'error': 'text zorunludur'}), 400
-        provider = get_ai_provider(app.config)
+        provider = get_ai_provider(app.config, overrides=_ai_overrides_from_request())
         try:
             rewritten, ai_result = ai_report_assistant.rewrite_professional(provider, text, lang)
         except (AIConfigError, AIRequestError) as e:
@@ -1694,7 +1779,7 @@ def ai_project_executive_summary(project_id):
         project = _project_or_404(project_id)
         lang = (request.json or {}).get('lang', 'tr')
         findings = [f.to_dict() for f in Finding.query.filter_by(project_id=project_id).all()]
-        provider = get_ai_provider(app.config)
+        provider = get_ai_provider(app.config, overrides=_ai_overrides_from_request())
         try:
             summary, ai_result = ai_report_assistant.generate_project_executive_summary(
                 provider, project.to_dict(), findings, lang
@@ -1715,6 +1800,62 @@ def ai_project_executive_summary(project_id):
 # ========================
 # HTML PROFESSIONAL REPORT
 # ========================
+
+@app.route('/api/projects/<project_id>/reports/pdf', methods=['GET', 'POST'])
+def generate_pdf_report(project_id):
+    """generate_html_report ile birebir ayni secenekler/govde (title,
+    client_name, pentester_name, date_range, include, template,
+    confidential, executive_summary, lang) -- tek fark, tarayici print
+    diyalogu yerine dogrudan indirilebilir bir .pdf dosyasi donmesi."""
+    try:
+        project = _project_or_404(project_id)
+        sessions = Session.query.filter_by(project_id=project_id).all()
+        all_results = []
+        for s in sessions:
+            all_results.extend([r.to_dict() for r in s.results])
+
+        findings = [f.to_dict() for f in Finding.query.filter_by(project_id=project_id).all()]
+
+        if request.method == 'POST':
+            body = request.json or {}
+        else:
+            body = {}
+        args = request.args
+        include = body.get('include') or args.get('include') or 'all'
+        if include not in ('all', 'critical_high'):
+            try:
+                include = [int(x) for x in include.split(',')] if isinstance(include, str) else include
+            except Exception:
+                include = 'all'
+
+        options = {
+            'title': body.get('title') or args.get('title'),
+            'client_name': body.get('client_name') or args.get('client_name'),
+            'pentester_name': body.get('pentester_name') or args.get('pentester_name'),
+            'date_range': body.get('date_range') or args.get('date_range'),
+            'logo_data_uri': body.get('logo_data_uri'),
+            'include': include,
+            'template': body.get('template') or args.get('template') or 'standard',
+            'confidential': str(body.get('confidential') or args.get('confidential') or '').lower() in ('1', 'true', 'yes'),
+        }
+        lang = body.get('lang') or args.get('lang') or 'tr'
+        executive_summary = body.get('executive_summary')
+
+        pdf_buf = report_pdf.build_pdf_report(
+            project.to_dict(), findings, all_results, options=options,
+            executive_summary=executive_summary, lang=lang
+        )
+
+        safe_name = ''.join(c if c.isalnum() or c in ' -_' else '_' for c in project.name)[:60]
+        filename = f"{safe_name}_report.pdf"
+        return send_file(pdf_buf, as_attachment=True, download_name=filename, mimetype='application/pdf')
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except report_pdf.PdfReportError as e:
+        return jsonify({'error': str(e)}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/projects/<project_id>/reports/html', methods=['GET', 'POST'])
 def generate_html_report(project_id):
@@ -2039,7 +2180,7 @@ def ai_status():
     aksine GERÇEK bir ağ isteği ATMAZ (sadece is_configured() kontrolü),
     böylece her sayfa yüklemesinde gereksiz API kotası tüketilmez."""
     try:
-        provider = get_ai_provider(app.config)
+        provider = get_ai_provider(app.config, overrides=_ai_overrides_from_request())
         return jsonify({
             'provider': getattr(provider, 'name', None),
             'model': getattr(provider, 'model', None),
@@ -2052,7 +2193,7 @@ def ai_status():
 @app.route('/api/ai/ping', methods=['GET', 'POST'])
 def ai_ping():
     try:
-        provider = get_ai_provider(app.config)
+        provider = get_ai_provider(app.config, overrides=_ai_overrides_from_request())
         result = _ping_provider(provider)
         return jsonify(result), 200 if result['ok'] else 503
     except Exception as e:
@@ -2100,7 +2241,7 @@ def ai_analyze_finding_generic():
     lang = data.get('lang', 'tr')
 
     try:
-        provider = get_ai_provider(app.config)
+        provider = get_ai_provider(app.config, overrides=_ai_overrides_from_request())
         analysis, ai_result = finding_analysis.analyze_finding(provider, title, content, test_id=test_id, lang=lang)
     except AIConfigError as e:
         return jsonify({'error': str(e)}), 200
@@ -2143,7 +2284,7 @@ def ai_suggest_next_test():
     findings = findings or []
 
     try:
-        provider = get_ai_provider(app.config)
+        provider = get_ai_provider(app.config, overrides=_ai_overrides_from_request())
         suggestion, ai_result = next_test_suggestion.suggest_next_test(provider, completed_test_ids, findings, lang=lang)
     except AIConfigError as e:
         return jsonify({'error': str(e)}), 200
@@ -2222,7 +2363,7 @@ def generate_session_report_summary(session_id):
         notes = _session_findings_for_report(session_id)
         report_data = report_generator.build_report_data(session.to_dict(), results, notes, lang=lang)
 
-        provider = get_ai_provider(app.config)
+        provider = get_ai_provider(app.config, overrides=_ai_overrides_from_request())
         try:
             summary, ai_result = report_generator.generate_executive_summary(provider, report_data, lang=lang)
         except (AIConfigError, AIRequestError) as e:

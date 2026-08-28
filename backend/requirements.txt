@@ -5,3 +5,4 @@ python-dotenv==1.0.0
 requests==2.31.0
 python-docx==1.1.0
 cryptography==43.0.3
+xhtml2pdf==0.2.17

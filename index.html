@@ -57,6 +57,7 @@
       <button class="nav-item" id="sessionsNavBtn"><span class="dot"></span><span data-i18n="navSessions">Test Oturumları</span></button>
       <button class="nav-item" id="reconNavBtn"><span class="dot"></span><span data-i18n="navRecon">Attack Surface Discovery</span></button>
       <button class="nav-item" id="plannerNavBtn"><span class="dot"></span><span data-i18n="navPlanner">Test Planı</span></button>
+      <button class="nav-item" id="aiNextTestNavBtn"><span class="dot"></span><span data-i18n="navAiNextTest">🤖 AI: Sırada Ne Var?</span></button>
       <button class="nav-item" id="importNavBtn"><span class="dot"></span><span data-i18n="navImport">Bulgu İçe Aktar</span></button>
       <button class="nav-item" id="exportBtn"><span class="dot"></span><span data-i18n="exportReport">Raporu Dışa Aktar</span></button>
       <button class="nav-item" id="resetBtn"><span class="dot"></span><span data-i18n="resetProgress">İlerlemeyi Sıfırla</span></button>
@@ -106,6 +107,11 @@
       </div>
       <div class="profile">
         <button class="topbar-session-btn" id="topbarSessionBtn" style="display:none"></button>
+        <button class="topbar-byok-btn" id="topbarByokBtn" type="button" title="Kendi API Key'inle Kullan">
+          <span class="byok-btn-icon">🔐</span>
+          <span class="byok-btn-label" data-i18n="byokTopbarLabel">Kendi Key'im</span>
+          <span class="byok-dot" id="byokDot"></span>
+        </button>
         <div class="avatar">P</div>
       </div>
     </div>
@@ -205,6 +211,7 @@
         <button data-filter="pending" data-i18n="filterPending">Bekleyen</button>
         <button data-filter="done" data-i18n="filterDone">Tamamlanan</button>
       </div>
+      <button type="button" class="sort-priority-toggle" id="sortPriorityToggle" title="Attack Surface Discovery'nin önerdiği önceliğe göre sırala" data-i18n="sortByPriorityBtn">🎯 Önceliğe Göre Sırala</button>
     </div>
     <div class="panel-body">
       <div id="testList"><!-- JS ile doldurulur --></div>
@@ -382,6 +389,28 @@
   </div>
 </div>
 
+<!-- AI: Sırada Ne Var? -->
+<div class="overlay" id="aiNextTestOverlay">
+  <div class="panel ai-next-test-panel" style="max-width:640px">
+    <div class="panel-header">
+      <div>
+        <h3 data-i18n="aiNextTestTitle">🤖 AI: Sırada Ne Var?</h3>
+        <p data-i18n="aiNextTestDesc">Şu ana kadar tamamladığınız testlere ve kaydettiğiniz bulgulara bakarak, AI bir sonraki mantıklı adımı gerekçesiyle birlikte önerir. Test Planı'ndan farkı: recon kanıtı gerekmez, sabit kural yerine AI akıl yürütmesi kullanır — bu yüzden her zaman bir öneri taslağıdır, kesin doğru kabul etmeyin.</p>
+      </div>
+      <button class="close-btn" id="closeAiNextTestOverlay">&times;</button>
+    </div>
+    <div class="panel-body">
+      <div id="aiNextTestBody">
+        <div class="hero-actions">
+          <button type="button" class="btn btn-primary" id="aiNextTestAskBtn" data-i18n="aiNextTestAskBtn">Öner</button>
+        </div>
+        <div class="ai-provider-status" id="aiNextTestStatus"></div>
+        <div id="aiNextTestResult" class="ai-next-test-result" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Finding Detail / Edit (Professional Finding + CVSS v3.1) -->
 <div class="overlay" id="findingModalOverlay">
   <div class="panel finding-modal-panel">
@@ -484,6 +513,52 @@
   </div>
 </div>
 
+<!-- Kendi API Key'inle Kullan (BYOK — bu oturuma özel, sunucuya kaydedilmez) -->
+<div class="overlay" id="byokOverlay">
+  <div class="panel byok-panel">
+    <div class="byok-panel-glow"></div>
+    <div class="panel-header">
+      <div>
+        <h3 data-i18n="byokTitle">🔐 Kendi API Key'inle Kullan</h3>
+        <p data-i18n="byokDesc">Buraya girdiğiniz key yalnızca bu tarayıcı sekmesinde tutulur; sunucuya hiçbir zaman kaydedilmez ve sekmeyi kapattığınızda otomatik olarak silinir. Aktif ettiğinizde tüm AI istekleriniz (bulgu analizi, açıklama/remediation üretimi, sırada ne var, rapor özeti) bu key ve modelle çalışır — paylaşılan/varsayılan AI Ayarları etkilenmez.</p>
+      </div>
+      <button class="close-btn" id="closeByokOverlay">&times;</button>
+    </div>
+    <div class="panel-body">
+      <div class="byok-status-strip" id="byokStatusStrip">
+        <span class="byok-status-dot" id="byokStatusDot"></span>
+        <span id="byokStatusText" data-i18n="byokStatusOff">Şu anda paylaşılan/varsayılan AI sağlayıcısı kullanılıyor.</span>
+      </div>
+
+      <label style="display:block;font-size:.8rem;color:var(--muted);font-weight:600;margin-bottom:10px" data-i18n="byokProviderLabel">Sağlayıcı</label>
+      <div class="byok-provider-grid" id="byokProviderGrid"><!-- JS ile doldurulur --></div>
+
+      <div class="byok-form">
+        <label id="byokKeyLabel" data-i18n="byokKeyLabel">API Key</label>
+        <div class="ai-key-input-wrap">
+          <input type="password" id="byokKeyInput" class="ai-key-input" placeholder="sk-... / AIza... / sk-ant-...">
+          <button type="button" class="ai-key-toggle-btn" id="byokKeyToggleBtn" title="Göster/Gizle">👁</button>
+        </div>
+
+        <label data-i18n="byokModelLabel">Model (opsiyonel — boş bırakılırsa varsayılan kullanılır)</label>
+        <input type="text" id="byokModelInput" placeholder="ör. claude-sonnet-5, gpt-5.6-terra, gemini-3.7-flash">
+
+        <label id="byokBaseUrlLabel" style="display:none" data-i18n="byokBaseUrlLabel">Ollama Base URL</label>
+        <input type="text" id="byokBaseUrlInput" style="display:none" placeholder="http://localhost:11434">
+
+        <p class="byok-hint" data-i18n="byokHint">İpucu: Key'iniz tarayıcınızın oturum belleğinde (sessionStorage) tutulur; sayfayı yenilediğinizde kalır ama sekmeyi kapatınca kaybolur.</p>
+
+        <div class="byok-actions">
+          <button type="button" class="btn btn-primary" id="byokActivateBtn" data-i18n="byokActivateBtn">Bu Oturumda Aktif Et</button>
+          <button type="button" class="btn btn-secondary" id="byokTestBtn" data-i18n="aiTestBtn">Test Et</button>
+          <button type="button" class="btn danger" id="byokClearBtn" data-i18n="byokClearBtn" style="display:none">Devre Dışı Bırak</button>
+        </div>
+        <div class="ai-provider-status" id="byokTestStatus"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- AI Ayarları (API key yönetimi) -->
 <div class="overlay" id="aiSettingsOverlay">
   <div class="panel" style="max-width:760px">
@@ -531,6 +606,10 @@
       <button class="close-btn" id="closeReconOverlay">&times;</button>
     </div>
     <div class="panel-body">
+      <div id="reconCachedNotice" class="recon-cached-notice" style="display:none">
+        <span id="reconCachedText"></span>
+        <button type="button" class="btn btn-sm" id="reconResetBtn" data-i18n="reconResetBtn">🔄 Sıfırla / Yeniden Tara</button>
+      </div>
       <div class="import-form">
         <label data-i18n="reconTargetLabel">Hedef Domain</label>
         <input type="text" id="reconTargetInput" placeholder="example.com">

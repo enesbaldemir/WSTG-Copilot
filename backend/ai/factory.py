@@ -50,13 +50,24 @@ def _from_db_setting(app_config, timeout):
         return None
 
 
-def get_ai_provider(app_config):
+def get_ai_provider(app_config, overrides=None):
     """
-    Once DB'deki 'AIProviderSetting.is_active=True' kaydina bakar (uygulama
-    icindeki AI Ayarlari panelinden yonetilir); yoksa app_config.AI_PROVIDER
-    uzerinden .env fallback'ine doner. Ust katmanlar (routes, ai analiz
-    fonksiyonlari) hep bu fonksiyonu cagirir; sağlayici degisince baska
-    hicbir yeri degistirmeye gerek yoktur.
+    Sağlayıcı seçimi üç kademeli öncelik sırasıyla çözülür:
+
+      1) `overrides` -- kullanıcının tarayıcıdan "kendi API key'imle kullan"
+         (BYOK) diyerek gönderdiği { 'provider', 'api_key', 'model',
+         'base_url' } değerleri. Verilirse hem DB'deki hem de .env'deki
+         ayarların ÖNÜNE geçer ve HİÇBİR YERE KAYDEDİLMEZ; sadece o tek
+         istek için kullanılır. Bu sayede birden çok kullanıcı, aynı
+         kurulumu paylaşsa bile, istedikleri sağlayıcıyı/modeli kendi
+         key'leriyle kullanabilir.
+      2) DB'deki 'AIProviderSetting.is_active=True' kaydı (uygulama içindeki
+         AI Ayarları panelinden yönetilir, sunucuda şifreli saklanır --
+         paylaşılan/varsayılan kurulum için).
+      3) app_config.AI_PROVIDER üzerinden .env fallback'i.
+
+    Üst katmanlar (routes, ai analiz fonksiyonları) hep bu fonksiyonu
+    çağırır; sağlayıcı değişince başka hiçbir yeri değiştirmeye gerek yoktur.
 
     app_config: bir sınıf (DevelopmentConfig gibi, nokta erişimi) ya da
     Flask'ın app.config nesnesi (dict-benzeri, ['KEY'] erişimi) olabilir.
@@ -72,10 +83,30 @@ def get_ai_provider(app_config):
 
     timeout = cfg("AI_REQUEST_TIMEOUT", 30)
 
+    overrides = overrides or {}
+    override_provider = (overrides.get("provider") or "").strip().lower() or None
+    override_key = (overrides.get("api_key") or "").strip() or None
+    override_model = (overrides.get("model") or "").strip() or None
+    override_base_url = (overrides.get("base_url") or "").strip() or None
+
+    # 1) BYOK: kullanıcı en azından provider + (key ya da ollama için base_url)
+    #    belirtmişse, bu isteğe özel sağlayıcıyı kur ve hiçbir şeyi kalıcı
+    #    olarak değiştirme / kaydetme.
+    if override_provider and (override_key or override_provider == "ollama"):
+        return _build_provider(
+            override_provider,
+            api_key=override_key,
+            model=override_model,
+            base_url=override_base_url,
+            timeout=timeout,
+        )
+
+    # 2) Paylaşılan/varsayılan kurulum: DB'de aktif işaretli sağlayıcı.
     db_provider = _from_db_setting(app_config, timeout)
     if db_provider is not None:
         return db_provider
 
+    # 3) .env fallback.
     provider = (cfg("AI_PROVIDER", "gemini") or "gemini").lower()
     return _build_provider(
         provider,

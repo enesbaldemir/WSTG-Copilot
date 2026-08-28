@@ -8,6 +8,7 @@
   const SESSION_ID_KEY = "wstg_session_id_v1";
   const SKIP_SESSION_KEY = "wstg_skip_session_v1";
   const RECON_PRIORITY_KEY = "wstg_recon_priority_v1";
+  const RECON_CACHE_KEY = "wstg_recon_cache_v1";
   const API_BASE = "http://localhost:5000/api";
 
   const DATA_FILES = {
@@ -90,6 +91,7 @@
       filterAll: "Tümü",
       filterPending: "Bekleyen",
       filterDone: "Tamamlanan",
+      sortByPriorityBtn: "🎯 Önceliğe Göre Sırala",
       descriptionLabel: "Açıklama",
       howToLabel: "Nasıl Test Edilir",
       exampleLabel: "Örnek Payload / Komut",
@@ -100,6 +102,7 @@
       markDoneToast: "Test tamamlandı olarak işaretlendi",
       markPendingToast: "Test beklemede olarak işaretlendi",
       reportDownloadedToast: "Rapor indirildi",
+      exportProHint: "💡 İpucu: AI destekli PDF/HTML profesyonel rapor (bulgu seçimi, yönetici özeti) için bir Proje açıp 'Reports' sekmesini kullanın.",
       progressResetToast: "İlerleme sıfırlandı",
       resetConfirm: "Tüm ilerleme sıfırlansın mı? Bu işlem geri alınamaz.",
       noMatchInCategory: "Bu kategoride eşleşen test bulunamadı.",
@@ -207,6 +210,10 @@
       reconNoSuggestions: "Önerilecek bir test önceliği bulunamadı.",
       reconAppliedToast: n => `${n} test maddesi önceliklendirildi`,
       reconBackendOffline: "Bu özellik backend gerektirir — lütfen backend/app.py'yi çalıştırın.",
+      reconResetBtn: "🔄 Sıfırla / Yeniden Tara",
+      reconResetConfirm: "Bu proje/oturum için kayıtlı tarama sonuçları ve öncelik verisi silinsin mi? Bu işlem geri alınamaz.",
+      reconResetToast: "Tarama verisi sıfırlandı",
+      reconCachedNotice: (target, when) => `Son tarama: <b>${target}</b>${when ? ' · ' + when : ''} — yeniden taramadan gösteriliyor.`,
       reconPriorityBadge_high: "🎯 Yüksek Öncelik",
       reconPriorityBadge_medium: "🎯 Orta Öncelik",
       reconPriorityBadge_low: "🎯 Düşük Öncelik",
@@ -219,6 +226,15 @@
       plannerReasonLabel: "Neden",
       plannerGotoBtn: "Bu maddeye git",
       plannerScoreNote: "Skor: kanıt sayısı + öncelik seviyesi + WSTG metodoloji sırasına göre hesaplanır (sabit kurallar, model çağrısı yapılmaz).",
+
+      navAiNextTest: "🤖 AI: Sırada Ne Var?",
+      aiNextTestTitle: "🤖 AI: Sırada Ne Var?",
+      aiNextTestDesc: "Şu ana kadar tamamladığınız testlere ve kaydettiğiniz bulgulara bakarak, AI bir sonraki mantıklı adımı gerekçesiyle birlikte önerir. Test Planı'ndan farkı: recon kanıtı gerekmez, sabit kural yerine AI akıl yürütmesi kullanır — bu yüzden her zaman bir öneri taslağıdır, kesin doğru kabul etmeyin.",
+      aiNextTestAskBtn: "Öner",
+      aiNextTestAllDone: "Tüm testler tamamlanmış görünüyor — önerecek bir şey yok!",
+      aiNextTestNoSuggestion: "AI bir öneri üretemedi. Tekrar deneyin.",
+      aiNextTestUngrounded: "AI'ın önerdiği test ID'si beklenmeyen bir değer — lütfen dikkatli değerlendirin.",
+      aiNextTestAltsLabel: "Alternatif adaylar",
 
       navProjects: "Projeler",
       projectsModalTitle: "Projeler",
@@ -336,6 +352,7 @@
       aiFindSimilarBtn: "Benzer Bulguları Bul",
       aiSuggestCweBtn: "CWE/Severity Öner",
       aiWorking: "AI çalışıyor…",
+      aiRequestTimeout: "AI yanıtı zaman aşımına uğradı (45 sn). İnternet bağlantınızı, kullandığınız API key'i ve sağlayıcının durumunu kontrol edip tekrar deneyin.",
       aiDone: "Tamamlandı",
       aiSaveFirst: "AI asistanını kullanmadan önce finding'i bir kez kaydedin.",
       aiNotConfigured: "AI sağlayıcısı yapılandırılmamış (.env dosyasını kontrol edin).",
@@ -362,6 +379,23 @@
       aiTestFailed: "Bağlantı başarısız",
       aiStatusWorkingWith: "ile çalışıyor",
       aiStatusNotConfigured: "AI yapılandırılmamış",
+
+      byokTopbarLabel: "Kendi Key'im",
+      byokTitle: "🔐 Kendi API Key'inle Kullan",
+      byokDesc: "Buraya girdiğiniz key yalnızca bu tarayıcı sekmesinde tutulur; sunucuya hiçbir zaman kaydedilmez ve sekmeyi kapattığınızda otomatik olarak silinir. Aktif ettiğinizde tüm AI istekleriniz bu key ve modelle çalışır — paylaşılan/varsayılan AI Ayarları etkilenmez.",
+      byokStatusOff: "Şu anda paylaşılan/varsayılan AI sağlayıcısı kullanılıyor.",
+      byokStatusOn: "Bu oturumda aktif: {provider} {model}",
+      byokProviderLabel: "Sağlayıcı",
+      byokKeyLabel: "API Key",
+      byokModelLabel: "Model (opsiyonel — boş bırakılırsa varsayılan kullanılır)",
+      byokBaseUrlLabel: "Ollama Base URL",
+      byokHint: "İpucu: Key'iniz tarayıcınızın oturum belleğinde (sessionStorage) tutulur; sayfayı yenilediğinizde kalır ama sekmeyi kapatınca kaybolur.",
+      byokActivateBtn: "Bu Oturumda Aktif Et",
+      byokClearBtn: "Devre Dışı Bırak",
+      byokActivatedToast: "Kendi API key'iniz bu oturum için aktif edildi",
+      byokClearedToast: "Kendi API key'iniz devre dışı bırakıldı, paylaşılan ayara dönüldü",
+      byokMissingKey: "Lütfen bir API key girin",
+      byokMissingProvider: "Lütfen bir sağlayıcı seçin",
 
       dupAlertTitle: "⚠️ Olası Tekrarlanan Bulgu Tespit Edildi",
       dupAlertDesc: "Bu bulguya benzer, projede zaten kayıtlı bulgular var.",
@@ -481,6 +515,9 @@
       reportIncludeLabel: "Dahil Edilecek Bulgular",
       reportIncludeAll: "Tümü",
       reportIncludeCriticalHigh: "Sadece Kritik + Yüksek",
+      reportIncludeSelected: "Seçtiğim Bulgular",
+      reportFindingPickerLabel: "Rapora Dahil Edilecek Bulgular",
+      reportFindingPickerEmpty: "Bu projede henüz kayıtlı bulgu yok.",
       reportTemplateLabel: "Şablon",
       reportTemplateStandard: "Standart",
       reportTemplateExecutive: "Yönetici Özeti",
@@ -490,6 +527,8 @@
       reportExecSummaryPlaceholder: "Boş bırakılırsa rapor istatistik tabanlı sade bir özet kullanır.",
       reportGenSummaryBtn: "AI ile Özet Oluştur",
       reportOpenHtmlBtn: "HTML Raporu Aç",
+      reportDownloadPdfBtn: "PDF İndir",
+      reportPdfGenerating: "PDF oluşturuluyor…",
 
       pwTabKanbanDesc: "WSTG testlerini kanban panosunda sürükle-bırak ile takip edin.",
       kanbanFilterTestId: "WSTG ID filtrele...",
@@ -548,6 +587,7 @@
       filterAll: "All",
       filterPending: "Pending",
       filterDone: "Completed",
+      sortByPriorityBtn: "🎯 Sort By Priority",
       descriptionLabel: "Description",
       howToLabel: "How to Test",
       exampleLabel: "Example Payload / Command",
@@ -558,6 +598,7 @@
       markDoneToast: "Test marked as completed",
       markPendingToast: "Test marked as pending",
       reportDownloadedToast: "Report downloaded",
+      exportProHint: "💡 Tip: for an AI-assisted PDF/HTML professional report (finding selection, executive summary), open a Project and use its 'Reports' tab.",
       progressResetToast: "Progress reset",
       resetConfirm: "Reset all progress? This action cannot be undone.",
       noMatchInCategory: "No matching test found in this category.",
@@ -665,6 +706,10 @@
       reconNoSuggestions: "No test priority suggestions found.",
       reconAppliedToast: n => `${n} test items prioritized`,
       reconBackendOffline: "This feature requires the backend — please run backend/app.py.",
+      reconResetBtn: "🔄 Reset / Re-scan",
+      reconResetConfirm: "Delete the saved scan results and priority data for this project/session? This cannot be undone.",
+      reconResetToast: "Scan data reset",
+      reconCachedNotice: (target, when) => `Last scan: <b>${target}</b>${when ? ' · ' + when : ''} — showing without re-scanning.`,
       reconPriorityBadge_high: "🎯 High Priority",
       reconPriorityBadge_medium: "🎯 Medium Priority",
       reconPriorityBadge_low: "🎯 Low Priority",
@@ -677,6 +722,15 @@
       plannerReasonLabel: "Reason",
       plannerGotoBtn: "Go to this item",
       plannerScoreNote: "Score is computed from evidence count + priority level + WSTG methodology order (fixed rules, no model call involved).",
+
+      navAiNextTest: "🤖 AI: What's Next?",
+      aiNextTestTitle: "🤖 AI: What's Next?",
+      aiNextTestDesc: "Looking at the tests you've completed so far and the findings you've recorded, the AI suggests the next logical step along with its reasoning. Unlike the Test Plan: no recon evidence is required, and it uses AI reasoning instead of fixed rules — so it's always a draft suggestion, not a guaranteed-correct answer.",
+      aiNextTestAskBtn: "Suggest",
+      aiNextTestAllDone: "All tests appear to be completed — nothing left to suggest!",
+      aiNextTestNoSuggestion: "The AI couldn't produce a suggestion. Please try again.",
+      aiNextTestUngrounded: "The test ID suggested by the AI was unexpected — please review it carefully.",
+      aiNextTestAltsLabel: "Alternative candidates",
 
       navProjects: "Projects",
       projectsModalTitle: "Projects",
@@ -794,6 +848,7 @@
       aiFindSimilarBtn: "Find Similar Findings",
       aiSuggestCweBtn: "Suggest CWE/Severity",
       aiWorking: "AI is working…",
+      aiRequestTimeout: "The AI response timed out (45s). Check your internet connection, the API key you're using, and the provider's status, then try again.",
       aiDone: "Done",
       aiSaveFirst: "Save the finding once before using the AI assistant.",
       aiNotConfigured: "No AI provider configured (check your .env file).",
@@ -820,6 +875,23 @@
       aiTestFailed: "Connection failed",
       aiStatusWorkingWith: "is active",
       aiStatusNotConfigured: "AI not configured",
+
+      byokTopbarLabel: "My Own Key",
+      byokTitle: "🔐 Use Your Own API Key",
+      byokDesc: "The key you enter here is kept only in this browser tab; it is never saved to the server and is automatically discarded when you close the tab. Once activated, all your AI requests use this key and model — the shared/default AI Settings are not affected.",
+      byokStatusOff: "Currently using the shared/default AI provider.",
+      byokStatusOn: "Active for this session: {provider} {model}",
+      byokProviderLabel: "Provider",
+      byokKeyLabel: "API Key",
+      byokModelLabel: "Model (optional — default is used if left blank)",
+      byokBaseUrlLabel: "Ollama Base URL",
+      byokHint: "Tip: your key is stored in the browser's session storage; it survives a page refresh but disappears when you close the tab.",
+      byokActivateBtn: "Activate For This Session",
+      byokClearBtn: "Deactivate",
+      byokActivatedToast: "Your own API key is now active for this session",
+      byokClearedToast: "Your own API key was deactivated, back to the shared setting",
+      byokMissingKey: "Please enter an API key",
+      byokMissingProvider: "Please choose a provider",
 
       dupAlertTitle: "⚠️ Potential Duplicate Finding Detected",
       dupAlertDesc: "Findings similar to this one already exist in the project.",
@@ -939,6 +1011,9 @@
       reportIncludeLabel: "Findings to Include",
       reportIncludeAll: "All",
       reportIncludeCriticalHigh: "Critical + High Only",
+      reportIncludeSelected: "Selected Findings",
+      reportFindingPickerLabel: "Findings to Include in the Report",
+      reportFindingPickerEmpty: "This project has no findings yet.",
       reportTemplateLabel: "Template",
       reportTemplateStandard: "Standard",
       reportTemplateExecutive: "Executive",
@@ -948,6 +1023,8 @@
       reportExecSummaryPlaceholder: "If left empty, the report uses a plain statistics-based summary.",
       reportGenSummaryBtn: "Generate Summary with AI",
       reportOpenHtmlBtn: "Open HTML Report",
+      reportDownloadPdfBtn: "Download PDF",
+      reportPdfGenerating: "Generating PDF…",
 
       pwTabKanbanDesc: "Track WSTG tests on a drag-and-drop kanban board.",
       kanbanFilterTestId: "Filter WSTG ID...",
@@ -984,6 +1061,7 @@
   let saveTimers = {};
   let currentCategoryId = null;
   let currentFilter = "all"; // all | done | pending
+  let sortByReconPriority = false; // false = resmi WSTG sırası (varsayılan), true = recon önceliğine göre sırala
   let currentLang = loadLang();
   let currentFramework = loadFramework(); // 'wstg' | 'llm-security'
   let currentTheme = loadTheme();
@@ -1049,12 +1127,49 @@
     try{ localStorage.setItem(FINDINGS_KEY, JSON.stringify(findings)); }catch(e){}
   }
 
+  // Attack Surface Discovery verisi (öncelik rozetleri + son tarama önbelleği)
+  // artik ProJE (varsa) ya da OTURUM (varsa) bazinda ayri anahtarlarda
+  // tutulur -- eskiden tek, global bir anahtardaydi ve bu yuzden bir
+  // oturumu/projeyi silip yenisini actiginizda eski taramanin sonuclari
+  // (Test Plani, checklist rozetleri) sizmaya devam ediyordu. Baglam yoksa
+  // ('nosession') eski davranisla ayni sekilde calisir.
+  function reconContextKey(){
+    if(currentProjectId) return `project:${currentProjectId}`;
+    if(currentSession && currentSession.id) return `session:${currentSession.id}`;
+    return 'nosession';
+  }
+
   function loadReconPriority(){
-    try{ return JSON.parse(localStorage.getItem(RECON_PRIORITY_KEY)) || {}; }
+    try{ return JSON.parse(localStorage.getItem(`${RECON_PRIORITY_KEY}:${reconContextKey()}`)) || {}; }
     catch(e){ return {}; }
   }
   function saveReconPriority(){
-    try{ localStorage.setItem(RECON_PRIORITY_KEY, JSON.stringify(reconPriority)); }catch(e){}
+    try{ localStorage.setItem(`${RECON_PRIORITY_KEY}:${reconContextKey()}`, JSON.stringify(reconPriority)); }catch(e){}
+  }
+  // Bağlam (proje/oturum) değiştiğinde çağrılır: eski bağlamın önceliklerini
+  // görüntülemeyi bırakıp yeni bağlamınkini (varsa) yükler.
+  function reloadReconContext(){
+    reconPriority = loadReconPriority();
+    renderSidebar();
+    renderDashboard();
+    if(currentCategoryId) renderTestList();
+  }
+
+  // Ham tarama sonucunu (subdomain/tech/endpoint/öneri listesi), Attack
+  // Surface Discovery penceresi kapatılıp yeniden açıldığında yeniden
+  // taramaya gerek kalmadan geri getirebilmek için bağlam bazlı önbelleğe
+  // yazar. Proje modunda ayrıca backend'e de kalıcı olarak yazılır
+  // (bkz. runRecon → POST /recon); bu önbellek oturum modunda ve
+  // backend'e erişilemediğinde de aynı deneyimi sağlamak içindir.
+  function loadReconCache(){
+    try{ return JSON.parse(localStorage.getItem(`${RECON_CACHE_KEY}:${reconContextKey()}`)) || null; }
+    catch(e){ return null; }
+  }
+  function saveReconCache(result){
+    try{ localStorage.setItem(`${RECON_CACHE_KEY}:${reconContextKey()}`, JSON.stringify({ result, cachedAt: new Date().toISOString() })); }catch(e){}
+  }
+  function clearReconCache(){
+    try{ localStorage.removeItem(`${RECON_CACHE_KEY}:${reconContextKey()}`); }catch(e){}
   }
 
   // Returns the current finding {text, severity} for a test item, reading
@@ -1343,6 +1458,10 @@
     if(!cat) return;
     currentCategoryId = catId;
     currentFilter = "all";
+    sortByReconPriority = false;
+    const sortBtn = document.getElementById('sortPriorityToggle');
+    if(sortBtn) sortBtn.classList.remove('active');
+    document.querySelectorAll('.filter-toggle button').forEach(b=>b.classList.toggle('active', b.dataset.filter === 'all'));
     document.getElementById('panelTitle').textContent = `${cat.code} · ${cat.name}`;
     document.getElementById('panelDesc').textContent = cat.description;
     document.getElementById('itemSearch').value = "";
@@ -1370,12 +1489,19 @@
     if(currentFilter === 'done') items = items.filter(t=>progress[t.id]);
     if(currentFilter === 'pending') items = items.filter(t=>!progress[t.id]);
     if(q) items = items.filter(x => x.title.toLowerCase().includes(q) || x.id.toLowerCase().includes(q) || x.description.toLowerCase().includes(q));
-    const prioOrder = { high: 3, medium: 2, low: 1, info: 0 };
-    items = items.slice().sort((a, b) => {
-      const pa = reconPriority[a.id] ? (prioOrder[reconPriority[a.id].level] ?? 0) + 1 : 0;
-      const pb = reconPriority[b.id] ? (prioOrder[reconPriority[b.id].level] ?? 0) + 1 : 0;
-      return pb - pa;
-    });
+    // Varsayılan: resmi WSTG numaralandırma sırası korunur (JSON'daki sıra).
+    // Recon (Attack Surface Discovery) önceliğine göre sıralama, kullanıcı
+    // "Önceliğe Göre Sırala" düğmesini açıkça seçtiğinde devreye girer --
+    // aksi halde testler WSTG-XXXX-01, 02, 03... sırasından çıkıp karışık
+    // görünmesin diye sabit tutulur.
+    if(sortByReconPriority){
+      const prioOrder = { high: 3, medium: 2, low: 1, info: 0 };
+      items = items.slice().sort((a, b) => {
+        const pa = reconPriority[a.id] ? (prioOrder[reconPriority[a.id].level] ?? 0) + 1 : 0;
+        const pb = reconPriority[b.id] ? (prioOrder[reconPriority[b.id].level] ?? 0) + 1 : 0;
+        return pb - pa;
+      });
+    }
     const list = document.getElementById('testList');
     if(!items.length){
       list.innerHTML = `<div class="search-empty">${t('noMatchInCategory')}</div>`;
@@ -1628,10 +1754,60 @@
 
   /* ===================== DB / SESSIONS ===================== */
 
+  const BYOK_STORAGE_KEY = 'wstgAiByok';
+
+  function loadByok(){
+    try{
+      const raw = sessionStorage.getItem(BYOK_STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    }catch(e){ return null; }
+  }
+  function saveByok(cfg){
+    try{ sessionStorage.setItem(BYOK_STORAGE_KEY, JSON.stringify(cfg)); }catch(e){}
+  }
+  function clearByok(){
+    try{ sessionStorage.removeItem(BYOK_STORAGE_KEY); }catch(e){}
+  }
+  // BYOK header'ları -- sadece o anki isteğe eklenir, hiçbir yere kaydedilmez.
+  // Backend (ai/factory.get_ai_provider) bunları DB/​.env ayarlarının önüne
+  // alır; header yoksa davranış tamamen eskisi gibi paylaşılan ayarla devam eder.
+  function byokHeaders(){
+    const cfg = loadByok();
+    if(!cfg || !cfg.provider) return {};
+    if(cfg.provider !== 'ollama' && !cfg.api_key) return {};
+    const headers = { 'X-AI-Provider': cfg.provider };
+    if(cfg.api_key) headers['X-AI-Api-Key'] = cfg.api_key;
+    if(cfg.model) headers['X-AI-Model'] = cfg.model;
+    if(cfg.base_url) headers['X-AI-Base-Url'] = cfg.base_url;
+    return headers;
+  }
+
+  // AI çağrıları (Gemini/OpenAI/Anthropic/Ollama'ya giden istekler) bazen
+  // ağ/sağlayıcı tarafında yavaşlayabilir ya da tamamen takılabilir. fetch()
+  // tek başına bunun için bir zaman aşımı uygulamaz -- bu yüzden AI
+  // endpoint'lerine giden istekleri burada AbortController ile sınırlıyoruz;
+  // böylece arayüz "AI çalışıyor…" ekranında sonsuza kadar takılı kalmak
+  // yerine, makul bir sürede net bir hata gösterir.
+  const AI_REQUEST_UI_TIMEOUT_MS = 45000;
+
   function apiRequest(path, options){
-    return fetch(API_BASE + path, Object.assign({
-      headers: { 'Content-Type': 'application/json' }
-    }, options || {})).then(async res => {
+    options = options || {};
+    const headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
+    const isAiPath = path.indexOf('/ai/') !== -1 || path.indexOf('/ai-') !== -1;
+    if(isAiPath){
+      Object.assign(headers, byokHeaders());
+    }
+
+    let signal = options.signal;
+    let timeoutId = null;
+    if(isAiPath && typeof AbortController !== 'undefined' && !signal){
+      const ctrl = new AbortController();
+      signal = ctrl.signal;
+      timeoutId = setTimeout(()=> ctrl.abort(), AI_REQUEST_UI_TIMEOUT_MS);
+    }
+
+    return fetch(API_BASE + path, Object.assign({}, options, { headers, signal })).then(async res => {
+      if(timeoutId) clearTimeout(timeoutId);
       if(!res.ok){
         let msg = res.statusText;
         let body = null;
@@ -1642,6 +1818,12 @@
       }
       if(res.status === 204) return null;
       return res.json();
+    }).catch(err => {
+      if(timeoutId) clearTimeout(timeoutId);
+      if(err && err.name === 'AbortError'){
+        throw new Error(t('aiRequestTimeout'));
+      }
+      throw err;
     });
   }
 
@@ -1703,6 +1885,7 @@
         progress = progressFromResults(results);
         saveSessionId(session.id);
         setSkipFlag(false);
+        reloadReconContext();
         renderSidebar(); renderDashboard();
         if(currentCategoryId) renderTestList();
         updateSessionUI();
@@ -1802,6 +1985,7 @@
         sessionResults = {};
         saveSessionId(null);
         progress = loadProgress();
+        reloadReconContext();
         renderSidebar(); renderDashboard();
         updateSessionUI();
       }
@@ -2029,11 +2213,53 @@
     document.getElementById('reconResultsWrap').style.display = 'none';
     document.getElementById('reconTargetInput').value = '';
     document.getElementById('reconAuthCheck').checked = false;
+    document.getElementById('reconCachedNotice').style.display = 'none';
     const status = document.getElementById('reconStatus');
     status.textContent = '';
     status.classList.remove('error');
     lastReconResult = null;
     document.getElementById('reconOverlay').classList.add('open');
+
+    // Daha önce bu proje/oturum için bir tarama yapıldıysa, yeniden
+    // taramaya gerek kalmadan sonuçları geri getir.
+    if(currentProjectId){
+      apiRequest(`/projects/${currentProjectId}/recon/latest`).then(res => {
+        if(res && res.run) restoreReconResult(res.run, res.run.created_at);
+      }).catch(()=>{ restoreFromLocalReconCache(); });
+    } else {
+      restoreFromLocalReconCache();
+    }
+  }
+
+  function restoreFromLocalReconCache(){
+    const cached = loadReconCache();
+    if(cached && cached.result) restoreReconResult(cached.result, cached.cachedAt);
+  }
+
+  function restoreReconResult(result, cachedAtIso){
+    lastReconResult = result;
+    document.getElementById('reconTargetInput').value = result.target || result.baseUrl || '';
+    renderReconResults(result);
+    const notice = document.getElementById('reconCachedNotice');
+    const text = document.getElementById('reconCachedText');
+    const when = cachedAtIso ? new Date(cachedAtIso).toLocaleString(t('dateLocale')) : '';
+    text.innerHTML = t('reconCachedNotice')(escapeHtml(result.target || result.baseUrl || ''), escapeHtml(when));
+    notice.style.display = '';
+  }
+
+  function resetReconState(){
+    if(!confirm(t('reconResetConfirm'))) return;
+    clearReconCache();
+    const doClear = currentProjectId
+      ? apiRequest(`/projects/${currentProjectId}/recon`, { method: 'DELETE' }).catch(()=>{})
+      : Promise.resolve();
+    doClear.then(()=>{
+      lastReconResult = null;
+      document.getElementById('reconResultsWrap').style.display = 'none';
+      document.getElementById('reconCachedNotice').style.display = 'none';
+      document.getElementById('reconTargetInput').value = '';
+      showToast(t('reconResetToast'));
+    });
   }
   function closeReconModal(){
     document.getElementById('reconOverlay').classList.remove('open');
@@ -2063,6 +2289,7 @@
 
     statusEl.textContent = t('reconRunning');
     document.getElementById('reconResultsWrap').style.display = 'none';
+    document.getElementById('reconCachedNotice').style.display = 'none';
 
     apiRequest('/recon', {
       method: 'POST',
@@ -2071,6 +2298,7 @@
       lastReconResult = result;
       statusEl.textContent = '';
       renderReconResults(result);
+      saveReconCache(result); // sonraki açılışta yeniden taramadan göster
     }).catch(err => {
       statusEl.textContent = (t('reconError') + ': ') + (err && err.message ? err.message : String(err));
       statusEl.classList.add('error');
@@ -2201,6 +2429,100 @@
   }
 
   // ========================
+  // AI: Sırada Ne Var? — Test Planı'nın (kural tabanlı) AI destekli
+  // alternatifi. Recon kanıtı gerekmez; tamamlanan testlere + kayıtlı
+  // bulgulara bakıp bir sonraki adımı gerekçesiyle önerir. Session
+  // açıksa backend, tamamlanan test listesini ve bulguları oturumdan
+  // kendisi türetir; session yoksa (yerel/oturumsuz mod) burada
+  // `progress` ve local `findings` deposundan elle topluyoruz.
+  // ========================
+
+  function openAiNextTestModal(){
+    document.getElementById('aiNextTestResult').style.display = 'none';
+    document.getElementById('aiNextTestResult').innerHTML = '';
+    document.getElementById('aiNextTestStatus').textContent = '';
+    document.getElementById('aiNextTestStatus').className = 'ai-provider-status';
+    document.getElementById('aiNextTestOverlay').classList.add('open');
+  }
+  function closeAiNextTestModal(){
+    document.getElementById('aiNextTestOverlay').classList.remove('open');
+  }
+
+  function localCompletedTestIds(){
+    return Object.keys(progress).filter(id => progress[id]);
+  }
+  function localFindingsForAi(){
+    return Object.entries(findings).map(([testId, f]) => {
+      const meta = testInfoById(testId);
+      return { title: (meta && meta.title) || testId, severity: f.severity || 'info', test_id: testId };
+    }).filter(f => f.severity && f.severity !== 'info');
+  }
+
+  function askAiNextTest(){
+    const statusEl = document.getElementById('aiNextTestStatus');
+    const resultEl = document.getElementById('aiNextTestResult');
+    resultEl.style.display = 'none';
+    statusEl.className = 'ai-provider-status';
+    statusEl.textContent = t('aiWorking');
+
+    const body = currentSession
+      ? { session_id: currentSession.id, lang: currentLang }
+      : { completed_test_ids: localCompletedTestIds(), findings: localFindingsForAi(), lang: currentLang };
+
+    apiRequest('/ai/suggest-next-test', { method: 'POST', body: JSON.stringify(body) })
+      .then(suggestion => {
+        statusEl.textContent = '';
+        renderAiNextTestResult(suggestion);
+      })
+      .catch(err => {
+        statusEl.className = 'ai-provider-status failure';
+        statusEl.textContent = `✗ ${err && err.message ? err.message : String(err)}`;
+      });
+  }
+
+  function renderAiNextTestResult(s){
+    const resultEl = document.getElementById('aiNextTestResult');
+    resultEl.style.display = '';
+
+    if(s.all_done){
+      resultEl.innerHTML = `<div class="ant-all-done">🎉 ${escapeHtml(t('aiNextTestAllDone'))}</div>`;
+      return;
+    }
+    if(!s.suggested_test_id){
+      resultEl.innerHTML = `<div class="ant-all-done">${escapeHtml(t('aiNextTestNoSuggestion'))}</div>`;
+      return;
+    }
+
+    const meta = testInfoById(s.suggested_test_id);
+    const priority = (s.priority || 'medium').toLowerCase();
+    const groundedWarning = s.suggestion_grounded === false
+      ? `<div class="ant-grounded-warning">⚠️ ${escapeHtml(t('aiNextTestUngrounded'))}</div>` : '';
+    const altsHtml = (s.alternative_test_ids && s.alternative_test_ids.length)
+      ? `<div class="ant-alts">${escapeHtml(t('aiNextTestAltsLabel'))}: ${s.alternative_test_ids.map(escapeHtml).join(', ')}</div>` : '';
+
+    resultEl.innerHTML = `
+      <div class="ant-top">
+        <span class="ant-id">${escapeHtml(s.suggested_test_id)}</span>
+        <span class="ant-title">${escapeHtml(s.suggested_test_title || (meta && meta.title) || '')}</span>
+        <span class="ant-priority ${priority}">${escapeHtml(t('reconPriorityBadge_'+priority) || priority)}</span>
+      </div>
+      ${groundedWarning}
+      <div class="ant-reasoning">${escapeHtml(s.reasoning || '')}</div>
+      ${altsHtml}
+      <div class="ant-actions">
+        ${meta ? `<button type="button" class="btn btn-primary btn-sm" id="aiNextTestGotoBtn" data-cat="${meta.catId}" data-test="${escapeHtml(s.suggested_test_id)}">${t('plannerGotoBtn')}</button>` : ''}
+        <button type="button" class="btn btn-secondary btn-sm" id="aiNextTestAgainBtn">${t('aiNextTestAskBtn')}</button>
+      </div>`;
+
+    const gotoBtn = document.getElementById('aiNextTestGotoBtn');
+    if(gotoBtn) gotoBtn.addEventListener('click', ()=>{
+      closeAiNextTestModal();
+      openCategory(gotoBtn.dataset.cat, gotoBtn.dataset.test);
+    });
+    document.getElementById('aiNextTestAgainBtn').addEventListener('click', askAiNextTest);
+  }
+
+  // ========================
   // Project / Engagement Management
   //
   // Tasarım notu: bu modül, mevcut Recon/Test Planı/WSTG Checklist/Rapor
@@ -2322,6 +2644,7 @@
         customTests = [];
         updateProjectChip();
         closeProjectWorkspace();
+        reloadReconContext();
         renderSidebar(); renderDashboard();
       }
       renderProjectList();
@@ -2344,6 +2667,7 @@
       currentProjectObj = project;
       updateProjectChip();
       closeProjectsModal();
+      reloadReconContext();
       renderProjectWorkspaceHeader();
       switchPwTab('overview');
       document.getElementById('projectWorkspaceOverlay').classList.add('open');
@@ -3134,6 +3458,165 @@
     });
   }
 
+  // --- BYOK: Kendi API Key'inle Kullan (bu oturuma özel, sunucuya kaydedilmez) ---
+  const BYOK_PROVIDERS_META = [
+    { id: 'anthropic', icon: '🟣', label: 'Anthropic', defaultModel: 'claude-sonnet-5', needsKey: true, needsBaseUrl: false, placeholder: 'sk-ant-...' },
+    { id: 'openai', icon: '⚪', label: 'OpenAI', defaultModel: 'gpt-5.6-terra', needsKey: true, needsBaseUrl: false, placeholder: 'sk-...' },
+    { id: 'gemini', icon: '🔵', label: 'Gemini', defaultModel: 'gemini-3.7-flash', needsKey: true, needsBaseUrl: false, placeholder: 'AIza...' },
+    { id: 'ollama', icon: '🟢', label: 'Ollama', defaultModel: 'llama3.1', needsKey: false, needsBaseUrl: true, placeholder: '(gerekmez)' },
+  ];
+  let byokSelectedProvider = 'anthropic';
+
+  function updateByokDot(){
+    const dot = document.getElementById('byokDot');
+    if(!dot) return;
+    dot.classList.toggle('active', !!loadByok());
+  }
+
+  function renderByokProviderGrid(){
+    const grid = document.getElementById('byokProviderGrid');
+    if(!grid) return;
+    grid.innerHTML = BYOK_PROVIDERS_META.map(meta => `
+      <button type="button" class="byok-provider-card ${meta.id === byokSelectedProvider ? 'selected' : ''}" data-provider="${meta.id}">
+        <span class="byok-provider-icon">${meta.icon}</span>
+        <span class="byok-provider-name">${meta.label}</span>
+      </button>
+    `).join('');
+  }
+
+  function applyByokProviderFields(){
+    const meta = BYOK_PROVIDERS_META.find(m => m.id === byokSelectedProvider) || BYOK_PROVIDERS_META[0];
+    const keyLabel = document.getElementById('byokKeyLabel');
+    const keyWrap = document.getElementById('byokKeyInput').closest('.ai-key-input-wrap');
+    const baseUrlLabel = document.getElementById('byokBaseUrlLabel');
+    const baseUrlInput = document.getElementById('byokBaseUrlInput');
+    const keyInput = document.getElementById('byokKeyInput');
+    keyInput.placeholder = meta.placeholder;
+    if(meta.needsKey){ keyLabel.style.display = ''; keyWrap.style.display = ''; }
+    else { keyLabel.style.display = 'none'; keyWrap.style.display = 'none'; }
+    if(meta.needsBaseUrl){ baseUrlLabel.style.display = ''; baseUrlInput.style.display = ''; }
+    else { baseUrlLabel.style.display = 'none'; baseUrlInput.style.display = 'none'; }
+    document.getElementById('byokModelInput').placeholder = meta.defaultModel;
+  }
+
+  function refreshByokStatusStrip(){
+    const strip = document.getElementById('byokStatusStrip');
+    const dot = document.getElementById('byokStatusDot');
+    const text = document.getElementById('byokStatusText');
+    const clearBtn = document.getElementById('byokClearBtn');
+    const cfg = loadByok();
+    if(cfg){
+      strip.classList.add('active');
+      dot.classList.add('active');
+      const meta = BYOK_PROVIDERS_META.find(m => m.id === cfg.provider);
+      text.textContent = t('byokStatusOn').replace('{provider}', (meta && meta.label) || cfg.provider).replace('{model}', cfg.model || '');
+      clearBtn.style.display = '';
+    } else {
+      strip.classList.remove('active');
+      dot.classList.remove('active');
+      text.textContent = t('byokStatusOff');
+      clearBtn.style.display = 'none';
+    }
+  }
+
+  function openByokModal(){
+    const cfg = loadByok();
+    byokSelectedProvider = (cfg && cfg.provider) || 'anthropic';
+    renderByokProviderGrid();
+    applyByokProviderFields();
+    document.getElementById('byokKeyInput').value = (cfg && cfg.api_key) || '';
+    document.getElementById('byokModelInput').value = (cfg && cfg.model) || '';
+    document.getElementById('byokBaseUrlInput').value = (cfg && cfg.base_url) || '';
+    document.getElementById('byokTestStatus').textContent = '';
+    document.getElementById('byokTestStatus').className = 'ai-provider-status';
+    refreshByokStatusStrip();
+    document.getElementById('byokOverlay').classList.add('open');
+  }
+  function closeByokModal(){
+    document.getElementById('byokOverlay').classList.remove('open');
+  }
+
+  function readByokFormValues(){
+    const meta = BYOK_PROVIDERS_META.find(m => m.id === byokSelectedProvider) || BYOK_PROVIDERS_META[0];
+    return {
+      provider: byokSelectedProvider,
+      api_key: document.getElementById('byokKeyInput').value.trim(),
+      model: document.getElementById('byokModelInput').value.trim() || meta.defaultModel,
+      base_url: document.getElementById('byokBaseUrlInput').value.trim(),
+    };
+  }
+
+  function wireByokModal(){
+    const topbarBtn = document.getElementById('topbarByokBtn');
+    if(topbarBtn) topbarBtn.addEventListener('click', openByokModal);
+    document.getElementById('closeByokOverlay').addEventListener('click', closeByokModal);
+    document.getElementById('byokOverlay').addEventListener('click', e=>{
+      if(e.target.id === 'byokOverlay') closeByokModal();
+    });
+
+    document.getElementById('byokProviderGrid').addEventListener('click', e=>{
+      const card = e.target.closest('.byok-provider-card');
+      if(!card) return;
+      byokSelectedProvider = card.dataset.provider;
+      renderByokProviderGrid();
+      applyByokProviderFields();
+    });
+
+    document.getElementById('byokKeyToggleBtn').addEventListener('click', ()=>{
+      const input = document.getElementById('byokKeyInput');
+      input.type = input.type === 'password' ? 'text' : 'password';
+    });
+
+    document.getElementById('byokActivateBtn').addEventListener('click', ()=>{
+      const meta = BYOK_PROVIDERS_META.find(m => m.id === byokSelectedProvider);
+      const values = readByokFormValues();
+      if(!values.provider){ showToast(t('byokMissingProvider')); return; }
+      if(meta.needsKey && !values.api_key){ showToast(t('byokMissingKey')); return; }
+      saveByok(values);
+      refreshByokStatusStrip();
+      updateByokDot();
+      showToast(t('byokActivatedToast'));
+    });
+
+    document.getElementById('byokClearBtn').addEventListener('click', ()=>{
+      clearByok();
+      document.getElementById('byokKeyInput').value = '';
+      document.getElementById('byokModelInput').value = '';
+      document.getElementById('byokBaseUrlInput').value = '';
+      refreshByokStatusStrip();
+      updateByokDot();
+      showToast(t('byokClearedToast'));
+    });
+
+    document.getElementById('byokTestBtn').addEventListener('click', ()=>{
+      const meta = BYOK_PROVIDERS_META.find(m => m.id === byokSelectedProvider);
+      const values = readByokFormValues();
+      if(meta.needsKey && !values.api_key){ showToast(t('byokMissingKey')); return; }
+      const statusEl = document.getElementById('byokTestStatus');
+      statusEl.className = 'ai-provider-status';
+      statusEl.textContent = t('aiWorking');
+      const headers = { 'Content-Type': 'application/json', 'X-AI-Provider': values.provider };
+      if(values.api_key) headers['X-AI-Api-Key'] = values.api_key;
+      if(values.model) headers['X-AI-Model'] = values.model;
+      if(values.base_url) headers['X-AI-Base-Url'] = values.base_url;
+      fetch(API_BASE + '/ai/ping', { method: 'POST', headers })
+        .then(async res => {
+          const body = await res.json().catch(()=>({}));
+          if(res.ok && body.ok !== false){
+            statusEl.className = 'ai-provider-status success';
+            statusEl.textContent = `✓ ${t('aiTestSuccess')} (${body.provider || values.provider}${body.latency_ms ? ' · ' + body.latency_ms + 'ms' : ''})`;
+          } else {
+            statusEl.className = 'ai-provider-status failure';
+            statusEl.textContent = `✗ ${t('aiTestFailed')}: ${body.error || res.statusText}`;
+          }
+        })
+        .catch(err => {
+          statusEl.className = 'ai-provider-status failure';
+          statusEl.textContent = `✗ ${t('aiTestFailed')}: ${err.message || err}`;
+        });
+    });
+  }
+
   // --- AI Ayarları (API key yönetimi UI'dan) ---
   // Key'ler ASLA tam olarak burada tutulmaz/gösterilmez -- backend sadece
   // maskelenmiş hali (api_key_masked) döner, input placeholder'ı bunu
@@ -3609,6 +4092,7 @@
               <select id="reportIncludeSelect">
                 <option value="all">${t('reportIncludeAll')}</option>
                 <option value="critical_high">${t('reportIncludeCriticalHigh')}</option>
+                <option value="selected">${t('reportIncludeSelected')}</option>
               </select>
             </div>
             <div>
@@ -3620,6 +4104,12 @@
               </select>
             </div>
           </div>
+          <div id="reportFindingPickerWrap" style="display:none">
+            <label>${t('reportFindingPickerLabel')}</label>
+            <div id="reportFindingPicker" class="report-finding-picker">
+              <div class="search-empty">${t('loadingSessions')}</div>
+            </div>
+          </div>
           <label class="recon-auth-check">
             <input type="checkbox" id="reportConfidentialCheck">
             <span>${t('reportConfidentialLabel')}</span>
@@ -3629,13 +4119,62 @@
           <div class="hero-actions" style="margin-top:8px">
             <button type="button" class="btn btn-sm" id="reportGenSummaryBtn">🤖 ${t('reportGenSummaryBtn')}</button>
             <button type="button" class="btn btn-primary btn-sm" id="openHtmlReportBtn">🌐 ${t('reportOpenHtmlBtn')}</button>
+            <button type="button" class="btn btn-primary btn-sm" id="downloadPdfReportBtn">📄 ${t('reportDownloadPdfBtn')}</button>
           </div>
           <div class="import-status" id="reportBuilderStatus"></div>
         </div>
       </div>`;
   }
 
+  function loadReportFindingPicker(){
+    const wrap = document.getElementById('reportFindingPickerWrap');
+    const box = document.getElementById('reportFindingPicker');
+    apiRequest(`/projects/${currentProjectId}/findings`).then(list => {
+      if(!list.length){
+        box.innerHTML = `<div class="search-empty">${t('reportFindingPickerEmpty')}</div>`;
+        return;
+      }
+      box.innerHTML = list.map(f => `
+        <label class="report-finding-picker-item">
+          <input type="checkbox" class="report-finding-check" value="${f.id}" checked>
+          <span class="recon-priority-badge prio-${(f.severity||'info') === 'critical' ? 'high' : (f.severity||'info')}">${escapeHtml((f.severity||'info').toUpperCase())}</span>
+          <span>${escapeHtml(f.title || '')}</span>
+        </label>`).join('');
+    }).catch(()=>{
+      box.innerHTML = `<div class="search-empty">${t('resultSaveError')}</div>`;
+    });
+  }
+
+  function currentReportOptions(){
+    const includeSel = document.getElementById('reportIncludeSelect').value;
+    let include = includeSel;
+    if(includeSel === 'selected'){
+      include = Array.from(document.querySelectorAll('.report-finding-check:checked')).map(cb => Number(cb.value));
+    }
+    return {
+      title: document.getElementById('reportTitleInput').value.trim() || undefined,
+      client_name: document.getElementById('reportClientInput').value.trim(),
+      pentester_name: document.getElementById('reportPentesterInput').value.trim(),
+      date_range: document.getElementById('reportDateRangeInput').value.trim(),
+      include,
+      template: document.getElementById('reportTemplateSelect').value,
+      confidential: document.getElementById('reportConfidentialCheck').checked,
+      executive_summary: document.getElementById('reportExecSummaryInput').value.trim() || undefined,
+      lang: currentLang,
+    };
+  }
+
   function wireHtmlReportBuilder(){
+    document.getElementById('reportIncludeSelect').addEventListener('change', e=>{
+      const wrap = document.getElementById('reportFindingPickerWrap');
+      if(e.target.value === 'selected'){
+        wrap.style.display = '';
+        loadReportFindingPicker();
+      } else {
+        wrap.style.display = 'none';
+      }
+    });
+
     document.getElementById('reportGenSummaryBtn').addEventListener('click', ()=>{
       const statusEl = document.getElementById('reportBuilderStatus');
       statusEl.textContent = t('aiWorking');
@@ -3650,17 +4189,7 @@
     });
 
     document.getElementById('openHtmlReportBtn').addEventListener('click', ()=>{
-      const payload = {
-        title: document.getElementById('reportTitleInput').value.trim() || undefined,
-        client_name: document.getElementById('reportClientInput').value.trim(),
-        pentester_name: document.getElementById('reportPentesterInput').value.trim(),
-        date_range: document.getElementById('reportDateRangeInput').value.trim(),
-        include: document.getElementById('reportIncludeSelect').value,
-        template: document.getElementById('reportTemplateSelect').value,
-        confidential: document.getElementById('reportConfidentialCheck').checked,
-        executive_summary: document.getElementById('reportExecSummaryInput').value.trim() || undefined,
-        lang: currentLang,
-      };
+      const payload = currentReportOptions();
       // Yeni sekme kullanici tiklamasiyla AYNI ANDA acilir (popup engelleyiciyi
       // atlamak icin) -- icerik fetch tamamlaninca dolduruluyor.
       const reportWindow = window.open('', '_blank');
@@ -3681,6 +4210,38 @@
         if(reportWindow) reportWindow.close();
         showToast(t('resultSaveError'));
       });
+    });
+
+    document.getElementById('downloadPdfReportBtn').addEventListener('click', ()=>{
+      const btn = document.getElementById('downloadPdfReportBtn');
+      const statusEl = document.getElementById('reportBuilderStatus');
+      const payload = currentReportOptions();
+      btn.disabled = true;
+      statusEl.textContent = t('reportPdfGenerating');
+      fetch(`${API_BASE}/projects/${currentProjectId}/reports/pdf`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).then(async res => {
+        if(!res.ok){
+          const body = await res.json().catch(()=>({}));
+          throw new Error(body.error || 'PDF generation failed');
+        }
+        return res.blob();
+      }).then(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${(currentProjectObj && currentProjectObj.name) || 'report'}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(()=> URL.revokeObjectURL(url), 4000);
+        statusEl.textContent = '';
+      }).catch(err => {
+        statusEl.textContent = '';
+        showToast(err.message || t('resultSaveError'));
+      }).finally(()=>{ btn.disabled = false; });
     });
   }
 
@@ -4032,6 +4593,7 @@
     });
     document.getElementById('reconRunBtn').addEventListener('click', runRecon);
     document.getElementById('reconApplyBtn').addEventListener('click', applyReconPriorities);
+    document.getElementById('reconResetBtn').addEventListener('click', resetReconState);
 
     document.getElementById('plannerNavBtn').addEventListener('click', openPlannerModal);
     document.getElementById('closePlannerOverlay').addEventListener('click', closePlannerModal);
@@ -4044,6 +4606,13 @@
       closePlannerModal();
       openCategory(btn.dataset.cat, btn.dataset.test);
     });
+
+    document.getElementById('aiNextTestNavBtn').addEventListener('click', openAiNextTestModal);
+    document.getElementById('closeAiNextTestOverlay').addEventListener('click', closeAiNextTestModal);
+    document.getElementById('aiNextTestOverlay').addEventListener('click', e=>{
+      if(e.target.id === 'aiNextTestOverlay') closeAiNextTestModal();
+    });
+    document.getElementById('aiNextTestAskBtn').addEventListener('click', askAiNextTest);
 
     document.getElementById('projectsNavBtn').addEventListener('click', openProjectsModal);
     document.getElementById('closeProjectsOverlay').addEventListener('click', closeProjectsModal);
@@ -4077,6 +4646,8 @@
     document.getElementById('submitFindingBtn').addEventListener('click', submitFindingForm);
     initAiAssistantButtons();
     wireAiSettingsModal();
+    wireByokModal();
+    updateByokDot();
 
     document.getElementById('closeDuplicateAlert').addEventListener('click', closeDuplicateAlert);
     document.getElementById('duplicateAlertOverlay').addEventListener('click', e=>{
@@ -4130,8 +4701,8 @@
 
     document.addEventListener('keydown', e=>{
       if(e.key === 'Escape'){
-        closeCategory(); closeThemeModal(); closeNewSessionOverlay(); closeTop10Detail(); closeImportModal(); closeReconModal(); closePlannerModal();
-        closeProjectsModal(); closeNewProjectModal(); closeProjectWorkspace(); closeFindingModal(); closeDuplicateAlert(); closeAiSettingsModal();
+        closeCategory(); closeThemeModal(); closeNewSessionOverlay(); closeTop10Detail(); closeImportModal(); closeReconModal(); closePlannerModal(); closeAiNextTestModal();
+        closeProjectsModal(); closeNewProjectModal(); closeProjectWorkspace(); closeFindingModal(); closeDuplicateAlert(); closeAiSettingsModal(); closeByokModal();
         if(document.getElementById('closeSessionGate').style.display !== 'none') closeSessionGate();
       }
     });
@@ -4145,6 +4716,14 @@
         renderTestList();
       });
     });
+    const sortPriorityBtn = document.getElementById('sortPriorityToggle');
+    if(sortPriorityBtn){
+      sortPriorityBtn.addEventListener('click', ()=>{
+        sortByReconPriority = !sortByReconPriority;
+        sortPriorityBtn.classList.toggle('active', sortByReconPriority);
+        renderTestList();
+      });
+    }
 
     document.getElementById('testList').addEventListener('click', e=>{
       const checkBtn = e.target.closest('.test-check');
@@ -4180,7 +4759,15 @@
       openCategory(item.dataset.cat, item.dataset.test);
     });
 
-    document.getElementById('exportBtn').addEventListener('click', exportReport);
+    document.getElementById('exportBtn').addEventListener('click', ()=>{
+      exportReport();
+      // AI destekli, PDF/HTML profesyonel rapor (bulgu seçimi, yönetici
+      // özeti vb.) Proje bağlamına özeldir -- bunu bilmeyen kullanıcılar
+      // sadece bu düz metin dökümünü görüp diğerini hiç bulamıyordu.
+      // "Rapor indirildi" toast'ı bitince ikinci bir ipucu toast'ı gösterilir
+      // (aynı anda çağrılırsa ilk toast görünmeden üzerine yazılırdı).
+      if(!currentProjectId) setTimeout(()=> showToast(t('exportProHint')), 2400);
+    });
     document.getElementById('resetBtn').addEventListener('click', resetProgress);
     document.getElementById('startBtn').addEventListener('click', ()=>{
       if(dbOnline && !currentSession){ openSessionGate(true); return; }

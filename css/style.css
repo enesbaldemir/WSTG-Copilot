@@ -358,10 +358,21 @@ body::after{
 }
 .filter-toggle button.active{ background:rgba(var(--primary-rgb),.2); color:var(--text); }
 
+.sort-priority-toggle{
+  background:var(--surface2); border:1px solid var(--border); color:var(--muted); font-size:.78rem; font-weight:600;
+  padding:9px 13px; border-radius:12px; cursor:pointer; font-family:inherit; transition:var(--transition); white-space:nowrap;
+}
+.sort-priority-toggle:hover{ border-color:rgba(var(--primary-rgb),.35); color:var(--text); }
+.sort-priority-toggle.active{
+  background:rgba(var(--accent-rgb),.16); border-color:rgba(var(--accent-rgb),.4); color:var(--text);
+  box-shadow:0 0 14px rgba(var(--accent-rgb),.18);
+}
+
 .toast{
   position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--surface2);
   border:1px solid var(--border); padding:12px 20px; border-radius:14px; font-size:.85rem; z-index:200;
   opacity:0; pointer-events:none; transition:all .25s; box-shadow:0 10px 40px rgba(0,0,0,.4);
+  max-width:min(92vw, 480px); text-align:center; line-height:1.4;
 }
 .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 
@@ -713,6 +724,17 @@ body::after{
 .recon-priority-badge.prio-low{ background:rgba(34,197,94,.16); color:#22c55e; }
 .recon-priority-badge.prio-info{ background:rgba(148,163,184,.16); color:#94a3b8; }
 
+.recon-cached-notice{
+  display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  background:rgba(var(--accent-rgb),.08); border:1px solid rgba(var(--accent-rgb),.25); border-radius:12px;
+  padding:11px 14px; margin-bottom:16px; font-size:.82rem; color:var(--text);
+}
+.recon-cached-notice button{
+  background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:.76rem; font-weight:600;
+  padding:7px 12px; border-radius:10px; cursor:pointer; font-family:inherit; white-space:nowrap; transition:var(--transition);
+}
+.recon-cached-notice button:hover{ border-color:rgba(var(--primary-rgb),.4); }
+
 /* ===================== TEST PLANI (AI Pentest Planner) ===================== */
 .planner-list{ display:flex; flex-direction:column; gap:12px; }
 .planner-row{
@@ -740,6 +762,29 @@ body::after{
 }
 .planner-goto-btn:hover{ background:rgba(var(--primary-rgb),.14); border-color:rgba(var(--primary-rgb),.3); }
 .planner-score-note{ font-size:.74rem; color:var(--muted); opacity:.75; text-align:center; padding-top:6px; }
+
+/* ===================== AI: SIRADA NE VAR? ===================== */
+.ai-next-test-result{
+  margin-top:18px; background:rgba(var(--accent-rgb),.06); border:1px solid rgba(var(--accent-rgb),.22);
+  border-radius:16px; padding:18px 20px;
+}
+.ant-top{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:10px; }
+.ant-id{ font-size:.78rem; font-weight:700; font-family:monospace; color:var(--muted); }
+.ant-title{ font-size:1.02rem; font-weight:800; }
+.ant-priority{
+  font-size:.68rem; font-weight:800; padding:3px 10px; border-radius:999px; text-transform:uppercase; letter-spacing:.03em;
+}
+.ant-priority.high{ background:rgba(239,68,68,.16); color:#ef4444; }
+.ant-priority.medium{ background:rgba(234,179,8,.16); color:#eab308; }
+.ant-priority.low{ background:rgba(34,197,94,.16); color:#22c55e; }
+.ant-reasoning{ font-size:.86rem; line-height:1.6; color:var(--text); margin-bottom:14px; white-space:pre-wrap; }
+.ant-alts{ font-size:.78rem; color:var(--muted); margin-bottom:14px; }
+.ant-actions{ display:flex; gap:10px; flex-wrap:wrap; }
+.ant-grounded-warning{
+  font-size:.76rem; color:#eab308; background:rgba(234,179,8,.1); border:1px solid rgba(234,179,8,.25);
+  border-radius:10px; padding:8px 12px; margin-bottom:12px;
+}
+.ant-all-done{ text-align:center; padding:20px 10px; color:var(--muted); font-size:.9rem; }
 
 /* ===================== PROJECTS / ENGAGEMENT MANAGEMENT ===================== */
 .project-card{
@@ -1110,6 +1155,16 @@ body::after{
 .report-builder-form input:focus, .report-builder-form select:focus, .report-builder-form textarea:focus{
   outline:none; border-color:rgba(var(--primary-rgb),.4);
 }
+.report-finding-picker{
+  max-height:220px; overflow-y:auto; background:rgba(255,255,255,.02); border:1px solid var(--border);
+  border-radius:12px; padding:8px 10px; display:flex; flex-direction:column; gap:2px;
+}
+.report-finding-picker-item{
+  display:flex; align-items:center; gap:10px; padding:7px 4px; font-size:.83rem; color:var(--text);
+  border-bottom:1px solid rgba(255,255,255,.04); cursor:pointer;
+}
+.report-finding-picker-item:last-child{ border-bottom:none; }
+.report-finding-picker-item input{ width:15px; height:15px; accent-color:var(--primary); flex-shrink:0; }
 
 /* ===================== PENTEST KANBAN ===================== */
 .kanban-filter-bar select{
@@ -1186,3 +1241,62 @@ body::after{
 .ai-provider-status{ font-size:.78rem; margin-top:8px; min-height:1.1em; }
 .ai-provider-status.success{ color:#22c55e; }
 .ai-provider-status.failure{ color:#ef4444; }
+
+/* ===================== BYOK (Kendi API Key'inle Kullan) ===================== */
+.topbar-byok-btn{
+  position:relative; display:flex; align-items:center; gap:8px;
+  background:rgba(var(--accent-rgb),.12); border:1px solid rgba(var(--accent-rgb),.35); color:var(--text);
+  padding:9px 14px; border-radius:12px; font-size:.82rem; font-weight:600; cursor:pointer; font-family:inherit;
+  transition:var(--transition);
+}
+.topbar-byok-btn:hover{ background:rgba(var(--accent-rgb),.22); box-shadow:0 0 18px rgba(var(--accent-rgb),.25); }
+.byok-btn-icon{ font-size:1rem; line-height:1; }
+.byok-dot{ width:7px; height:7px; border-radius:50%; background:var(--muted); flex-shrink:0; transition:var(--transition); }
+.byok-dot.active{ background:var(--success); box-shadow:0 0 8px var(--success); }
+
+.byok-panel{ position:relative; overflow:hidden; max-width:660px; }
+.byok-panel-glow{
+  position:absolute; inset:-2px; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(560px 220px at 15% -15%, rgba(var(--accent-rgb),.28), transparent 60%),
+    radial-gradient(460px 220px at 105% 0%, rgba(var(--primary-rgb),.22), transparent 60%);
+}
+.byok-panel .panel-header, .byok-panel .panel-body{ position:relative; z-index:1; }
+
+.byok-status-strip{
+  display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.03); border:1px solid var(--border);
+  border-radius:12px; padding:11px 14px; margin-bottom:20px; font-size:.82rem; color:var(--muted);
+}
+.byok-status-dot{ width:8px; height:8px; border-radius:50%; background:var(--muted); flex-shrink:0; }
+.byok-status-dot.active{ background:var(--success); box-shadow:0 0 8px var(--success); }
+.byok-status-strip.active{ color:var(--text); border-color:rgba(34,197,94,.3); background:rgba(34,197,94,.07); }
+
+.byok-provider-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:22px; }
+.byok-provider-card{
+  background:rgba(255,255,255,.02); border:1.5px solid var(--border); border-radius:14px; padding:14px 8px;
+  text-align:center; cursor:pointer; transition:var(--transition); font-family:inherit; color:var(--text);
+}
+.byok-provider-card:hover{ border-color:rgba(var(--primary-rgb),.4); transform:translateY(-2px); }
+.byok-provider-card.selected{
+  border-color:var(--accent); background:rgba(var(--accent-rgb),.14); box-shadow:0 0 18px rgba(var(--accent-rgb),.22);
+}
+.byok-provider-icon{ font-size:1.4rem; margin-bottom:6px; display:block; }
+.byok-provider-name{ font-size:.76rem; font-weight:700; }
+
+.byok-form label{ display:block; font-size:.8rem; color:var(--muted); font-weight:600; margin:14px 0 6px; }
+.byok-form label:first-child{ margin-top:0; }
+.byok-form input[type="password"], .byok-form input[type="text"]{
+  width:100%; background:var(--surface2); border:1px solid var(--border); color:var(--text);
+  padding:11px 14px; border-radius:12px; font-family:inherit; font-size:.88rem; outline:none; transition:var(--transition);
+}
+.byok-form input:focus{ border-color:rgba(var(--accent-rgb),.5); box-shadow:0 0 0 3px rgba(var(--accent-rgb),.14); }
+.byok-hint{ font-size:.76rem; color:var(--muted); margin-top:6px; line-height:1.5; }
+.byok-actions{ margin-top:20px; display:flex; gap:10px; flex-wrap:wrap; }
+.byok-actions .danger{ background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.3); color:#ef4444; }
+.byok-actions .danger:hover{ background:rgba(239,68,68,.18); }
+
+@media(max-width:900px){
+  .byok-provider-grid{ grid-template-columns:repeat(2,1fr); }
+  .byok-btn-label{ display:none; }
+  .topbar-byok-btn{ padding:9px 11px; }
+}

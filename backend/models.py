@@ -318,24 +318,38 @@ class ReconRun(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     project_id = db.Column(db.String(36), db.ForeignKey('projects.id'), nullable=False)
     target = db.Column(db.String(300))
+    base_url = db.Column(db.String(300))
     subdomains = db.Column(db.Text)     # JSON-encoded list[str]
     technologies = db.Column(db.Text)   # JSON-encoded list[str]
     endpoints = db.Column(db.Text)      # JSON-encoded list[str]
+    apis = db.Column(db.Text)                # JSON-encoded list[str]
+    interesting_paths = db.Column(db.Text)   # JSON-encoded list[{path, status}]
+    forms = db.Column(db.Text)               # JSON-encoded list
+    cookies_present = db.Column(db.Boolean, default=False)
+    suggestions = db.Column(db.Text)         # JSON-encoded {test_id: {level, reasons}} -- Test Planı ve
+                                              # checklist öncelik rozetlerinin kaynağı; bu run silinene/
+                                              # üzerine yenisi gelene kadar projede kalıcıdır.
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
-        def _load(field):
+        def _load(field, default=None):
             try:
-                return json.loads(field) if field else []
+                return json.loads(field) if field else (default if default is not None else [])
             except Exception:
-                return []
+                return default if default is not None else []
         return {
             'id': self.id,
             'project_id': self.project_id,
             'target': self.target,
+            'baseUrl': self.base_url,
             'subdomains': _load(self.subdomains),
             'technologies': _load(self.technologies),
             'endpoints': _load(self.endpoints),
+            'apis': _load(self.apis),
+            'interestingPaths': _load(self.interesting_paths),
+            'forms': _load(self.forms),
+            'cookiesPresent': bool(self.cookies_present),
+            'suggestions': _load(self.suggestions, default={}),
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 
