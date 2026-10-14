@@ -1,365 +1,462 @@
-# 🛡️ Pentest Workspace — OWASP WSTG v4.2
+# Pentest Workspace — OWASP WSTG v4.2
 
-![Made with HTML/CSS/JS](https://img.shields.io/badge/stack-HTML%20%7C%20CSS%20%7C%20JS-informational)
+![Frontend](https://img.shields.io/badge/frontend-HTML%20%7C%20CSS%20%7C%20JS-informational)
 ![Backend](https://img.shields.io/badge/backend-Flask%20%2B%20SQLite-lightgrey)
 ![AI](https://img.shields.io/badge/AI-multi--provider%20%2B%20BYOK-8b5cf6)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-**🇬🇧 [English](#-english)** · **🇹🇷 [Türkçe](#-türkçe)**
+**[English](#english)** · **[Türkçe](#türkçe)**
 
 ---
 
-## 🇬🇧 English
+## English
 
-A full pentest **engagement workspace** built around the **OWASP Web Security Testing Guide (WSTG) v4.2** — not just a checklist anymore. It covers an entire assessment lifecycle: scope & attack-surface discovery, a WSTG-driven test plan, professional CVSS-scored findings, evidence collection (screenshots + raw HTTP with automatic secret redaction), attack-chain correlation, a Kanban board, and DOCX/HTML report generation — with optional, pluggable AI assistance at every step.
+### Table of Contents
 
-The checklist itself still works with **zero setup** (just open `index.html`), but the full experience (Projects, findings, evidence, reports, AI) needs the small Flask + SQLite backend described below.
+- [Overview](#overview)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Architecture](#architecture)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Environment Variables](#environment-variables)
+- [Running](#running)
+- [Project Structure](#project-structure)
+- [Contributing](#contributing)
+- [License](#license)
 
-### ✨ Features
+### Overview
 
-**Checklist core**
-- **98 WSTG test items** across 12 categories (Information Gathering, Configuration Management, Identity Management, Authentication, Authorization, Session Management, Input Validation, Error Handling, Cryptography, Business Logic, Client-Side, API Testing)
-- Each test includes a **description, step-by-step testing instructions, example payload/command, and recommended tools**
-- 🧩 **Alternate framework**: switch the whole checklist to the **OWASP LLM Top 10 (AI Security)** checklist (10 categories / 21 test items) from the sidebar — useful when the target under test is an LLM-backed application
-- 🛡️ **OWASP Top 10:2025 reference module** — all ten risk categories with description, how it happens, step-by-step guidance, example attack scenario/payload, prevention checklist, mapped CWEs and tools, cross-linked to the matching WSTG items
-- ✅ Custom test items — add your own project-specific checklist entries alongside the official WSTG ones
-- 🔍 Global search across categories/test items, 📊 dashboard with progress stats, 🌐 Turkish/English UI, 🎨 25 built-in themes, 📱 responsive, 📎 bundled WSTG v4.2 PDF
+Pentest Workspace is a web application for running penetration tests based on the **OWASP Web Security Testing Guide (WSTG) v4.2**. It combines the WSTG checklist with engagement management: scope definition, attack surface discovery, CVSS-scored findings, evidence collection, rule-based attack-chain correlation, a Kanban board and DOCX/HTML/PDF reporting. AI assistance (Anthropic, OpenAI, Google Gemini or Ollama) is optional and every AI output is a draft that the user reviews.
 
-**Project / Engagement management (backend required)**
-- 📁 **Projects** — group everything (scope, sessions, recon, findings, evidence, timeline, reports) under a named engagement (client, description, status, start/end dates)
-- 🎯 **Scope management** — declare in-scope/out-of-scope domains, subdomains, IPs and CIDR ranges per project
-- 🕸️ **Attack Surface Discovery (Recon)** — run passive/active recon against a declared, authorized target (subdomain enumeration, HTTP probing, tech fingerprinting via `subfinder` / `httpx` / `whatweb` / `dnsx` / `nmap` if installed on the server) and get discovered assets automatically mapped to relevant WSTG test IDs with a priority score, plus SSRF-safe target validation. **Scan results persist**: reopening the panel (or switching back into the same project/session) shows your last scan instead of forcing a re-scan; a "Reset / Re-scan" action lets you start over deliberately when you point it at a new target. Priority badges and the Test Planner are scoped per project/session, so switching or deleting one no longer leaks another's stale results.
-- 🧰 **Tool Runner** — run a small allow-listed set of external recon tools directly from the UI, with a command preview before execution and a run history per project
-- 📋 **Test Planner** — a rule-based, fully transparent priority queue: WSTG items are ranked by recon evidence + methodology order (no black-box AI scoring), each suggestion shows *why* it's ranked there
-- 🤖 **AI: What's Next?** — a complementary, AI-reasoned suggestion for your next test, based on what you've completed and found so far. Unlike the Test Planner it needs no recon evidence and uses AI judgment instead of fixed rules, so it's always a draft to sanity-check, with alternate candidates shown alongside the primary suggestion
-- 📥 **Import external findings** — parse Nmap / Nikto / WPScan output (XML/JSON) and turn matches into findings linked to the right WSTG items
+The checklist works with only a static file server. Projects, findings, evidence, reports and AI features require the Flask + SQLite backend.
+
+### Features
+
+**Checklist**
+- 98 WSTG v4.2 test items in 12 categories; each item has a description, testing steps, an example payload/command and suggested tools
+- Alternate checklist: OWASP LLM Top 10 (10 categories, 21 test items) for LLM-based targets
+- OWASP Top 10:2025 reference module (10 categories) cross-linked to WSTG items
+- Project-specific custom test items
+- Global search, progress dashboard, Turkish/English interface
+- Bundled original WSTG v4.2 PDF (`wstg-v4_2.pdf`)
+
+**Projects and sessions** (backend required)
+- Projects with client, description, status and start/end dates; each project has a timeline of events
+- Scope management: in-scope / out-of-scope domains, subdomains, IPs and CIDR ranges
+- Named test sessions (name, tester, target URL); checklist progress is stored in SQLite and can be resumed. If the backend is unreachable, the app falls back to `localStorage`
+- Attack Surface Discovery (recon): passive subdomain discovery via crt.sh Certificate Transparency logs, DNS resolution, a single HTTP fetch for technology fingerprinting, link/form/cookie extraction and a short list of well-known paths (`robots.txt`, `swagger.json`, `.git/config`, …). Results are mapped to WSTG test IDs, stored per project and shown again when the panel is reopened. Requires explicit authorization confirmation; targets resolving to private, loopback, link-local or reserved IPs are rejected (SSRF protection)
+- Tool Runner: runs an allow-listed set of tools (`nmap`, `httpx`, `whatweb`, `subfinder`, `dnsx`) with fixed argument templates, shows a command preview first and keeps a run history per project. Commands are passed as argument lists (no shell); missing tools are reported as unavailable, never auto-installed
+- Test Planner: rule-based priority queue that ranks WSTG items by recon evidence and methodology order, with the reason for each ranking
+- AI "What's Next?": AI-generated suggestion for the next test based on completed tests and findings, with alternate candidates
+- Import of Nmap (XML), Nikto (XML/JSON) and WPScan (JSON) output into findings linked to WSTG items
 
 **Findings**
-- 🧾 **Professional findings** with title, description, affected endpoint, remediation, **CVSS v3.1 calculator** (interactive vector builder with live score), CWE mapping, and severity
-- 🪞 **Duplicate detection** — new/edited findings are checked against existing ones in the project (title/description/endpoint/CWE similarity) with a merge-or-create-anyway prompt
-- 🔗 **Attack Chain / Finding Correlation Engine** — matches your recorded findings against known attack-chain patterns (e.g. User Enumeration → Weak Authentication → Account Takeover) using fixed, auditable rules — no AI call involved
-- 🗂️ **Kanban board** — drag findings/test results through To Do → In Progress → Review → Done, with assignee/severity/test-ID filters
+- Title, description, affected endpoint, remediation, CWE, severity and a CVSS v3.1 calculator with live scoring (client and server side)
+- Duplicate detection based on title/description/endpoint/CWE similarity (`difflib`), with merge or create-anyway options
+- Attack-chain correlation: findings are matched against 10 fixed attack-chain patterns (e.g. user enumeration → weak authentication → account takeover). No AI involved
+- Kanban board for test results with the columns To Do, Testing, Review, Confirmed and Done
 
 **Evidence**
-- 🖼️ Screenshot evidence upload (PNG/JPEG/WebP/GIF), stored under server-generated UUID filenames (never the user's original filename, to prevent path traversal)
-- 🌐 Raw HTTP request/response evidence, with **automatic secrets/PII redaction** (Authorization headers, cookies, JWTs, common API key formats, private keys, emails, card-like numbers) shown by default — raw text requires an explicit "show raw" action
-- 🤖 Optional AI Vision analysis of screenshots (Anthropic Claude) that suggests relevant WSTG test IDs — entirely opt-in, validated against the real WSTG dataset so it can't hallucinate a test ID, and never auto-attaches to a finding without your Accept
+- Screenshot upload (PNG/JPEG/WebP/GIF), stored under server-generated UUID file names
+- Raw HTTP request/response evidence with automatic redaction of secrets and PII (Authorization headers, cookies, JWTs, common API key formats, private keys, e-mail addresses, card-like numbers); the unredacted text is only returned on explicit request
+- Optional AI vision analysis of screenshots (Anthropic Claude, enabled only when `ANTHROPIC_API_KEY` is set) that suggests WSTG test IDs validated against the real dataset; suggestions are only attached after the user accepts them
 
 **Reporting**
-- 📄 **Three DOCX report templates** — *Technical* (full detail for pentesters/QA), *Executive* (management-level summary and risk posture), *Developer* (finding-by-finding "Problem / Why it matters / How to fix")
-- 🖨️ **Self-contained HTML report** — single file, no external CDN/script dependencies, with a built-in "Print / Save as PDF" button (no server-side PDF library required)
-- 📑 **One-click downloadable PDF report** — a real, ready-to-send `.pdf` file generated server-side (cover page, executive summary, risk breakdown, per-finding detail, appendices, running footer with page numbers) via the pure-Python `xhtml2pdf` library, so it works out of the box on Windows/Mac/Linux with no GTK, Cairo, or `wkhtmltopdf` install required. Full Turkish character support (ğ/ş/ı/İ/ö/ü/ç) via an embedded font
-- ✅ **Pick exactly which findings go in the report** — "All", "Critical + High only", or hand-pick individual findings from a checklist, for both the HTML and PDF report
-- ✍️ Optional AI-generated executive summary draft that you review before it's included
+- DOCX reports in three templates: Technical, Executive and Developer
+- Self-contained HTML report (single file, no external dependencies) with a print / save-as-PDF button
+- Server-side PDF report generated with `xhtml2pdf` (cover page, executive summary, risk breakdown, per-finding details, appendices, page numbers) with an embedded font for Turkish characters
+- Finding selection for HTML/PDF reports: all, critical + high only, or hand-picked
+- Session-level reports (Markdown / DOCX) and an optional AI-drafted executive summary
 
-**AI Assistance — multi-provider, bring-your-own-key**
-- 🔌 Works with **Anthropic (Claude), OpenAI, Google Gemini, or a local Ollama model** — you choose the provider
-- 🔑 **AI Settings** (shared/default) — store an encrypted API key per provider for the whole installation, pick which one is active, and test the connection before relying on it
-- 🔐 **"Use Your Own API Key" (BYOK)** — a separate, distinctly-styled panel (top bar) lets *any* user of a shared deployment plug in their **own** API key for their **own session only**. It's kept in the browser's `sessionStorage`, never sent to be stored on the server, and is automatically discarded when the tab closes — it simply overrides the shared setting for that user's requests
-- Used for: finding description/remediation drafting, CWE/severity/CVSS suggestions, professional rewriting, "what should I test next" suggestions, executive summary drafts, and optional evidence screenshot triage — all of it is a *draft you review*, never something silently written to the database
-- Every AI call (success or failure) is logged (provider, model, latency, purpose) for auditability via `/api/ai/logs`
+**AI assistance**
+- Providers: Anthropic, OpenAI, Google Gemini, Ollama (local)
+- AI Settings panel: store an encrypted (Fernet) API key per provider, choose the active provider and test the connection
+- Bring Your Own Key (BYOK): each user can enter a personal key that is kept in the browser's `sessionStorage` and sent per request via `X-AI-*` headers; it is not stored on the server
+- Uses: drafting descriptions and remediation, CWE/severity/CVSS suggestions, text rewriting, next-test suggestions, executive summary drafts
+- Every AI call is logged (provider, model, latency, purpose, success/failure) and available at `/api/ai/logs`
 
-**Named test sessions (works with or without a Project)**
-- 🗄️ Group a pentest run under a named session (name, tester, target URL); every checkbox is persisted to SQLite and can be resumed later
-- Falls back automatically to `localStorage`-only mode if the backend isn't reachable — nothing breaks
+### Tech Stack
 
-### 🖥️ Overview
+| Layer | Technologies |
+|---|---|
+| Frontend | HTML5, CSS3, vanilla JavaScript (no framework, no build step), Inter font (Google Fonts) |
+| Backend | Python, Flask 2.3, Flask-SQLAlchemy, Flask-CORS, SQLite |
+| Reporting | `python-docx`, `xhtml2pdf` |
+| Security | `cryptography` (Fernet) for stored AI keys |
+| AI | Provider layer for Anthropic, OpenAI, Gemini and Ollama (HTTP via `requests`) |
+| External tools (optional) | `nmap`, `httpx`, `whatweb`, `subfinder`, `dnsx` |
 
-The sidebar gives you category navigation plus quick access to Projects, Test Sessions, Attack Surface Discovery, Test Planner, Import, AI Settings, and your own BYOK key panel. Opening a Project takes you into a full workspace with tabs for Overview, Scope, Assets, Recon, Tools, Test Plan, WSTG Tests, Findings, Evidence, Attack Chains, Timeline, Kanban and Reports.
+### Architecture
 
-### 📂 Project Structure
+```
+Browser (index.html + js/app.js)
+   │  loads checklist data from data/*.json
+   │  REST calls to http://localhost:5000/api  (+ optional X-AI-* BYOK headers)
+   ▼
+Flask API (backend/app.py)
+   ├── SQLAlchemy models ──► SQLite (backend/database/wstg.db)
+   ├── recon.py / tool_runner.py ──► target (after authorization + SSRF checks)
+   ├── cvss.py, duplicate_detector.py, attack_chains.py, redaction.py   (rule-based)
+   ├── report_builder.py / report_html.py / report_pdf.py / report_generator.py
+   └── ai/factory.py ──► Anthropic | OpenAI | Gemini | Ollama
+```
+
+- The frontend is a static single-page application. It reads checklist content from `data/*.json` and talks to the backend at the fixed address `http://localhost:5000/api` (`API_BASE` in `js/app.js`). Without a backend it works in checklist-only mode using `localStorage`.
+- The backend creates the database and tables on first start and adds missing columns to an existing database automatically.
+- AI provider resolution order: BYOK request headers → active provider saved in the AI Settings panel → `.env` values. If none is configured, AI features are disabled; no placeholder content is generated.
+- Uploaded evidence files are stored under `backend/uploads/`.
+
+### Requirements
+
+- Python 3 with `pip` and `venv`
+- A modern web browser
+- Any static file server for the frontend (e.g. `python -m http.server`)
+- Optional: `nmap`, `httpx`, `whatweb`, `subfinder`, `dnsx` on `PATH` for the Tool Runner
+- Optional: an API key for Anthropic / OpenAI / Gemini, or a running Ollama instance, for AI features
+
+### Installation
+
+```bash
+git clone https://github.com/enesbaldemir/WSTG-Copilot.git
+cd WSTG-Copilot/backend
+python -m venv venv
+source venv/bin/activate        # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+cp .env.example .env            # optional
+```
+
+### Environment Variables
+
+All variables are optional and are read from `backend/.env`. AI keys are normally entered in the in-app AI Settings panel; the AI variables below are fallbacks for setups without a UI.
+
+| Variable | Default | Description |
+|---|---|---|
+| `DATABASE_URL` | `sqlite:///<backend>/database/wstg.db` | SQLAlchemy database URL |
+| `SECRET_KEY` | development value | Flask secret key; change it in production |
+| `CORS_ORIGINS` | `http://localhost:8000,http://localhost:3000` | Allowed frontend origins |
+| `LOG_LEVEL` | `INFO` | Log level |
+| `ANTHROPIC_API_KEY` | empty | Enables AI vision analysis of evidence screenshots; also the Anthropic fallback key |
+| `AI_PROVIDER` | `gemini` | Fallback provider: `gemini`, `openai`, `anthropic` or `ollama` |
+| `AI_REQUEST_TIMEOUT` | `30` | AI request timeout in seconds |
+| `GEMINI_API_KEY` / `GEMINI_MODEL` | empty / `gemini-3.7-flash` | Gemini key and model |
+| `OPENAI_API_KEY` / `OPENAI_MODEL` | empty / `gpt-5.6-terra` | OpenAI key and model |
+| `ANTHROPIC_MODEL` | `claude-sonnet-5` | Anthropic model |
+| `OLLAMA_BASE_URL` / `OLLAMA_MODEL` | `http://localhost:11434` / `llama3.1` | Ollama server and model |
+| `ENCRYPTION_KEY` | derived from `SECRET_KEY` | Key used to encrypt API keys saved in AI Settings. If it is not set and `SECRET_KEY` changes, saved keys must be re-entered |
+
+Do not commit `backend/.env`; it is already listed in `.gitignore`.
+
+### Running
+
+1. Start the backend (from `backend/`, with the virtual environment active):
+
+   ```bash
+   python app.py
+   ```
+
+   The API listens on `http://localhost:5000` (debug mode).
+
+2. Serve the frontend from the repository root in a second terminal:
+
+   ```bash
+   python -m http.server 8000
+   ```
+
+3. Open `http://localhost:8000`. The frontend detects the backend automatically.
+
+For checklist-only use, step 1 can be skipped; progress is then kept in `localStorage`.
+
+### Project Structure
 
 ```
 WSTG-Copilot/
-├── index.html                       # Main HTML file
-├── css/
-│   └── style.css                    # All styles, themes, and BYOK/AI panel styling
+├── index.html                  # Single-page frontend
+├── css/style.css               # Styles
 ├── js/
-│   ├── app.js                       # App logic (state, rendering, i18n, themes, projects, AI, BYOK…)
-│   ├── cvss.js                      # CVSS v3.1 vector calculator
-│   └── import-parsers.js            # Nmap/Nikto/WPScan output parsers
+│   ├── app.js                  # Application logic, i18n, API client, AI/BYOK panels
+│   ├── cvss.js                 # CVSS v3.1 calculator
+│   └── import-parsers.js       # Nmap / Nikto / WPScan parsers
 ├── data/
-│   ├── wstg-checklist.{tr,en}.json        # WSTG v4.2 test data
-│   ├── owasp-top10.{tr,en}.json           # OWASP Top 10:2025 reference data
-│   └── llm-security-checklist.{tr,en}.json # Alternate OWASP LLM Top 10 checklist
-├── backend/                          # Flask + SQLite API
-│   ├── app.py                        # REST API — sessions, projects, recon, findings, evidence,
-│   │                                  # attack chains, kanban, reports, AI endpoints
-│   ├── models.py                     # SQLAlchemy models (Project, ScopeItem, TimelineEvent,
-│   │                                  # Finding, ToolRun, CustomTest, Evidence, ReconRun,
-│   │                                  # Session, TestResult, AIInteractionLog, AIProviderSetting)
-│   ├── ai/                           # Multi-provider AI layer
-│   │   ├── factory.py                 # Provider resolution: BYOK header → DB setting → .env
-│   │   ├── base.py, anthropic_provider.py, openai_provider.py,
-│   │   │   gemini_provider.py, ollama_provider.py
-│   ├── ai_report_assistant.py        # Finding description/remediation/rewrite prompts
-│   ├── finding_analysis.py           # AI CWE/severity/CVSS suggestion for a finding
-│   ├── next_test_suggestion.py       # AI "what to test next" suggestion
-│   ├── evidence_intel.py             # Optional AI vision analysis of evidence screenshots
-│   ├── recon.py                      # Attack Surface Discovery (SSRF-safe recon orchestration)
-│   ├── tool_runner.py                # Allow-listed external tool execution (nmap/httpx/…)
-│   ├── attack_chains.py              # Rule-based attack-chain correlation (no AI)
-│   ├── duplicate_detector.py         # difflib-based duplicate finding detection
-│   ├── redaction.py                  # Secrets/PII redaction for HTTP evidence
-│   ├── crypto_utils.py               # Fernet encryption for stored AI provider keys
-│   ├── mapping.py                    # WSTG ↔ OWASP Top 10 ↔ CWE lookup index
-│   ├── cvss.py                       # CVSS v3.1 vector parsing/scoring
-│   ├── report_builder.py             # DOCX reports (technical/executive/developer)
-│   ├── report_html.py                # Self-contained HTML report
-│   ├── report_pdf.py                 # Downloadable PDF report (xhtml2pdf, embedded Unicode font)
-│   ├── report_generator.py           # Session-level report data/markdown/docx (legacy-compatible)
-│   ├── config.py                     # Config (DB path, CORS, AI defaults, timeouts)
-│   ├── .env.example                  # All optional environment variables, documented
+│   ├── wstg-checklist.{tr,en}.json
+│   ├── owasp-top10.{tr,en}.json
+│   └── llm-security-checklist.{tr,en}.json
+├── backend/
+│   ├── app.py                  # Flask REST API
+│   ├── models.py               # SQLAlchemy models
+│   ├── config.py               # Configuration from environment variables
+│   ├── ai/                     # Provider layer (factory + Anthropic/OpenAI/Gemini/Ollama)
+│   ├── ai_report_assistant.py  # Description / remediation / rewrite / summary prompts
+│   ├── finding_analysis.py     # AI CWE / severity / CVSS suggestion
+│   ├── next_test_suggestion.py # AI next-test suggestion
+│   ├── evidence_intel.py       # Optional AI screenshot analysis
+│   ├── recon.py                # Attack Surface Discovery
+│   ├── tool_runner.py          # Allow-listed external tool execution
+│   ├── attack_chains.py        # Rule-based attack-chain correlation
+│   ├── duplicate_detector.py   # Duplicate finding detection
+│   ├── redaction.py            # Secret / PII redaction
+│   ├── crypto_utils.py         # Fernet encryption for stored keys
+│   ├── mapping.py              # WSTG ↔ OWASP Top 10 ↔ CWE index
+│   ├── cvss.py                 # CVSS v3.1 scoring
+│   ├── report_builder.py       # DOCX project reports
+│   ├── report_html.py          # HTML report
+│   ├── report_pdf.py           # PDF report
+│   ├── report_generator.py     # Session-level reports
+│   ├── test_*.py               # Tests
+│   ├── .env.example
 │   └── requirements.txt
-├── wstg-v4_2.pdf                     # Original OWASP WSTG v4.2 guide
+├── wstg-v4_2.pdf               # OWASP WSTG v4.2 guide
 └── LICENSE
 ```
 
-### 🚀 Getting Started
+### Contributing
 
-**Checklist only, no backend:**
-```bash
-python3 -m http.server 8000   # or: npx serve .
-```
-Then open `http://localhost:8000`. Progress is saved to `localStorage` only.
+1. Fork the repository and create a branch from `main`.
+2. Make your changes; keep the frontend free of build steps and frameworks.
+3. Run the relevant tests from the `backend/` directory, for example:
 
-**Full workspace (Projects, findings, evidence, reports, AI) — run the backend:**
-```bash
-cd backend
-python3 -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-cp .env.example .env            # optional — see below for what each variable does
-python3 app.py
-```
-The API runs on `http://localhost:5000` and creates `backend/database/wstg.db` (SQLite) on first run. Serve the frontend as above — it auto-detects the backend.
+   ```bash
+   python test_finding_analysis.py
+   python test_ai_layer.py
+   ```
 
-Recon and the Tool Runner rely on external binaries (`nmap`, `subfinder`, `httpx`, `whatweb`, `dnsx`) being installed and on your `PATH`; if a tool isn't available, that specific action is skipped/reported as unavailable rather than failing the whole request.
+4. Open a pull request describing the change.
 
-### 🔑 AI Configuration
+Bug reports and suggestions are welcome as GitHub issues.
 
-You don't need to touch `.env` at all — the in-app **AI Settings** panel (🔑, sidebar) lets you add, test, and activate a provider (Anthropic / OpenAI / Gemini / Ollama) from the UI; keys are encrypted at rest and never shown in full.
+### Disclaimer
 
-If you're running a shared/deployed instance, each visitor can instead open **"My Own Key"** (top bar, 🔐) and plug in their **personal** API key for their **own session** — it lives only in the browser and is never persisted server-side, so a shared installation doesn't force everyone to share (or pay for) the same key.
+This tool is intended for **authorized** security testing and educational use only. Testing systems without the owner's explicit permission is illegal. Recon and the Tool Runner only act on targets you specify and require you to confirm authorization. You are responsible for how you use this project.
 
-`.env` values are only a fallback for headless/CI/Docker setups without a UI — see `backend/.env.example` for the full list (`AI_PROVIDER`, `*_API_KEY`, `*_MODEL`, `OLLAMA_BASE_URL`, `ENCRYPTION_KEY`, etc).
+### License
 
-### 🎨 Theme System
+Released under the [MIT License](LICENSE).
 
-Click **Theme** in the sidebar to choose from 25 built-in themes (Dark/Neon, Nature/Calm, Bold/Dramatic, Light/Elegant). Your pick is saved to `localStorage`. To add a new one: add an entry to `THEMES` in `js/app.js` and a matching `[data-theme="id"]{ ... }` block in `css/style.css`.
-
-### 🌐 Language Support
-
-Switch Turkish/English from the sidebar. UI strings live in the `I18N` object in `js/app.js`; checklist content lives in the `data/*.json` files.
-
-### 💾 Local Storage Keys (no-backend / no-session mode)
-
-| Key | Content |
-|---|---|
-| `wstg_progress_v1` | Completed test IDs (local/no-session mode only) |
-| `wstg_lang_v1` | Selected language |
-| `wstg_theme_v1` | Selected theme |
-| `wstg_session_id_v1` | Active DB session ID, if any |
-| `wstg_skip_session_v1` | Remembers "continue without a session" choice |
-| `wstgAiByok` *(sessionStorage)* | Your personal BYOK provider/key/model for this browser tab only — never sent to the server for storage |
-
-### 🛠️ Tech Stack
-
-- Vanilla **HTML5 / CSS3 / JavaScript** — no framework, no build step
-- **Flask + SQLAlchemy + SQLite** backend
-- `python-docx` for DOCX report generation, `xhtml2pdf` (pure Python) for downloadable PDF reports, `cryptography` (Fernet) for at-rest AI key encryption
-- Pluggable AI layer supporting Anthropic, OpenAI, Gemini, and Ollama
-- [Inter](https://fonts.google.com/specimen/Inter) font (Google Fonts)
-
-### 📖 Source
-
-Test items are based on the [OWASP Web Security Testing Guide v4.2](https://owasp.org/www-project-web-security-testing-guide/) and the [OWASP Top 10:2025](https://owasp.org/Top10/2025/) / OWASP LLM Top 10 references.
-
-### ⚠️ Disclaimer
-
-This tool is for **authorized** security testing (pentesting) only, for educational and reference purposes. Testing systems you do not own or do not have explicit written permission to test is illegal. Recon and the Tool Runner only ever target what you explicitly point them at and require you to confirm authorization — the app never runs anything on its own or against a third party. You are solely responsible for how you use this project.
-
-### 📄 License
-
-Licensed under the [MIT License](LICENSE). Use, modify, and distribute freely.
+Test content is based on the [OWASP Web Security Testing Guide v4.2](https://owasp.org/www-project-web-security-testing-guide/), [OWASP Top 10:2025](https://owasp.org/Top10/2025/) and the OWASP LLM Top 10.
 
 ---
 
-## 🇹🇷 Türkçe
+## Türkçe
 
-**OWASP Web Security Testing Guide (WSTG) v4.2** temelli, artık sadece bir checklist değil, uçtan uca bir **pentest çalışma alanı (engagement workspace)**. Kapsam & saldırı yüzeyi keşfinden, WSTG odaklı test planına, profesyonel CVSS puanlı bulgulara, kanıt toplamaya (ekran görüntüsü + otomatik gizli-bilgi redaksiyonlu ham HTTP), saldırı zinciri korelasyonuna, bir Kanban tahtasına ve DOCX/HTML rapor üretimine kadar tüm süreci kapsar — her adımda opsiyonel, takılıp çıkarılabilir AI desteğiyle.
+### İçindekiler
 
-Checklist'in kendisi **hiçbir kurulum gerektirmeden** çalışır (`index.html`'i açmanız yeterli), ama tam deneyim (Projeler, bulgular, kanıtlar, raporlar, AI) için aşağıda anlatılan küçük Flask + SQLite backend'i gerekir.
+- [Genel Bakış](#genel-bakış)
+- [Özellikler](#özellikler)
+- [Kullanılan Teknolojiler](#kullanılan-teknolojiler)
+- [Mimari](#mimari)
+- [Gereksinimler](#gereksinimler)
+- [Kurulum](#kurulum)
+- [Ortam Değişkenleri](#ortam-değişkenleri)
+- [Çalıştırma](#çalıştırma)
+- [Proje Klasör Yapısı](#proje-klasör-yapısı)
+- [Katkıda Bulunma](#katkıda-bulunma)
+- [Lisans](#lisans)
 
-### ✨ Özellikler
+### Genel Bakış
 
-**Checklist çekirdeği**
-- **12 kategoride 98 WSTG test maddesi** (Bilgi Toplama, Konfigürasyon ve Dağıtım Yönetimi, Kimlik Yönetimi, Kimlik Doğrulama, Yetkilendirme, Oturum Yönetimi, Girdi Doğrulama, Hata Yönetimi, Kriptografi, İş Mantığı, İstemci Taraflı Testler, API Testleri)
-- Her testte **açıklama, adım adım test talimatı, örnek payload/komut ve önerilen araçlar**
-- 🧩 **Alternatif framework**: sidebar'dan tüm checklist'i **OWASP LLM Top 10 (AI Security)** checklist'ine (10 kategori / 21 test maddesi) çevirebilirsiniz — hedef bir LLM tabanlı uygulama olduğunda kullanışlı
-- 🛡️ **OWASP Top 10:2025 referans modülü** — 10 risk kategorisinin tamamı; açıklama, nasıl ortaya çıktığı, adım adım rehber, örnek saldırı senaryosu/payload, önlem kontrol listesi, ilişkili CWE'ler ve araçlar, eşleşen WSTG maddelerine bağlantılarla
-- ✅ Özel test maddeleri — resmi WSTG maddelerinin yanına projeye özel kendi checklist kalemlerinizi ekleyin
-- 🔍 Kategoriler/testler genelinde global arama, 📊 ilerleme istatistikli dashboard, 🌐 Türkçe/İngilizce arayüz, 🎨 25 hazır tema, 📱 responsive tasarım, 📎 dahili WSTG v4.2 PDF
+Pentest Workspace, **OWASP Web Security Testing Guide (WSTG) v4.2** temelli sızma testleri yürütmek için geliştirilmiş bir web uygulamasıdır. WSTG checklist'ini engagement yönetimiyle birleştirir: kapsam tanımı, saldırı yüzeyi keşfi, CVSS puanlı bulgular, kanıt toplama, kural tabanlı saldırı zinciri korelasyonu, Kanban panosu ve DOCX/HTML/PDF raporlama. AI desteği (Anthropic, OpenAI, Google Gemini veya Ollama) opsiyoneldir ve üretilen her çıktı kullanıcının gözden geçirdiği bir taslaktır.
 
-**Proje / Engagement yönetimi (backend gerekir)**
-- 📁 **Projeler** — kapsam, oturumlar, recon, bulgular, kanıtlar, zaman çizelgesi ve raporların tamamını isimli bir engagement altında toplayın (müşteri, açıklama, durum, başlangıç/bitiş tarihi)
-- 🎯 **Kapsam (Scope) yönetimi** — proje bazında kapsam içi/dışı domain, subdomain, IP ve CIDR aralıkları tanımlayın
-- 🕸️ **Attack Surface Discovery (Recon)** — tanımlanmış, yetkilendirilmiş bir hedefe karşı pasif/aktif recon çalıştırın (sunucuda kuruluysa `subfinder` / `httpx` / `whatweb` / `dnsx` / `nmap` ile subdomain keşfi, HTTP probe, teknoloji parmak izi) ve bulunan varlıkların otomatik olarak ilgili WSTG test ID'leriyle önceliklendirilmiş şekilde eşleştirilmesini sağlayın; SSRF'ye karşı hedef doğrulaması dahildir. **Tarama sonuçları kalıcıdır**: paneli tekrar açtığınızda (ya da aynı proje/oturuma geri döndüğünüzde) yeniden taramaya gerek kalmadan son taramanız gösterilir; yeni bir hedefe geçmek istediğinizde bilinçli olarak "Sıfırla / Yeniden Tara" ile başlayabilirsiniz. Öncelik rozetleri ve Test Planı artık proje/oturum bazında ayrıştırılır, böylece birini değiştirmek/silmek başka birinin eski verisini sızdırmaz.
-- 🧰 **Tool Runner** — izin listesindeki küçük bir dış araç setini (nmap, httpx, whatweb, subfinder, dnsx) doğrudan arayüzden, çalıştırmadan önce komut önizlemesiyle ve proje bazlı çalıştırma geçmişiyle kullanın
-- 📋 **Test Planı (Planner)** — kural tabanlı, tamamen şeffaf bir öncelik kuyruğu: WSTG maddeleri recon kanıtı + metodoloji sırasına göre sıralanır (kara kutu AI skorlaması yok), her öneri "neden orada" olduğunu gösterir
-- 🤖 **AI: Sırada Ne Var?** — Test Planı'nı tamamlayan, AI akıl yürütmesine dayalı bir öneri: tamamladığınız testlere ve bulduğunuz bulgulara bakarak bir sonraki adımı gerekçesiyle önerir. Test Planı'ndan farkı: recon kanıtı gerekmez, sabit kural yerine AI kullanır — bu yüzden her zaman gözden geçirilmesi gereken bir taslaktır; ana önerinin yanında alternatif adaylar da gösterilir
-- 📥 **Dış bulgu içe aktarma** — Nmap / Nikto / WPScan çıktısını (XML/JSON) ayrıştırıp eşleşmeleri ilgili WSTG maddelerine bağlı bulgulara dönüştürün
+Checklist yalnızca statik bir dosya sunucusuyla çalışır. Projeler, bulgular, kanıtlar, raporlar ve AI özellikleri için Flask + SQLite backend'i gerekir.
+
+### Özellikler
+
+**Checklist**
+- 12 kategoride 98 WSTG v4.2 test maddesi; her maddede açıklama, test adımları, örnek payload/komut ve önerilen araçlar
+- Alternatif checklist: LLM tabanlı hedefler için OWASP LLM Top 10 (10 kategori, 21 test maddesi)
+- WSTG maddelerine bağlantılı OWASP Top 10:2025 referans modülü (10 kategori)
+- Projeye özel test maddeleri
+- Global arama, ilerleme paneli, Türkçe/İngilizce arayüz
+- Orijinal WSTG v4.2 PDF'i (`wstg-v4_2.pdf`)
+
+**Projeler ve oturumlar** (backend gerekir)
+- Müşteri, açıklama, durum ve başlangıç/bitiş tarihi içeren projeler; her projenin olay zaman çizelgesi
+- Kapsam yönetimi: kapsam içi/dışı domain, subdomain, IP ve CIDR aralıkları
+- İsimli test oturumları (isim, test uzmanı, hedef URL); checklist ilerlemesi SQLite'a kaydedilir ve devam ettirilebilir. Backend'e erişilemezse uygulama `localStorage` moduna geçer
+- Attack Surface Discovery (recon): crt.sh Certificate Transparency kayıtları üzerinden pasif subdomain keşfi, DNS çözümleme, teknoloji tespiti için tek bir HTTP isteği, link/form/cookie çıkarımı ve kısa bir iyi bilinen yol listesinin kontrolü (`robots.txt`, `swagger.json`, `.git/config`, …). Sonuçlar WSTG test ID'leriyle eşleştirilir, proje bazında saklanır ve panel yeniden açıldığında tekrar gösterilir. Yetki onayı zorunludur; private, loopback, link-local veya reserved IP'ye çözümlenen hedefler reddedilir (SSRF koruması)
+- Tool Runner: izin listesindeki araçları (`nmap`, `httpx`, `whatweb`, `subfinder`, `dnsx`) sabit argüman şablonlarıyla çalıştırır, önce komut önizlemesi gösterir ve proje bazında çalıştırma geçmişi tutar. Komutlar shell kullanılmadan argüman listesi olarak verilir; kurulu olmayan araçlar "kullanılamaz" olarak bildirilir, otomatik kurulum yapılmaz
+- Test Planı: WSTG maddelerini recon kanıtı ve metodoloji sırasına göre sıralayan, her sıralamanın gerekçesini gösteren kural tabanlı öncelik kuyruğu
+- AI: Sırada Ne Var?: tamamlanan testlere ve bulgulara göre bir sonraki test için AI önerisi ve alternatif adaylar
+- Nmap (XML), Nikto (XML/JSON) ve WPScan (JSON) çıktılarını WSTG maddelerine bağlı bulgulara dönüştüren içe aktarma
 
 **Bulgular**
-- 🧾 **Profesyonel bulgular** — başlık, açıklama, etkilenen endpoint, remediation, **CVSS v3.1 hesaplayıcı** (canlı skorlu interaktif vektör oluşturucu), CWE eşlemesi ve önem derecesi
-- 🪞 **Tekrar (duplicate) tespiti** — yeni/düzenlenen bulgular projedeki mevcut bulgularla (başlık/açıklama/endpoint/CWE benzerliği) karşılaştırılır, birleştir ya da yine de oluştur seçeneği sunulur
-- 🔗 **Saldırı Zinciri / Bulgu Korelasyon Motoru** — kayıtlı bulgularınızı bilinen saldırı zinciri kalıplarıyla (ör. Kullanıcı Numaralandırma → Zayıf Kimlik Doğrulama → Hesap Ele Geçirme) sabit, denetlenebilir kurallarla eşleştirir — hiçbir AI çağrısı içermez
-- 🗂️ **Kanban panosu** — bulgu/test sonuçlarını Yapılacak → Devam Ediyor → İnceleme → Tamamlandı arasında taşıyın; atanan kişi/önem/test-ID filtreleriyle
+- Başlık, açıklama, etkilenen endpoint, remediation, CWE, önem derecesi ve canlı skor hesaplayan CVSS v3.1 hesaplayıcı (istemci ve sunucu tarafı)
+- Başlık/açıklama/endpoint/CWE benzerliğine (`difflib`) dayalı tekrar tespiti; birleştir ya da yine de oluştur seçenekleri
+- Saldırı zinciri korelasyonu: bulgular 10 sabit saldırı zinciri kalıbıyla eşleştirilir (ör. kullanıcı numaralandırma → zayıf kimlik doğrulama → hesap ele geçirme). AI kullanılmaz
+- Test sonuçları için Yapılacak, Test Ediliyor, İncelemede, Onaylandı ve Tamamlandı sütunlarından oluşan Kanban panosu
 
-**Kanıtlar (Evidence)**
-- 🖼️ Ekran görüntüsü kanıtı yükleme (PNG/JPEG/WebP/GIF), diskte her zaman sunucu tarafında üretilen UUID dosya adlarıyla saklanır (kullanıcının orijinal dosya adı asla kullanılmaz — path traversal'a karşı)
-- 🌐 Ham HTTP request/response kanıtı, **otomatik gizli bilgi/PII redaksiyonu** ile (Authorization header'ları, cookie'ler, JWT'ler, yaygın API key formatları, private key'ler, e-postalar, kart benzeri numaralar) varsayılan olarak gösterilir — ham metni görmek için açıkça "ham metni göster" demeniz gerekir
-- 🤖 Ekran görüntülerinde opsiyonel AI Vision analizi (Anthropic Claude) ilgili WSTG test ID'lerini önerir — tamamen opsiyoneldir, gerçek WSTG veri setine karşı doğrulanır (uydurma bir ID öneremez) ve siz Accept demeden hiçbir bulguya otomatik bağlanmaz
+**Kanıtlar**
+- Ekran görüntüsü yükleme (PNG/JPEG/WebP/GIF); dosyalar sunucu tarafında üretilen UUID adlarıyla saklanır
+- Gizli bilgi ve kişisel verilerin otomatik maskelendiği ham HTTP request/response kanıtı (Authorization header'ları, cookie'ler, JWT'ler, yaygın API key formatları, private key'ler, e-posta adresleri, kart benzeri numaralar); maskelenmemiş metin yalnızca açık istek üzerine döner
+- Ekran görüntüleri için opsiyonel AI görsel analizi (Anthropic Claude, yalnızca `ANTHROPIC_API_KEY` tanımlıysa etkin): gerçek veri setine göre doğrulanmış WSTG test ID'leri önerir; öneriler kullanıcı onaylamadan bağlanmaz
 
 **Raporlama**
-- 📄 **Üç DOCX rapor şablonu** — *Technical* (pentester/QA için tam detay), *Executive* (yönetim için üst düzey özet ve risk duruşu), *Developer* (bulgu bazında "Problem / Neden Önemli / Nasıl Düzeltilir")
-- 🖨️ **Kendi kendine yeten HTML rapor** — tek dosya, harici CDN/script bağımlılığı yok, dahili "Yazdır / PDF olarak kaydet" butonuyla (sunucu tarafı PDF kütüphanesi gerekmez)
-- 📑 **Tek tıkla indirilebilir gerçek PDF rapor** — kapak sayfası, yönetici özeti, risk dağılımı, bulgu bazında detay, ekler ve sayfa numaralı alt bilgi içeren, sunucu tarafında saf Python `xhtml2pdf` kütüphanesiyle üretilen, doğrudan gönderilebilir bir `.pdf` dosyası. GTK, Cairo ya da `wkhtmltopdf` kurulumu gerekmediği için Windows/Mac/Linux'ta ekstra adım olmadan çalışır. Gömülü font sayesinde Türkçe karakterler (ğ/ş/ı/İ/ö/ü/ç) tam destekli
-- ✅ **Rapora hangi bulguların gireceğini siz seçin** — "Tümü", "Sadece Kritik + Yüksek" ya da checklist'ten tek tek işaretleyerek seçtiğiniz bulgular; hem HTML hem PDF rapor için geçerlidir
-- ✍️ Siz gözden geçirmeden rapora eklenmeyen, opsiyonel AI destekli yönetici özeti taslağı
+- Üç şablonlu DOCX rapor: Technical, Executive ve Developer
+- Yazdır / PDF olarak kaydet butonlu, harici bağımlılığı olmayan tek dosyalık HTML rapor
+- `xhtml2pdf` ile sunucu tarafında üretilen PDF rapor (kapak, yönetici özeti, risk dağılımı, bulgu detayları, ekler, sayfa numaraları); Türkçe karakterler için gömülü font
+- HTML/PDF raporlarında bulgu seçimi: tümü, yalnızca kritik + yüksek ya da tek tek seçim
+- Oturum bazlı raporlar (Markdown / DOCX) ve opsiyonel AI destekli yönetici özeti taslağı
 
-**AI Desteği — çoklu sağlayıcı, kendi key'ini getir (BYOK)**
-- 🔌 **Anthropic (Claude), OpenAI, Google Gemini veya yerel bir Ollama modeliyle** çalışır — sağlayıcıyı siz seçersiniz
-- 🔑 **AI Ayarları** (paylaşılan/varsayılan) — kurulumun tamamı için sağlayıcı bazında şifreli bir API key saklayın, hangisinin aktif olacağını seçin, güvenmeden önce bağlantıyı test edin
-- 🔐 **"Kendi API Key'inle Kullan" (BYOK)** — üst çubukta ayrı, kendine özgü tasarımlı bir panel; paylaşılan bir kurulumdaki *herhangi bir kullanıcı*, **sadece kendi oturumu için** **kendi** API key'ini girebilir. Key tarayıcının `sessionStorage`'ında tutulur, sunucuya asla kaydedilmek üzere gönderilmez ve sekme kapanınca otomatik silinir — sadece o kullanıcının isteklerinde paylaşılan ayarın önüne geçer
-- Kullanım alanları: bulgu açıklama/remediation taslağı, CWE/önem/CVSS önerisi, profesyonel yeniden yazım, "sırada ne test etmeliyim" önerisi, yönetici özeti taslağı, opsiyonel kanıt ekran görüntüsü ön analizi — hepsi *sizin gözden geçirdiğiniz bir taslaktır*, hiçbir şey sessizce veritabanına yazılmaz
-- Her AI çağrısı (başarılı/başarısız) denetlenebilirlik için loglanır (sağlayıcı, model, gecikme, amaç) — `/api/ai/logs`
+**AI desteği**
+- Sağlayıcılar: Anthropic, OpenAI, Google Gemini, Ollama (yerel)
+- AI Ayarları paneli: sağlayıcı bazında şifreli (Fernet) API key saklama, aktif sağlayıcı seçimi ve bağlantı testi
+- Kendi Key'ini Kullan (BYOK): her kullanıcı kişisel key'ini girebilir; key tarayıcının `sessionStorage`'ında tutulur, her istekte `X-AI-*` header'larıyla gönderilir ve sunucuda saklanmaz
+- Kullanım alanları: açıklama ve remediation taslağı, CWE/önem/CVSS önerisi, metin yeniden yazımı, sonraki test önerisi, yönetici özeti taslağı
+- Her AI çağrısı (sağlayıcı, model, gecikme, amaç, başarı/hata) loglanır ve `/api/ai/logs` üzerinden görüntülenebilir
 
-**İsimli test oturumları (Proje ile veya Proje olmadan çalışır)**
-- 🗄️ Bir pentest sürecini isimli bir oturum altında toplayın (isim, test uzmanı, hedef URL); her işaretlediğiniz test SQLite'a kaydedilir ve daha sonra devam edilebilir
-- Backend'e erişilemezse otomatik olarak sadece `localStorage` moduna döner — hiçbir şey bozulmaz
+### Kullanılan Teknolojiler
 
-### 🖥️ Ekran Görünümü
+| Katman | Teknolojiler |
+|---|---|
+| Frontend | HTML5, CSS3, vanilla JavaScript (framework ve build adımı yok), Inter yazı tipi (Google Fonts) |
+| Backend | Python, Flask 2.3, Flask-SQLAlchemy, Flask-CORS, SQLite |
+| Raporlama | `python-docx`, `xhtml2pdf` |
+| Güvenlik | Saklanan AI key'leri için `cryptography` (Fernet) |
+| AI | Anthropic, OpenAI, Gemini ve Ollama için sağlayıcı katmanı (`requests` ile HTTP) |
+| Dış araçlar (opsiyonel) | `nmap`, `httpx`, `whatweb`, `subfinder`, `dnsx` |
 
-Sidebar; kategori navigasyonunun yanında Projeler, Test Oturumları, Attack Surface Discovery, Test Planı, İçe Aktarma, AI Ayarları ve kendi BYOK key panelinize hızlı erişim sunar. Bir Projeyi açtığınızda; Overview, Scope, Assets, Recon, Tools, Test Plan, WSTG Tests, Findings, Evidence, Attack Chains, Timeline, Kanban ve Reports sekmelerinden oluşan tam bir çalışma alanına geçersiniz.
+### Mimari
 
-### 📂 Proje Yapısı
+```
+Tarayıcı (index.html + js/app.js)
+   │  checklist verisini data/*.json dosyalarından yükler
+   │  http://localhost:5000/api adresine REST çağrıları (+ opsiyonel X-AI-* BYOK header'ları)
+   ▼
+Flask API (backend/app.py)
+   ├── SQLAlchemy modelleri ──► SQLite (backend/database/wstg.db)
+   ├── recon.py / tool_runner.py ──► hedef (yetki onayı + SSRF kontrolünden sonra)
+   ├── cvss.py, duplicate_detector.py, attack_chains.py, redaction.py   (kural tabanlı)
+   ├── report_builder.py / report_html.py / report_pdf.py / report_generator.py
+   └── ai/factory.py ──► Anthropic | OpenAI | Gemini | Ollama
+```
+
+- Frontend statik, tek sayfalık bir uygulamadır. Checklist içeriğini `data/*.json` dosyalarından okur ve backend ile sabit `http://localhost:5000/api` adresi üzerinden konuşur (`js/app.js` içindeki `API_BASE`). Backend yoksa `localStorage` kullanan yalnızca-checklist modunda çalışır.
+- Backend ilk açılışta veritabanını ve tabloları oluşturur, mevcut bir veritabanındaki eksik kolonları otomatik ekler.
+- AI sağlayıcı seçim sırası: BYOK istek header'ları → AI Ayarları panelinde aktif edilen sağlayıcı → `.env` değerleri. Hiçbiri yoksa AI özellikleri devre dışı kalır; sahte içerik üretilmez.
+- Yüklenen kanıt dosyaları `backend/uploads/` altında saklanır.
+
+### Gereksinimler
+
+- Python 3 (`pip` ve `venv` ile)
+- Güncel bir web tarayıcısı
+- Frontend için herhangi bir statik dosya sunucusu (ör. `python -m http.server`)
+- Opsiyonel: Tool Runner için `PATH` üzerinde `nmap`, `httpx`, `whatweb`, `subfinder`, `dnsx`
+- Opsiyonel: AI özellikleri için Anthropic / OpenAI / Gemini API key'i ya da çalışan bir Ollama sunucusu
+
+### Kurulum
+
+```bash
+git clone https://github.com/enesbaldemir/WSTG-Copilot.git
+cd WSTG-Copilot/backend
+python -m venv venv
+source venv/bin/activate        # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+cp .env.example .env            # opsiyonel
+```
+
+### Ortam Değişkenleri
+
+Tüm değişkenler opsiyoneldir ve `backend/.env` dosyasından okunur. AI key'leri normalde uygulama içindeki AI Ayarları panelinden girilir; aşağıdaki AI değişkenleri arayüzsüz kurulumlar için fallback'tir.
+
+| Değişken | Varsayılan | Açıklama |
+|---|---|---|
+| `DATABASE_URL` | `sqlite:///<backend>/database/wstg.db` | SQLAlchemy veritabanı adresi |
+| `SECRET_KEY` | geliştirme değeri | Flask gizli anahtarı; production'da değiştirin |
+| `CORS_ORIGINS` | `http://localhost:8000,http://localhost:3000` | İzin verilen frontend origin'leri |
+| `LOG_LEVEL` | `INFO` | Log seviyesi |
+| `ANTHROPIC_API_KEY` | boş | Kanıt ekran görüntülerinin AI görsel analizini etkinleştirir; Anthropic için fallback key'dir |
+| `AI_PROVIDER` | `gemini` | Fallback sağlayıcı: `gemini`, `openai`, `anthropic` veya `ollama` |
+| `AI_REQUEST_TIMEOUT` | `30` | AI isteği zaman aşımı (saniye) |
+| `GEMINI_API_KEY` / `GEMINI_MODEL` | boş / `gemini-3.7-flash` | Gemini key'i ve modeli |
+| `OPENAI_API_KEY` / `OPENAI_MODEL` | boş / `gpt-5.6-terra` | OpenAI key'i ve modeli |
+| `ANTHROPIC_MODEL` | `claude-sonnet-5` | Anthropic modeli |
+| `OLLAMA_BASE_URL` / `OLLAMA_MODEL` | `http://localhost:11434` / `llama3.1` | Ollama sunucusu ve modeli |
+| `ENCRYPTION_KEY` | `SECRET_KEY`'den türetilir | AI Ayarları'nda saklanan key'leri şifreleyen anahtar. Tanımlı değilse ve `SECRET_KEY` değişirse kayıtlı key'lerin yeniden girilmesi gerekir |
+
+`backend/.env` dosyasını commit'lemeyin; `.gitignore` içinde zaten tanımlıdır.
+
+### Çalıştırma
+
+1. Backend'i başlatın (`backend/` klasöründe, sanal ortam aktifken):
+
+   ```bash
+   python app.py
+   ```
+
+   API `http://localhost:5000` adresinde (debug modunda) çalışır.
+
+2. İkinci bir terminalde frontend'i depo kök dizininden servis edin:
+
+   ```bash
+   python -m http.server 8000
+   ```
+
+3. `http://localhost:8000` adresini açın. Frontend backend'i otomatik algılar.
+
+Yalnızca checklist kullanılacaksa 1. adım atlanabilir; ilerleme bu durumda `localStorage`'da tutulur.
+
+### Proje Klasör Yapısı
 
 ```
 WSTG-Copilot/
-├── index.html                       # Ana HTML dosyası
-├── css/
-│   └── style.css                    # Tüm stiller, temalar, BYOK/AI panel tasarımı
+├── index.html                  # Tek sayfalık frontend
+├── css/style.css               # Stiller
 ├── js/
-│   ├── app.js                       # Uygulama mantığı (state, render, i18n, tema, projeler, AI, BYOK…)
-│   ├── cvss.js                      # CVSS v3.1 vektör hesaplayıcı
-│   └── import-parsers.js            # Nmap/Nikto/WPScan çıktı ayrıştırıcıları
+│   ├── app.js                  # Uygulama mantığı, i18n, API istemcisi, AI/BYOK panelleri
+│   ├── cvss.js                 # CVSS v3.1 hesaplayıcı
+│   └── import-parsers.js       # Nmap / Nikto / WPScan ayrıştırıcıları
 ├── data/
-│   ├── wstg-checklist.{tr,en}.json        # WSTG v4.2 test verisi
-│   ├── owasp-top10.{tr,en}.json           # OWASP Top 10:2025 referans verisi
-│   └── llm-security-checklist.{tr,en}.json # Alternatif OWASP LLM Top 10 checklist'i
-├── backend/                          # Flask + SQLite API
-│   ├── app.py                        # REST API — oturumlar, projeler, recon, bulgular, kanıtlar,
-│   │                                  # saldırı zincirleri, kanban, raporlar, AI uçları
-│   ├── models.py                     # SQLAlchemy modelleri (Project, ScopeItem, TimelineEvent,
-│   │                                  # Finding, ToolRun, CustomTest, Evidence, ReconRun,
-│   │                                  # Session, TestResult, AIInteractionLog, AIProviderSetting)
-│   ├── ai/                           # Çoklu sağlayıcılı AI katmanı
-│   │   ├── factory.py                 # Sağlayıcı çözümü: BYOK header → DB ayarı → .env
-│   │   ├── base.py, anthropic_provider.py, openai_provider.py,
-│   │   │   gemini_provider.py, ollama_provider.py
-│   ├── ai_report_assistant.py        # Bulgu açıklama/remediation/yeniden yazım prompt'ları
-│   ├── finding_analysis.py           # Bulgu için AI CWE/önem/CVSS önerisi
-│   ├── next_test_suggestion.py       # AI "sırada ne test edilmeli" önerisi
-│   ├── evidence_intel.py             # Kanıt ekran görüntülerinin opsiyonel AI vision analizi
-│   ├── recon.py                      # Attack Surface Discovery (SSRF-güvenli recon orkestrasyonu)
-│   ├── tool_runner.py                # İzin listeli dış araç çalıştırma (nmap/httpx/…)
-│   ├── attack_chains.py              # Kural tabanlı saldırı zinciri korelasyonu (AI yok)
-│   ├── duplicate_detector.py         # difflib tabanlı tekrar eden bulgu tespiti
-│   ├── redaction.py                  # HTTP kanıtı için gizli bilgi/PII redaksiyonu
-│   ├── crypto_utils.py               # Saklanan AI sağlayıcı key'leri için Fernet şifreleme
-│   ├── mapping.py                    # WSTG ↔ OWASP Top 10 ↔ CWE ilişki indeksi
-│   ├── cvss.py                       # CVSS v3.1 vektör ayrıştırma/skorlama
-│   ├── report_builder.py             # DOCX raporlar (technical/executive/developer)
-│   ├── report_html.py                # Kendi kendine yeten HTML rapor
-│   ├── report_pdf.py                 # İndirilebilir PDF rapor (xhtml2pdf, gömülü Unicode font)
-│   ├── report_generator.py           # Oturum bazlı rapor verisi/markdown/docx (geriye dönük uyum)
-│   ├── config.py                     # Ayarlar (DB yolu, CORS, AI varsayılanları, timeout'lar)
-│   ├── .env.example                  # Tüm opsiyonel ortam değişkenleri, açıklamalı
+│   ├── wstg-checklist.{tr,en}.json
+│   ├── owasp-top10.{tr,en}.json
+│   └── llm-security-checklist.{tr,en}.json
+├── backend/
+│   ├── app.py                  # Flask REST API
+│   ├── models.py               # SQLAlchemy modelleri
+│   ├── config.py               # Ortam değişkenlerinden yapılandırma
+│   ├── ai/                     # Sağlayıcı katmanı (factory + Anthropic/OpenAI/Gemini/Ollama)
+│   ├── ai_report_assistant.py  # Açıklama / remediation / yeniden yazım / özet prompt'ları
+│   ├── finding_analysis.py     # AI CWE / önem / CVSS önerisi
+│   ├── next_test_suggestion.py # AI sonraki test önerisi
+│   ├── evidence_intel.py       # Opsiyonel AI ekran görüntüsü analizi
+│   ├── recon.py                # Attack Surface Discovery
+│   ├── tool_runner.py          # İzin listeli dış araç çalıştırma
+│   ├── attack_chains.py        # Kural tabanlı saldırı zinciri korelasyonu
+│   ├── duplicate_detector.py   # Tekrar eden bulgu tespiti
+│   ├── redaction.py            # Gizli bilgi / kişisel veri maskeleme
+│   ├── crypto_utils.py         # Saklanan key'ler için Fernet şifreleme
+│   ├── mapping.py              # WSTG ↔ OWASP Top 10 ↔ CWE indeksi
+│   ├── cvss.py                 # CVSS v3.1 skorlama
+│   ├── report_builder.py       # Proje DOCX raporları
+│   ├── report_html.py          # HTML rapor
+│   ├── report_pdf.py           # PDF rapor
+│   ├── report_generator.py     # Oturum bazlı raporlar
+│   ├── test_*.py               # Testler
+│   ├── .env.example
 │   └── requirements.txt
-├── wstg-v4_2.pdf                     # Orijinal OWASP WSTG v4.2 kılavuzu
+├── wstg-v4_2.pdf               # OWASP WSTG v4.2 kılavuzu
 └── LICENSE
 ```
 
-### 🚀 Kurulum ve Çalıştırma
+### Katkıda Bulunma
 
-**Sadece checklist, backend'siz:**
-```bash
-python3 -m http.server 8000   # ya da: npx serve .
-```
-Ardından `http://localhost:8000` adresini açın. İlerleme sadece `localStorage`'a kaydedilir.
+1. Depoyu fork'layın ve `main` dalından yeni bir dal açın.
+2. Değişikliklerinizi yapın; frontend'i framework ve build adımı gerektirmeyecek şekilde tutun.
+3. İlgili testleri `backend/` klasöründen çalıştırın, örneğin:
 
-**Tam çalışma alanı (Projeler, bulgular, kanıtlar, raporlar, AI) — backend'i çalıştırın:**
-```bash
-cd backend
-python3 -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-cp .env.example .env            # opsiyonel — her değişkenin ne işe yaradığı aşağıda
-python3 app.py
-```
-API `http://localhost:5000` üzerinde çalışır ve ilk çalıştırmada `backend/database/wstg.db` (SQLite) dosyasını otomatik oluşturur. Frontend'i yukarıdaki gibi servis edin — backend'i otomatik algılayacaktır.
+   ```bash
+   python test_finding_analysis.py
+   python test_ai_layer.py
+   ```
 
-Recon ve Tool Runner, sunucunuzda kurulu ve `PATH`'te olan dış araçlara (`nmap`, `subfinder`, `httpx`, `whatweb`, `dnsx`) dayanır; bir araç mevcut değilse, tüm isteği başarısız kılmak yerine sadece o araca ait adım atlanır/kullanılamaz olarak raporlanır.
+4. Değişikliği açıklayan bir pull request açın.
 
-### 🔑 AI Yapılandırması
+Hata bildirimleri ve öneriler için GitHub issue açabilirsiniz.
 
-`.env` dosyasına hiç dokunmanıza gerek yok — uygulama içindeki **AI Ayarları** paneli (🔑, sidebar) bir sağlayıcı (Anthropic / OpenAI / Gemini / Ollama) eklemenizi, test etmenizi ve aktif etmenizi sağlar; key'ler şifreli saklanır ve hiçbir zaman tam olarak gösterilmez.
+### Sorumluluk Reddi
 
-Paylaşılan/deploy edilmiş bir kurulum çalıştırıyorsanız, her ziyaretçi bunun yerine üst çubuktaki **"Kendi Key'im"** (🔐) panelini açıp **kendi** API key'ini **sadece kendi oturumu** için girebilir — key yalnızca tarayıcıda tutulur, sunucuya asla kaydedilmez; böylece paylaşılan bir kurulum herkesi aynı key'i paylaşmaya (ya da onun maliyetine) zorlamaz.
+Bu araç yalnızca **yetkilendirilmiş** güvenlik testleri ve eğitim amaçlı kullanım içindir. Sahibinin açık izni olmayan sistemleri test etmek yasa dışıdır. Recon ve Tool Runner yalnızca sizin belirttiğiniz hedeflere karşı çalışır ve yetki onayı ister. Projenin kullanımından doğan sorumluluk kullanıcıya aittir.
 
-`.env` değerleri yalnızca arayüzsüz (headless/CI/Docker) kurulumlar için bir fallback'tir — tam liste için `backend/.env.example` dosyasına bakın (`AI_PROVIDER`, `*_API_KEY`, `*_MODEL`, `OLLAMA_BASE_URL`, `ENCRYPTION_KEY` vb.).
+### Lisans
 
-### 🎨 Tema Sistemi
+[MIT Lisansı](LICENSE) ile yayınlanmıştır.
 
-Sidebar'daki **Tema** butonuna tıklayarak 25 hazır tema arasından seçim yapın (Koyu/Neon, Doğa/Sakin, Yoğun/Dramatik, Açık/Zarif). Seçiminiz `localStorage`'a kaydedilir. Yeni tema eklemek için: `js/app.js`'teki `THEMES` dizisine bir kayıt ve `css/style.css`'e karşılık gelen `[data-theme="id"]{ ... }` bloğu ekleyin.
-
-### 🌐 Dil Desteği
-
-Sidebar'dan Türkçe/İngilizce arasında geçiş yapın. Arayüz metinleri `js/app.js` içindeki `I18N` nesnesinde, checklist içeriği `data/*.json` dosyalarında tutulur.
-
-### 💾 Yerel Depolama Anahtarları (backend'siz / oturumsuz mod)
-
-| Anahtar | İçerik |
-|---|---|
-| `wstg_progress_v1` | Tamamlanan test ID'leri (yalnızca yerel/oturumsuz modda) |
-| `wstg_lang_v1` | Seçili dil |
-| `wstg_theme_v1` | Seçili tema |
-| `wstg_session_id_v1` | Aktif DB oturumunun ID'si (varsa) |
-| `wstg_skip_session_v1` | "Oturumsuz devam et" tercihini hatırlar |
-| `wstgAiByok` *(sessionStorage)* | Sadece bu tarayıcı sekmesine ait kişisel BYOK sağlayıcı/key/model bilgisi — sunucuya kaydedilmek üzere asla gönderilmez |
-
-### 🛠️ Kullanılan Teknolojiler
-
-- Vanilla **HTML5 / CSS3 / JavaScript** — framework yok, build adımı yok
-- **Flask + SQLAlchemy + SQLite** backend
-- DOCX rapor üretimi için `python-docx`, saklanan AI key'lerinin şifrelenmesi için `cryptography` (Fernet)
-- Anthropic, OpenAI, Gemini ve Ollama'yı destekleyen takılabilir AI katmanı
-- [Inter](https://fonts.google.com/specimen/Inter) yazı tipi (Google Fonts)
-
-### 📖 Kaynak
-
-Test maddeleri [OWASP Web Security Testing Guide v4.2](https://owasp.org/www-project-web-security-testing-guide/) ile [OWASP Top 10:2025](https://owasp.org/Top10/2025/) / OWASP LLM Top 10 referansları esas alınarak hazırlanmıştır.
-
-### ⚠️ Sorumluluk Reddi
-
-Bu araç yalnızca **yetkilendirilmiş** güvenlik testleri (pentest) için eğitim ve referans amaçlı hazırlanmıştır. Kendi sahibi olmadığınız veya yazılı izniniz bulunmayan sistemlere karşı test yapmak yasa dışıdır. Recon ve Tool Runner yalnızca sizin açıkça belirttiğiniz hedefe karşı çalışır ve yetkilendirmeyi onaylamanızı gerektirir — uygulama kendi başına ya da üçüncü bir tarafa karşı hiçbir şey çalıştırmaz. Bu projenin kullanımından doğacak sorumluluk tamamen kullanıcıya aittir.
-
-### 📄 Lisans
-
-Bu proje [MIT Lisansı](LICENSE) ile lisanslanmıştır. Dilediğiniz gibi kullanabilir, değiştirebilir ve dağıtabilirsiniz.
-
----
-
-Contributions are welcome — feel free to open an issue or submit a pull request. ⭐
-Katkıda bulunmak isterseniz bir issue açabilir veya pull request gönderebilirsiniz. ⭐
+Test içerikleri [OWASP Web Security Testing Guide v4.2](https://owasp.org/www-project-web-security-testing-guide/), [OWASP Top 10:2025](https://owasp.org/Top10/2025/) ve OWASP LLM Top 10 esas alınarak hazırlanmıştır.
