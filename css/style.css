@@ -1191,6 +1191,141 @@ button.wstg-ref-chip:hover{ border-color:var(--accent-border); }
   .foot-actions{ width:100%; justify-content:space-between; }
 }
 
+
+/* ==========================================================================
+   Saldırı Yüzeyi (proje çalışma alanı > Assets)
+   ========================================================================== */
+.i-xs{ width:13px; height:13px; }
+.as-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:16px; flex-wrap:wrap; }
+.as-title{ font-size:21px; font-weight:700; letter-spacing:-.015em; }
+.as-desc{ color:var(--muted); font-size:13.5px; margin-top:4px; max-width:620px; }
+.as-head-side{ display:flex; flex-direction:column; align-items:flex-end; gap:8px; }
+.as-target{ font-size:14px; color:var(--text-2); }
+.as-target b{ color:var(--text); font-family:var(--mono); font-weight:600; font-size:13.5px; }
+.as-head-side .badge{ font-size:12.5px; padding:3px 10px; }
+
+.as-summary{ display:grid; grid-template-columns:1.4fr repeat(3, 1fr); gap:10px; margin-bottom:16px; }
+.as-scan, .as-stat{ display:flex; align-items:center; gap:12px; padding:14px 16px; border:1px solid var(--border); border-radius:var(--radius-lg); background:var(--surface); text-align:left; min-width:0; }
+.as-scan{ flex-wrap:wrap; }
+.as-scan > div{ flex:1; min-width:140px; }
+.as-stat{ transition:border-color var(--ease), background var(--ease); }
+.as-stat:not(:disabled):hover{ border-color:var(--accent-border); background:var(--surface-2); }
+.as-stat[aria-pressed="true"]{ border-color:var(--accent); background:var(--accent-soft); }
+.as-stat-ico{ width:36px; height:36px; border-radius:8px; background:var(--surface-3); color:var(--text-2); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.as-stat-ico .i{ width:19px; height:19px; }
+.as-stat[data-as-type="subdomain"] .as-stat-ico{ background:var(--accent-soft); color:var(--accent-text); }
+.as-stat[data-as-type="endpoint"] .as-stat-ico{ background:var(--green-soft); color:var(--green); }
+.as-stat[data-as-type="technology"] .as-stat-ico{ background:var(--orange-soft); color:var(--orange); }
+.as-stat-text{ flex:1; min-width:0; display:flex; flex-direction:column; }
+.as-stat-label{ font-size:13.5px; font-weight:500; color:var(--text); }
+.as-stat-sub{ font-size:12px; color:var(--muted); }
+.as-stat-value{ font-size:24px; font-weight:650; font-variant-numeric:tabular-nums; }
+.as-scan-date{ font-size:15px; font-weight:600; margin-top:1px; }
+
+.as-filters{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+.as-filters .search-input{ flex:1 1 260px; }
+.as-filters select{ flex:0 1 180px; }
+.as-card{ margin-bottom:16px; }
+.as-card .card-head{ padding-bottom:4px; }
+.as-card .card-title{ font-size:16px; }
+.as-card .card-title .i{ width:18px; height:18px; }
+.as-note{ font-size:12.5px; color:var(--muted); line-height:1.5; padding:0 20px; margin:4px 0 8px; }
+.as-note.as-center{ text-align:center; padding:12px 0; }
+.as-card .seg button .i{ width:14px; height:14px; }
+
+.as-loading{ display:flex; align-items:center; justify-content:center; gap:10px; padding:56px 0; color:var(--muted); font-size:14px; }
+.as-spinner{ width:18px; height:18px; border-radius:50%; border:2px solid var(--border-strong); border-top-color:var(--accent); animation:spin .8s linear infinite; }
+@keyframes spin{ to{ transform:rotate(360deg); } }
+
+/* harita: kök -> 3 sütun, CSS bağlantı çizgileri */
+#asMapBody{ padding:8px 20px 20px; }
+.as-map + .as-map{ margin-top:28px; padding-top:20px; border-top:1px dashed var(--border); }
+.as-root-row{ display:flex; justify-content:center; position:relative; padding-bottom:26px; }
+.as-root-row::after{ content:''; position:absolute; left:50%; bottom:0; height:26px; border-left:1.5px solid var(--border-strong); }
+.as-cols{ display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); position:relative; }
+.as-col{ position:relative; padding:26px 8px 0; min-width:0; }
+.as-col::before{ content:''; position:absolute; top:0; left:50%; height:26px; border-left:1.5px solid var(--border-strong); }
+.as-col::after{ content:''; position:absolute; top:0; left:0; right:0; border-top:1.5px solid var(--border-strong); }
+.as-col:first-child::after{ left:50%; }
+.as-col:last-child::after{ right:50%; }
+.as-col:only-child::after{ display:none; }
+.as-col-head{ font-size:12.5px; font-weight:600; color:var(--text-2); text-align:center; margin-bottom:8px; }
+.as-col-items{ display:flex; flex-direction:column; gap:6px; }
+.as-node{
+  display:flex; align-items:center; gap:10px; width:100%; padding:9px 12px; border-radius:var(--radius); border:1px solid; text-align:left;
+  position:relative; min-width:0; transition:box-shadow var(--ease);
+}
+.as-node:hover{ box-shadow:var(--shadow-md); }
+.as-node.selected{ box-shadow:0 0 0 3px var(--accent-soft); border-color:var(--accent); }
+.as-node .i{ width:20px; height:20px; }
+.as-node .mn-text{ min-width:0; display:flex; flex-direction:column; flex:1; }
+.as-node .mn-title{ font-weight:600; font-size:13px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.as-node .mn-sub{ font-size:11.5px; color:var(--muted); }
+.as-node.t-domain, .as-node.t-subdomain{ background:var(--accent-soft); border-color:var(--accent-border); color:var(--accent-text); }
+.as-node.t-endpoint{ background:var(--green-soft); border-color:var(--green-border); color:var(--green); }
+.as-node.t-technology{ background:var(--orange-soft); border-color:var(--orange-border); color:var(--orange); }
+.as-node.t-more{ background:var(--surface); border-style:dashed; border-color:var(--border-strong); color:var(--muted); justify-content:center; font-size:12.5px; }
+.as-node.as-root{ width:auto; min-width:240px; max-width:100%; padding:11px 16px; }
+.as-node .mn-out{ font-size:11px; font-weight:600; color:var(--red); background:var(--surface); border:1px solid var(--red-border); border-radius:5px; padding:0 6px; flex-shrink:0; }
+
+/* liste görünümü (erişilebilir alternatif) */
+.as-tree, .as-tree ul{ list-style:none; margin:0; padding:0; }
+.as-tree ul{ padding-left:22px; margin-left:10px; border-left:1px solid var(--border); }
+.as-tree li{ padding:2px 0; }
+.as-tree-group{ display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; color:var(--text-2); padding:8px 0 4px; }
+.as-tree-group .i{ width:16px; height:16px; color:var(--muted); }
+.as-tree-item{ display:flex; align-items:center; gap:8px; width:100%; text-align:left; padding:6px 10px; border-radius:6px; font-size:13.5px; font-family:var(--mono); color:var(--text); flex-wrap:wrap; }
+.as-tree-item:hover{ background:var(--surface-3); }
+.as-tree-item.selected{ background:var(--accent-soft); color:var(--accent-text); }
+.as-tree-item .i{ width:16px; height:16px; }
+.as-tree-root{ font-weight:600; }
+.as-tree-meta{ font-family:var(--font); font-size:12px; color:var(--muted); margin-left:auto; }
+
+/* envanter */
+.as-table .as-row-btn{ text-align:left; width:100%; }
+.as-table .as-row-btn:hover .asset-val{ color:var(--accent-text); text-decoration:underline; }
+.as-table .cell-asset-text{ display:flex; flex-direction:column; min-width:0; }
+.as-table .type-ico{ display:inline-flex; }
+.as-table .type-ico .i{ width:20px; height:20px; }
+.as-table tr.selected td{ background:var(--accent-soft); }
+.as-tests{ display:flex; flex-wrap:wrap; gap:4px; }
+.as-test-link{ border:1px solid transparent; }
+.as-test-link:hover{ border-color:currentColor; }
+.as-card .table-wrap{ margin-top:8px; }
+#asmEndpointDetail{ margin:12px 20px 4px; outline:none; }
+.as-detail-tests{ display:flex; flex-direction:column; }
+
+/* öneriler */
+.as-sugg-list{ list-style:none; display:flex; flex-direction:column; gap:8px; padding:4px 20px 8px; margin:0; }
+.as-sugg-list .suggestion{ cursor:default; align-items:flex-start; }
+.as-sugg-list .suggestion:hover{ background:var(--surface); border-color:var(--border); }
+.as-sugg-list .suggestion.is-done{ opacity:.75; }
+.sg-reasons{ margin:2px 0 0; padding-left:18px; font-size:13px; color:var(--muted); line-height:1.5; }
+.as-more-row{ padding:0 20px 16px; font-size:13.5px; }
+
+@media (max-width:1100px){
+  .as-summary{ grid-template-columns:1fr 1fr; }
+  .as-scan{ grid-column:1 / -1; }
+}
+@media (max-width:700px){
+  .as-summary{ grid-template-columns:1fr; }
+  .as-head-side{ align-items:flex-start; }
+  .as-col{ padding-top:16px; }
+  .as-col::before, .as-col::after, .as-root-row::after{ display:none; }
+  .as-root-row{ padding-bottom:4px; }
+  #asMapBody{ padding:8px 12px 16px; }
+  .as-note{ padding:0 12px; }
+  .as-sugg-list{ padding:4px 12px 8px; }
+  .as-sugg-list .suggestion{ flex-direction:column; }
+  /* tablo -> kart */
+  .as-table thead{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+  .as-table, .as-table tbody, .as-table tr, .as-table td{ display:block; width:100%; }
+  .as-table tr{ border-bottom:1px solid var(--border); padding:10px 12px; }
+  .as-table td{ border:none; padding:3px 0; display:flex; gap:10px; }
+  .as-table td::before{ content:attr(data-label); flex:0 0 110px; color:var(--faint); font-size:12px; }
+  .as-table td:first-child::before{ display:none; }
+}
+
 /* ==========================================================================
    Responsive
    ========================================================================== */
@@ -1263,3 +1398,5 @@ button.wstg-ref-chip:hover{ border-color:var(--accent-border); }
 .pw-coverage-item .cat-progress-bar{ flex:none; }
 .detail-block h5, .recon-section h5, .pw-section-heading, .drawer-section h5, .finding-cvss-col h5, .asm-branch-title, .asm-endpoint-findings-label, .http-evidence-label, .dd-label{ font-size:12.5px; }
 .test-row-item:hover .badge:not(.green){ background:var(--surface); }
+.test-tag{ white-space:nowrap; }
+.test-tag.lv-badge{ font-family:var(--font); font-weight:600; letter-spacing:0; }

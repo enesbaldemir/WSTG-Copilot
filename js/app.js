@@ -1028,6 +1028,54 @@
 
   // Yeni arayüz (açık/koyu tema, üst çubuk) için ek metinler
   Object.assign(I18N.tr, {
+    navAttackSurface: "Saldırı Yüzeyi",
+    pwTabAssets: "Saldırı Yüzeyi",
+    asNeedProject: "Saldırı yüzeyini görmek için önce bir proje açın.",
+    asTitle: "Saldırı Yüzeyi",
+    asDesc: "Bu projede kayıtlı keşif sonuçlarından derlenir. Bu sayfa tarama başlatmaz; yeni keşif için Attack Surface Discovery'yi kullanın.",
+    asTargetLabel: "Hedef:",
+    asTargetScope_in: "Hedef kapsamda", asTargetScope_out: "Hedef kapsam dışı",
+    asTargetScope_unknown: "Hedef kapsam listesinde yok", asTargetScope_undefined: "Kapsam tanımlanmamış",
+    asLoading: "Kayıtlı keşif verisi yükleniyor…",
+    asLoadError: "Saldırı yüzeyi verisi yüklenemedi.",
+    asRetry: "Tekrar dene",
+    asEmptyTitle: "Henüz kayıtlı keşif yok",
+    asEmptyDesc: "Bu proje için Attack Surface Discovery çalıştırıldığında bulunan alt alan adları, endpoint'ler ve teknolojiler burada listelenir.",
+    asSummaryTitle: "Keşif özeti",
+    asLastScan: "Son kayıtlı keşif",
+    asRunCount: n => `${n} tarama kaydı`,
+    asStatSubResolved: "DNS'te çözümlenen",
+    asStatApi: n => `${n} tanesi API yolu`,
+    asStatTechSub: "Ana sayfa yanıtından",
+    asFilterHint: "Envanteri bu türe göre filtrelemek için tıklayın",
+    asSearchPlaceholder: "Varlık veya WSTG ID ara…",
+    asFilterTypeAll: "Tür: Tümü", asFilterScopeAll: "Kapsam: Tümü",
+    asClearFilters: "Filtreleri temizle",
+    asMapTitle: "Varlık ilişki haritası",
+    asViewToggle: "Görünüm", asViewMap: "Harita", asViewList: "Liste",
+    asRelationNote: "Bağlantılar, varlığın hangi hedefin tarama kaydında bulunduğunu gösterir. Teknolojiler hedefin ana sayfa yanıtından tespit edildiği için hedefe bağlıdır; hangi alt alan adında çalıştıkları kayıtlı değildir.",
+    asRootNode: "Kök hedef",
+    asGroup_subdomain: "Alt alan adları", asGroup_endpoint: "Endpoint'ler", asGroup_technology: "Teknolojiler",
+    asMoreNodes: n => `+${n} varlık daha (listede göster)`,
+    asNoMatch: "Filtrelerle eşleşen varlık yok.",
+    asType_domain: "Kök alan adı", asType_subdomain: "Alt alan adı", asType_endpoint: "Endpoint", asType_technology: "Teknoloji",
+    asTypeApiEndpoint: "API endpoint",
+    asRecord_target: "Tarama hedefi", asRecord_resolved: "DNS çözümlendi", asRecord_link: "Sayfa bağlantısı",
+    asRecord_detected: "Yanıttan tespit edildi",
+    asRecordHttp: code => `Bilinen yol · HTTP ${code}`,
+    asScope_in: "Kapsamda", asScope_out: "Kapsam dışı", asScope_unknown: "Listede yok", asScope_undefined: "Tanımsız",
+    asInventoryTitle: "Varlık envanteri",
+    asInventoryCount: (n, total) => n === total ? `(${n} varlık)` : `(${n}/${total} varlık)`,
+    asColAsset: "Varlık", asColType: "Tür", asColRecord: "Kayıt", asColScope: "Kapsam",
+    asColTests: "İlişkili WSTG testi", asColLastSeen: "Son görülme",
+    asTestsCount: n => `${n} test`,
+    asTestsDerivedNote: "İlişkili WSTG testleri, keşif kaydındaki gerekçe metinlerinden (\"…: /yol\") türetilmiştir. ✓ işareti testin bu projede tamamlandığını gösterir.",
+    asFirstSeen: "İlk görülme",
+    asTechNoHost: "Teknolojiler için endpoint veya bulgu ilişkisi kayıtlı değildir.",
+    asSuggestionsTitle: "Test önerileri",
+    asSuggestionsNote: "Her hedefin en son keşif kaydındaki öneriler; seviye ve gerekçeler kayıttan olduğu gibi gösterilir.",
+    asLevel_high: "Yüksek öncelik", asLevel_medium: "Orta öncelik", asLevel_low: "Düşük öncelik", asLevel_info: "Bilgi",
+    asShowAll: n => `Tümünü göster (${n})`, asShowLess: "Daha az göster",
     navDashboard: "Genel Bakış",
     navCategories: "OWASP WSTG",
     themeLabel: "Tema",
@@ -1050,6 +1098,54 @@
     selectTestHint: "Soldaki listeden bir test seçtiğinizde adımları, örnekleri ve notlarınız burada görünür."
   });
   Object.assign(I18N.en, {
+    navAttackSurface: "Attack Surface",
+    pwTabAssets: "Attack Surface",
+    asNeedProject: "Open a project first to see its attack surface.",
+    asTitle: "Attack Surface",
+    asDesc: "Compiled from discovery results already recorded for this project. This page never starts a scan; use Attack Surface Discovery for a new one.",
+    asTargetLabel: "Target:",
+    asTargetScope_in: "Target in scope", asTargetScope_out: "Target out of scope",
+    asTargetScope_unknown: "Target not in scope list", asTargetScope_undefined: "No scope defined",
+    asLoading: "Loading recorded discovery data…",
+    asLoadError: "Could not load attack surface data.",
+    asRetry: "Try again",
+    asEmptyTitle: "No recorded discovery yet",
+    asEmptyDesc: "Once Attack Surface Discovery is run for this project, the subdomains, endpoints and technologies it finds are listed here.",
+    asSummaryTitle: "Discovery summary",
+    asLastScan: "Last recorded discovery",
+    asRunCount: n => `${n} scan record${n === 1 ? '' : 's'}`,
+    asStatSubResolved: "Resolved in DNS",
+    asStatApi: n => `${n} of them API paths`,
+    asStatTechSub: "From the home page response",
+    asFilterHint: "Click to filter the inventory by this type",
+    asSearchPlaceholder: "Search asset or WSTG ID…",
+    asFilterTypeAll: "Type: All", asFilterScopeAll: "Scope: All",
+    asClearFilters: "Clear filters",
+    asMapTitle: "Asset relationship map",
+    asViewToggle: "View", asViewMap: "Map", asViewList: "List",
+    asRelationNote: "Links show which target's scan record an asset was found in. Technologies are linked to the target because they were detected from its home page response; which subdomain runs them is not recorded.",
+    asRootNode: "Root target",
+    asGroup_subdomain: "Subdomains", asGroup_endpoint: "Endpoints", asGroup_technology: "Technologies",
+    asMoreNodes: n => `+${n} more (show in list)`,
+    asNoMatch: "No assets match the filters.",
+    asType_domain: "Root domain", asType_subdomain: "Subdomain", asType_endpoint: "Endpoint", asType_technology: "Technology",
+    asTypeApiEndpoint: "API endpoint",
+    asRecord_target: "Scan target", asRecord_resolved: "DNS resolved", asRecord_link: "Page link",
+    asRecord_detected: "Detected in response",
+    asRecordHttp: code => `Known path · HTTP ${code}`,
+    asScope_in: "In scope", asScope_out: "Out of scope", asScope_unknown: "Not listed", asScope_undefined: "Undefined",
+    asInventoryTitle: "Asset inventory",
+    asInventoryCount: (n, total) => n === total ? `(${n} assets)` : `(${n}/${total} assets)`,
+    asColAsset: "Asset", asColType: "Type", asColRecord: "Record", asColScope: "Scope",
+    asColTests: "Related WSTG test", asColLastSeen: "Last seen",
+    asTestsCount: n => `${n} test${n === 1 ? '' : 's'}`,
+    asTestsDerivedNote: "Related WSTG tests are derived from the reason texts in the discovery record (\"…: /path\"). ✓ means the test is completed in this project.",
+    asFirstSeen: "First seen",
+    asTechNoHost: "No endpoint or finding relation is recorded for technologies.",
+    asSuggestionsTitle: "Test suggestions",
+    asSuggestionsNote: "Suggestions from each target's latest discovery record; level and reasons are shown exactly as recorded.",
+    asLevel_high: "High priority", asLevel_medium: "Medium priority", asLevel_low: "Low priority", asLevel_info: "Info",
+    asShowAll: n => `Show all (${n})`, asShowLess: "Show less",
     navDashboard: "Overview",
     navCategories: "OWASP WSTG",
     themeLabel: "Theme",
@@ -2915,7 +3011,7 @@
     pill.className = `project-status-pill ${currentProjectObj.status}`;
   }
 
-  function openProjectWorkspace(projectId){
+  function openProjectWorkspace(projectId, initialTab){
     apiRequest(`/projects/${projectId}`).then(project => {
       currentProjectId = project.id;
       currentProjectObj = project;
@@ -2923,7 +3019,7 @@
       closeProjectsModal();
       reloadReconContext();
       renderProjectWorkspaceHeader();
-      switchPwTab('overview');
+      switchPwTab(initialTab || 'overview');
       document.getElementById('projectWorkspaceOverlay').classList.add('open');
       return apiRequest(`/projects/${projectId}/custom-tests`);
     }).then(items => {
@@ -3087,109 +3183,422 @@
     });
   }
 
-  let assetsViewMode = 'list'; // 'list' | 'map'
-  let lastAssetsData = null;
   let lastFindingsForMap = [];
+
+  // ========================
+  // Saldırı Yüzeyi (proje çalışma alanı > Assets sekmesi)
+  //
+  // Salt-okunur: yalnızca GET /assets, GET /scope, GET /findings ve oturum
+  // sonuçlarını okur. /api/recon'u ÇAĞIRMAZ; yeni tarama kullanıcı isterse
+  // mevcut Attack Surface Discovery penceresinden (yetki onayıyla) başlatılır.
+  // Hesaplamalar js/attack-surface.js içinde ve birim testlidir.
+  // ========================
+  let asState = null;          // { surface, findings }
+  let asFilters = { q: '', type: 'all', scope: 'all' };
+  let asView = null;           // 'map' | 'list' (null -> ekran genişliğine göre)
+  let asSelectedKey = null;
+  let asShowAllSuggestions = false;
+  let asRequestSeq = 0;
+  const AS_MAP_LIMIT = 6;
+
+  const asIcons = {
+    domain: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+    endpoint: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>',
+    technology: '<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    bulb: '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/>',
+    chev: '<path d="m9 6 6 6-6 6"/>',
+    map: '<rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-2h12v2"/>',
+    list: '<path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/>',
+    shield: '<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/>'
+  };
+  function asIcon(name, cls){
+    const key = name === 'subdomain' ? 'domain' : name;
+    return `<svg class="i ${cls||''}" viewBox="0 0 24 24" aria-hidden="true">${asIcons[key] || asIcons.endpoint}</svg>`;
+  }
+  function asKey(row){ return `${row.type}|${row.target}|${row.value}`; }
+  function asDate(iso){
+    const d = iso ? new Date(iso) : null;
+    return d && !isNaN(d) ? d.toLocaleString(t('dateLocale'), { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+  }
+  function asTypeLabel(row){
+    if(row.type === 'endpoint' && row.isApi) return t('asTypeApiEndpoint');
+    return t('asType_' + row.type);
+  }
+  function asRecordLabel(row){
+    if(row.record === 'http') return t('asRecordHttp')(row.httpStatus);
+    return t('asRecord_' + row.record);
+  }
+  function asScopeBadge(scope){
+    if(!scope) return '<span class="cell-muted">—</span>';
+    const cls = { in: 'green', out: 'red', unknown: 'amber', undefined: '' }[scope] || '';
+    return `<span class="badge ${cls}">${t('asScope_' + scope)}</span>`;
+  }
+  function asLevelBadge(level){
+    const lv = LEVEL_LABEL_KEYS[level] ? level : 'info';
+    return `<span class="test-tag lv-${lv} lv-badge">${escapeHtml(t(LEVEL_LABEL_KEYS[lv]))}</span>`;
+  }
+  const LEVEL_LABEL_KEYS = { high: 'asLevel_high', medium: 'asLevel_medium', low: 'asLevel_low', info: 'asLevel_info' };
+
+  // Projede tamamlanmış testler: açık oturum bu projeye aitse onun ilerlemesi,
+  // değilse projenin ilk oturumunun sonuçları (Findings sekmesiyle aynı akış).
+  function projectDoneTestIds(){
+    if(currentSession && currentSession.project_id === currentProjectId){
+      return Promise.resolve(new Set(Object.keys(progress).filter(id => progress[id])));
+    }
+    return apiRequest(`/sessions?project_id=${currentProjectId}`).then(sessions => {
+      if(!sessions || !sessions.length) return new Set();
+      return apiRequest(`/sessions/${sessions[0].id}/results`).then(results =>
+        new Set((results || []).filter(r => r.status && r.status !== 'pending').map(r => r.test_id)));
+    }).catch(()=> new Set());
+  }
 
   function renderPwAssets(){
     const content = document.getElementById('pwContent');
-    content.innerHTML = `<div class="search-empty">${t('loadingSessions')}</div>`;
+    const seq = ++asRequestSeq;
+    if(!window.WSTGAttackSurface){
+      content.innerHTML = `<div class="search-empty">${t('asLoadError')}</div>`;
+      return;
+    }
+    content.innerHTML = `<div class="as-loading" role="status"><span class="as-spinner" aria-hidden="true"></span>${t('asLoading')}</div>`;
     Promise.all([
       apiRequest(`/projects/${currentProjectId}/assets`),
-      apiRequest(`/projects/${currentProjectId}/findings`)
-    ]).then(([a, findings])=>{
-      lastAssetsData = a;
-      lastFindingsForMap = findings;
-      if(!a.subdomains.length && !a.technologies.length && !a.endpoints.length){
-        content.innerHTML = `<div class="search-empty">${t('pwAssetsEmpty')}</div>`;
-        return;
-      }
-      renderAssetsView();
+      apiRequest(`/projects/${currentProjectId}/scope`).catch(()=> []),
+      apiRequest(`/projects/${currentProjectId}/findings`).catch(()=> []),
+      projectDoneTestIds(),
+    ]).then(([assets, scope, findings, doneIds]) => {
+      if(seq !== asRequestSeq || activePwTab !== 'assets') return; // kullanıcı başka sekmeye geçti
+      asState = { surface: window.WSTGAttackSurface.buildSurface(assets, scope, doneIds), findings: findings || [] };
+      lastFindingsForMap = asState.findings;
+      if(asView === null) asView = window.matchMedia && window.matchMedia('(max-width: 700px)').matches ? 'list' : 'map';
+      renderAttackSurface();
+    }).catch(err => {
+      if(seq !== asRequestSeq) return;
+      content.innerHTML = `
+        <div class="empty-state" role="alert">
+          <h3>${t('asLoadError')}</h3>
+          <p>${escapeHtml(String((err && err.message) || err))}</p>
+          <div class="hero-actions"><button type="button" class="btn btn-secondary" id="asRetryBtn">${t('asRetry')}</button></div>
+        </div>`;
+      document.getElementById('asRetryBtn').addEventListener('click', renderPwAssets);
     });
   }
 
-  function renderAssetsView(){
+  function renderAttackSurface(){
     const content = document.getElementById('pwContent');
-    const a = lastAssetsData;
-    const toggleHtml = `
-      <div class="asm-view-toggle">
-        <button type="button" class="asm-toggle-btn ${assetsViewMode==='list'?'active':''}" data-mode="list">${t('pwAssetsViewList')}</button>
-        <button type="button" class="asm-toggle-btn ${assetsViewMode==='map'?'active':''}" data-mode="map">${t('pwAssetsViewMap')}</button>
-      </div>`;
-
-    if(assetsViewMode === 'list'){
-      const chipRow = arr => arr.length ? arr.map(v => `<span class="tool-chip">${escapeHtml(v)}</span>`).join('') : `<span class="import-preview-source">—</span>`;
-      content.innerHTML = toggleHtml + `
-        <div class="recon-section" style="margin-top:14px">
-          <h5>${t('pwAssetsSubdomains')}</h5>
-          <div class="recon-chip-row">${chipRow(a.subdomains)}</div>
-        </div>
-        <div class="recon-section">
-          <h5>${t('pwAssetsTechnologies')}</h5>
-          <div class="recon-chip-row">${chipRow(a.technologies)}</div>
-        </div>
-        <div class="recon-section">
-          <h5>${t('pwAssetsEndpoints')}</h5>
-          <div class="recon-chip-row">${chipRow(a.endpoints)}</div>
+    const s = asState.surface;
+    if(!s.runCount){
+      content.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-ico">${asIcon('map')}</div>
+          <h3>${t('asEmptyTitle')}</h3>
+          <p>${t('asEmptyDesc')}</p>
+          <div class="hero-actions"><button type="button" class="btn btn-primary" data-as-action="open-recon">${t('pwReconOpenBtn')}</button></div>
         </div>`;
-    } else {
-      const rootLabel = (a.runs && a.runs[0] && a.runs[0].target) || (currentProjectObj && currentProjectObj.name) || '—';
-      content.innerHTML = toggleHtml + `
-        <div class="asm-tree" style="margin-top:16px">
-          <div class="asm-root">${escapeHtml(rootLabel)}</div>
-          <div class="asm-branches">
-            <div class="asm-branch">
-              <div class="asm-branch-title">${t('pwAssetsSubdomains')} (${a.subdomains.length})</div>
-              <div class="asm-nodes">
-                ${a.subdomains.length ? a.subdomains.map(s => `<div class="asm-node">${escapeHtml(s)}</div>`).join('') : `<div class="asm-node muted">—</div>`}
-              </div>
-            </div>
-            <div class="asm-branch">
-              <div class="asm-branch-title">${t('pwAssetsEndpoints')} (${a.endpoints.length})</div>
-              <div class="asm-nodes">
-                ${a.endpoints.length ? a.endpoints.map(ep => `<div class="asm-node asm-node-clickable" data-endpoint="${escapeHtml(ep)}">${escapeHtml(ep)}</div>`).join('') : `<div class="asm-node muted">—</div>`}
-              </div>
-            </div>
+      wireAttackSurface(content);
+      return;
+    }
+    const scopeText = s.targetScope ? `<span class="badge ${({in:'green',out:'red',unknown:'amber'})[s.targetScope]||''}">${asIcon('shield','i-xs')}${t('asTargetScope_' + s.targetScope)}</span>` : '';
+    content.innerHTML = `
+      <div class="as-head">
+        <div>
+          <h3 class="as-title">${t('asTitle')}</h3>
+          <p class="as-desc">${t('asDesc')}</p>
+        </div>
+        <div class="as-head-side">
+          <div class="as-target"><span>${t('asTargetLabel')}</span> <b>${escapeHtml(s.latestTarget || '—')}</b></div>
+          ${scopeText}
+        </div>
+      </div>
+      ${renderAsSummary(s)}
+      <div class="as-filters" role="search">
+        <div class="search-input"><svg class="i"><use href="#ic-search"/></svg>
+          <input type="text" id="asSearch" placeholder="${t('asSearchPlaceholder')}" value="${escapeHtml(asFilters.q)}" aria-label="${t('asSearchPlaceholder')}">
+        </div>
+        <select id="asTypeFilter" aria-label="${t('asColType')}">
+          ${['all','domain','subdomain','endpoint','technology'].map(v => `<option value="${v}" ${asFilters.type===v?'selected':''}>${v==='all' ? t('asFilterTypeAll') : t('asType_'+v)}</option>`).join('')}
+        </select>
+        <select id="asScopeFilter" aria-label="${t('asColScope')}">
+          ${['all','in','out','unknown','undefined'].map(v => `<option value="${v}" ${asFilters.scope===v?'selected':''}>${v==='all' ? t('asFilterScopeAll') : t('asScope_'+v)}</option>`).join('')}
+        </select>
+        <button type="button" class="btn btn-secondary" data-as-action="clear-filters">${t('asClearFilters')}</button>
+      </div>
+      <section class="card as-card" aria-labelledby="asMapTitle">
+        <div class="card-head">
+          <h4 class="card-title" id="asMapTitle">${t('asMapTitle')}</h4>
+          <div class="seg" role="group" aria-label="${t('asViewToggle')}">
+            <button type="button" class="${asView==='map'?'active':''}" data-as-view="map" aria-pressed="${asView==='map'}">${asIcon('map')}${t('asViewMap')}</button>
+            <button type="button" class="${asView==='list'?'active':''}" data-as-view="list" aria-pressed="${asView==='list'}">${asIcon('list')}${t('asViewList')}</button>
           </div>
         </div>
-        <div id="asmEndpointDetail" class="asm-endpoint-detail" style="display:none"></div>`;
-
-      content.querySelectorAll('.asm-node-clickable').forEach(node => {
-        node.addEventListener('click', ()=>{
-          content.querySelectorAll('.asm-node-clickable').forEach(n => n.classList.remove('selected'));
-          node.classList.add('selected');
-          renderEndpointDetail(node.dataset.endpoint);
-        });
-      });
-    }
-
-    content.querySelectorAll('.asm-toggle-btn').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        assetsViewMode = btn.dataset.mode;
-        renderAssetsView();
-      });
-    });
+        <p class="as-note">${t('asRelationNote')}</p>
+        <div id="asMapBody"></div>
+      </section>
+      <section class="card as-card" aria-labelledby="asInvTitle">
+        <div class="card-head">
+          <h4 class="card-title" id="asInvTitle">${t('asInventoryTitle')} <span class="muted-count" id="asInvCount"></span></h4>
+        </div>
+        <div id="asInventory"></div>
+        <div id="asmEndpointDetail" class="asm-endpoint-detail" style="display:none" tabindex="-1"></div>
+      </section>
+      <section class="card as-card" aria-labelledby="asSuggTitle">
+        <div class="card-head">
+          <h4 class="card-title" id="asSuggTitle">${asIcon('bulb')}${t('asSuggestionsTitle')}</h4>
+        </div>
+        <p class="as-note">${t('asSuggestionsNote')}</p>
+        <div id="asSuggestions"></div>
+      </section>`;
+    renderAsMap();
+    renderAsInventory();
+    renderAsSuggestions();
+    wireAttackSurface(content);
   }
 
-  function renderEndpointDetail(endpoint){
+  function renderAsSummary(s){
+    const tile = (icon, label, value, sub, type) => `
+      <button type="button" class="as-stat" ${type ? `data-as-type="${type}" aria-pressed="${asFilters.type===type}"` : 'disabled'} ${type ? `aria-label="${escapeHtml(label)}: ${value}. ${t('asFilterHint')}"` : ''}>
+        <span class="as-stat-ico">${asIcon(icon)}</span>
+        <span class="as-stat-text"><span class="as-stat-label">${escapeHtml(label)}</span>${sub ? `<span class="as-stat-sub">${escapeHtml(sub)}</span>` : ''}</span>
+        <span class="as-stat-value">${value}</span>
+      </button>`;
+    return `
+      <section class="as-summary" aria-label="${t('asSummaryTitle')}">
+        <div class="as-scan">
+          <span class="as-stat-ico">${asIcon('clock')}</span>
+          <div>
+            <div class="as-stat-label">${t('asLastScan')}</div>
+            <div class="as-scan-date">${escapeHtml(asDate(s.lastScanAt))}</div>
+            <div class="as-stat-sub">${t('asRunCount')(s.runCount)}</div>
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm" data-as-action="open-recon">${t('pwReconOpenBtn')}</button>
+        </div>
+        ${tile('subdomain', t('asType_subdomain'), s.counts.subdomain, t('asStatSubResolved'), 'subdomain')}
+        ${tile('endpoint', t('asType_endpoint'), s.counts.endpoint, s.counts.api ? t('asStatApi')(s.counts.api) : '', 'endpoint')}
+        ${tile('technology', t('asType_technology'), s.counts.technology, t('asStatTechSub'), 'technology')}
+      </section>`;
+  }
+
+  function asFiltered(){
+    return window.WSTGAttackSurface.filterInventory(asState.surface.inventory, asFilters);
+  }
+
+  function asNodeHtml(row, extraCls){
+    const key = asKey(row);
+    const sub = row.type === 'domain' ? t('asRootNode') : asTypeLabel(row);
+    const flag = row.scope === 'out' ? `<span class="mn-out">${t('asScope_out')}</span>` : '';
+    return `<button type="button" class="as-node t-${row.type} ${extraCls||''} ${asSelectedKey===key?'selected':''}" data-as-key="${escapeHtml(key)}"
+        aria-label="${escapeHtml(row.value)} — ${escapeHtml(sub)}${row.scope==='out' ? ' — ' + escapeHtml(t('asScope_out')) : ''}">
+      ${asIcon(row.type)}
+      <span class="mn-text"><span class="mn-title">${escapeHtml(row.value)}</span><span class="mn-sub">${escapeHtml(sub)}</span></span>
+      ${flag}
+    </button>`;
+  }
+
+  function renderAsMap(){
+    const body = document.getElementById('asMapBody');
+    const s = asState.surface;
+    const visible = new Set(asFiltered().map(asKey));
+    const byTarget = s.targets.map(tg => {
+      const rows = s.inventory.filter(r => r.target === tg.target);
+      return { tg, root: rows.find(r => r.type === 'domain'), rows };
+    });
+
+    if(asView === 'list'){
+      body.innerHTML = byTarget.map(({ tg, root, rows }) => {
+        const groups = ['subdomain','endpoint','technology'].map(type => {
+          const items = rows.filter(r => r.type === type && visible.has(asKey(r)));
+          if(!items.length) return '';
+          return `<li><span class="as-tree-group">${asIcon(type)}${t('asGroup_' + type)} <span class="muted-count">(${items.length})</span></span>
+            <ul>${items.map(r => `<li><button type="button" class="as-tree-item ${asSelectedKey===asKey(r)?'selected':''}" data-as-key="${escapeHtml(asKey(r))}">${escapeHtml(r.value)}<span class="as-tree-meta">${escapeHtml(asRecordLabel(r))}${r.tests.length ? ' · ' + t('asTestsCount')(r.tests.length) : ''}${r.scope === 'out' ? ' · ' + escapeHtml(t('asScope_out')) : ''}</span></button></li>`).join('')}</ul></li>`;
+        }).join('');
+        return `<ul class="as-tree" aria-label="${escapeHtml(tg.target)}">
+          <li><button type="button" class="as-tree-item as-tree-root ${root && asSelectedKey===asKey(root)?'selected':''}" ${root ? `data-as-key="${escapeHtml(asKey(root))}"` : ''}>${asIcon('domain')}${escapeHtml(tg.target)}<span class="as-tree-meta">${t('asRootNode')}</span></button>
+            ${groups ? `<ul>${groups}</ul>` : `<p class="as-note">${t('asNoMatch')}</p>`}
+          </li></ul>`;
+      }).join('');
+      return;
+    }
+
+    body.innerHTML = byTarget.map(({ tg, root, rows }) => {
+      const cols = ['subdomain','endpoint','technology'].map(type => {
+        const all = rows.filter(r => r.type === type && visible.has(asKey(r)));
+        if(!all.length) return '';
+        const shown = all.slice(0, AS_MAP_LIMIT);
+        const more = all.length - shown.length;
+        return `<div class="as-col">
+          <div class="as-col-head">${t('asGroup_' + type)} <span class="muted-count">(${all.length})</span></div>
+          <div class="as-col-items">
+            ${shown.map(r => asNodeHtml(r)).join('')}
+            ${more > 0 ? `<button type="button" class="as-node t-more" data-as-more="${type}">${t('asMoreNodes')(more)}</button>` : ''}
+          </div>
+        </div>`;
+      }).join('');
+      return `<div class="as-map" role="group" aria-label="${escapeHtml(tg.target)}">
+        <div class="as-root-row">${root ? asNodeHtml(root, 'as-root') : ''}</div>
+        ${cols ? `<div class="as-cols">${cols}</div>` : `<p class="as-note as-center">${t('asNoMatch')}</p>`}
+      </div>`;
+    }).join('');
+  }
+
+  function renderAsInventory(){
+    const box = document.getElementById('asInventory');
+    const rows = asFiltered();
+    document.getElementById('asInvCount').textContent = t('asInventoryCount')(rows.length, asState.surface.inventory.length);
+    if(!rows.length){
+      box.innerHTML = `<div class="search-empty">${t('asNoMatch')}</div>`;
+      return;
+    }
+    box.innerHTML = `
+      <div class="table-wrap">
+        <table class="table as-table">
+          <thead><tr>
+            <th scope="col">${t('asColAsset')}</th>
+            <th scope="col">${t('asColType')}</th>
+            <th scope="col">${t('asColRecord')}</th>
+            <th scope="col">${t('asColScope')}</th>
+            <th scope="col">${t('asColTests')}</th>
+            <th scope="col">${t('asColLastSeen')}</th>
+          </tr></thead>
+          <tbody>
+            ${rows.map(r => {
+              const key = asKey(r);
+              const tests = r.tests.length
+                ? r.tests.map(x => `<button type="button" class="test-tag lv-${x.level} as-test-link" data-as-test="${escapeHtml(x.test_id)}" title="${escapeHtml(x.reason)}">${escapeHtml(x.test_id)}${x.done ? ' ✓' : ''}</button>`).join(' ')
+                : '<span class="cell-muted">—</span>';
+              return `<tr class="${asSelectedKey===key?'selected':''}">
+                <td data-label="${t('asColAsset')}"><button type="button" class="cell-asset as-row-btn" data-as-key="${escapeHtml(key)}">
+                  <span class="type-ico type-${r.type}">${asIcon(r.type)}</span>
+                  <span class="cell-asset-text"><span class="asset-val">${escapeHtml(r.value)}</span>
+                  ${r.type !== 'domain' ? `<span class="asset-parent">${escapeHtml(r.target)}</span>` : ''}</span>
+                </button></td>
+                <td data-label="${t('asColType')}" class="cell-muted">${escapeHtml(asTypeLabel(r))}</td>
+                <td data-label="${t('asColRecord')}" class="cell-muted">${escapeHtml(asRecordLabel(r))}</td>
+                <td data-label="${t('asColScope')}">${asScopeBadge(r.scope)}</td>
+                <td data-label="${t('asColTests')}"><span class="as-tests">${tests}</span></td>
+                <td data-label="${t('asColLastSeen')}" class="cell-muted">${escapeHtml(asDate(r.lastSeen))}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+      <p class="as-note">${t('asTestsDerivedNote')}</p>`;
+  }
+
+  function renderAsSuggestions(){
+    const box = document.getElementById('asSuggestions');
+    const list = asState.surface.suggestions;
+    if(!list.length){
+      box.innerHTML = `<div class="search-empty">${t('reconNoSuggestions')}</div>`;
+      return;
+    }
+    const shown = asShowAllSuggestions ? list : list.slice(0, 5);
+    box.innerHTML = `<ul class="as-sugg-list">
+      ${shown.map(sg => {
+        const meta = testInfoById(sg.test_id);
+        return `<li class="suggestion ${sg.done ? 'is-done' : ''}">
+          <div class="sg-body">
+            <div class="sg-top">
+              <span class="badge mono">${escapeHtml(sg.test_id)}</span>
+              ${asLevelBadge(sg.level)}
+              ${sg.done ? `<span class="badge green">${t('statusDoneLabel')}</span>` : ''}
+            </div>
+            <div class="sg-title">${escapeHtml(meta ? meta.title : sg.test_id)}</div>
+            <ul class="sg-reasons">${sg.reasons.map(r => `<li>${escapeHtml(r)}</li>`).join('')}</ul>
+          </div>
+          ${meta ? `<button type="button" class="btn btn-secondary btn-sm" data-as-test="${escapeHtml(sg.test_id)}">${t('plannerGotoBtn')}</button>` : ''}
+        </li>`;
+      }).join('')}
+    </ul>
+    ${list.length > 5 ? `<div class="as-more-row"><button type="button" class="link-btn" data-as-action="toggle-suggestions" aria-expanded="${asShowAllSuggestions}">${asShowAllSuggestions ? t('asShowLess') : t('asShowAll')(list.length)}</button></div>` : ''}`;
+  }
+
+  function renderAsDetail(key){
+    const row = asState.surface.inventory.find(r => asKey(r) === key);
     const box = document.getElementById('asmEndpointDetail');
-    const matched = lastFindingsForMap.filter(f => f.endpoint && f.endpoint.includes(endpoint));
+    if(!row || !box){ if(box) box.style.display = 'none'; return; }
+    const needle = String(row.value).toLowerCase();
+    const matched = (row.type === 'technology') ? [] :
+      asState.findings.filter(f => f.endpoint && String(f.endpoint).toLowerCase().includes(needle));
     box.style.display = '';
     box.innerHTML = `
       <div class="asm-endpoint-detail-top">
-        <span class="asm-endpoint-path">${escapeHtml(endpoint)}</span>
-        <button type="button" class="btn btn-primary btn-sm" id="asmCreateFindingBtn">${t('newFindingBtn')}</button>
+        <div>
+          <div class="asm-endpoint-path">${escapeHtml(row.value)}</div>
+          <div class="as-note">${escapeHtml(asTypeLabel(row))} · ${escapeHtml(asRecordLabel(row))} · ${t('asFirstSeen')}: ${escapeHtml(asDate(row.firstSeen))}</div>
+        </div>
+        ${row.type !== 'technology' ? `<button type="button" class="btn btn-primary btn-sm" id="asmCreateFindingBtn">${t('newFindingBtn')}</button>` : ''}
       </div>
-      <div class="asm-endpoint-findings-label">${t('pwAssetsMapFindingsLabel')}</div>
+      ${row.tests.length ? `<div class="asm-endpoint-findings-label">${t('asColTests')}</div>
+        <div class="as-detail-tests">${row.tests.map(x => `<button type="button" class="test-row" data-as-test="${escapeHtml(x.test_id)}">
+          ${asLevelBadge(x.level)}<span class="tr-title"><b>${escapeHtml(x.test_id)}</b> ${escapeHtml((testInfoById(x.test_id)||{}).title || '')}<small>${escapeHtml(x.reason)}</small></span>${x.done ? `<span class="badge green">${t('statusDoneLabel')}</span>` : ''}
+        </button>`).join('')}</div>` : ''}
+      ${row.type !== 'technology' ? `<div class="asm-endpoint-findings-label" style="margin-top:14px">${t('pwAssetsMapFindingsLabel')}</div>
       ${matched.length ? matched.map(f => `
         <div class="asm-endpoint-finding-row">
-          <span class="finding-code">${f.finding_code}</span>
-          <span class="severity-badge sev-${f.severity}">${t('severity_'+f.severity)}</span>
+          <span class="finding-code">${escapeHtml(f.finding_code)}</span>
+          <span class="severity-badge sev-${escapeHtml(f.severity || 'info')}">${t('severity_'+(f.severity || 'info'))}</span>
           <span>${escapeHtml(f.title)}</span>
-        </div>`).join('') : `<div class="import-preview-source">${t('pwAssetsMapNoFindings')}</div>`}
-    `;
-    document.getElementById('asmCreateFindingBtn').addEventListener('click', ()=>{
-      openFindingModal(null, { title: endpoint, endpoint });
+        </div>`).join('') : `<div class="import-preview-source">${t('pwAssetsMapNoFindings')}</div>`}` : `<p class="as-note">${t('asTechNoHost')}</p>`}`;
+    const btn = document.getElementById('asmCreateFindingBtn');
+    if(btn) btn.addEventListener('click', ()=>{
+      openFindingModal(null, { title: row.value, endpoint: row.value });
+    });
+  }
+
+  function asRefreshLists(){
+    renderAsMap();
+    renderAsInventory();
+  }
+
+  function selectAsAsset(key){
+    asSelectedKey = key;
+    asRefreshLists();
+    renderAsDetail(key);
+    const box = document.getElementById('asmEndpointDetail');
+    if(box && box.style.display !== 'none'){
+      box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      box.focus({ preventScroll: true });
+    }
+  }
+
+  function wireAttackSurface(content){
+    // pwContent her sekmede yeniden kullanıldığından dinleyiciyi bir kez bağlarız.
+    if(content._asWired) return;
+    content._asWired = true;
+    content.addEventListener('click', e=>{
+      if(activePwTab !== 'assets' || !asState) return;
+      const action = e.target.closest('[data-as-action]');
+      if(action){
+        const a = action.dataset.asAction;
+        if(a === 'open-recon'){ closeProjectWorkspace(); openReconModal(); }
+        if(a === 'clear-filters'){ asFilters = { q: '', type: 'all', scope: 'all' }; renderAttackSurface(); }
+        if(a === 'toggle-suggestions'){ asShowAllSuggestions = !asShowAllSuggestions; renderAsSuggestions(); }
+        return;
+      }
+      const view = e.target.closest('[data-as-view]');
+      if(view){ asView = view.dataset.asView; renderAttackSurface(); return; }
+      const typeTile = e.target.closest('[data-as-type]');
+      if(typeTile){ asFilters.type = asFilters.type === typeTile.dataset.asType ? 'all' : typeTile.dataset.asType; renderAttackSurface(); return; }
+      const more = e.target.closest('[data-as-more]');
+      if(more){ asFilters.type = more.dataset.asMore; asView = 'list'; renderAttackSurface(); return; }
+      const test = e.target.closest('[data-as-test]');
+      if(test){
+        const meta = testInfoById(test.dataset.asTest);
+        if(meta){ closeProjectWorkspace(); openCategory(meta.catId, test.dataset.asTest); }
+        return;
+      }
+      const node = e.target.closest('[data-as-key]');
+      if(node) selectAsAsset(node.dataset.asKey);
+    });
+    content.addEventListener('input', e=>{
+      if(activePwTab !== 'assets' || !asState || e.target.id !== 'asSearch') return;
+      asFilters.q = e.target.value;
+      asRefreshLists();
+    });
+    content.addEventListener('change', e=>{
+      if(activePwTab !== 'assets' || !asState) return;
+      if(e.target.id === 'asTypeFilter'){ asFilters.type = e.target.value; asRefreshLists(); }
+      if(e.target.id === 'asScopeFilter'){ asFilters.scope = e.target.value; asRefreshLists(); }
     });
   }
 
@@ -4865,6 +5274,10 @@
     });
 
     document.getElementById('reconNavBtn').addEventListener('click', openReconModal);
+    document.getElementById('attackSurfaceNavBtn').addEventListener('click', ()=>{
+      if(currentProjectId) openProjectWorkspace(currentProjectId, 'assets');
+      else { openProjectsModal(); showToast(t('asNeedProject')); }
+    });
     document.getElementById('closeReconOverlay').addEventListener('click', closeReconModal);
     document.getElementById('reconOverlay').addEventListener('click', e=>{
       if(e.target.id === 'reconOverlay') closeReconModal();
