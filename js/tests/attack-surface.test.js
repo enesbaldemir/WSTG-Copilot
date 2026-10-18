@@ -87,3 +87,40 @@ test('empty data and filters', () => {
   assert.equal(AS.filterInventory(s.inventory, { type: 'endpoint' }).length, 3);
   assert.deepEqual(AS.filterInventory(s.inventory, { q: 'athn-02' }).map(r => r.value), ['/login']);
 });
+
+test('links are built only from the recorded http(s) baseUrl and same origin', () => {
+  assert.equal(AS.safeUrl('https://portal.acme.test', '/login?next=/x'), 'https://portal.acme.test/login?next=/x');
+  assert.equal(AS.safeUrl('https://portal.acme.test', '//evil.test/x'), null);   // protocol-relative -> other host
+  assert.equal(AS.safeUrl('javascript:alert(1)', '/x'), null);
+  assert.equal(AS.safeUrl('ftp://portal.acme.test', '/x'), null);
+  assert.equal(AS.safeUrl('https://portal.acme.test', 'login'), null);           // not an absolute path
+  assert.equal(AS.safeUrl(null, '/x'), null);
+
+  const s = AS.buildSurface({ runs: [run()] }, [], []);
+  assert.equal(s.inventory.find(r => r.value === '/login').url, 'https://portal.acme.test/login');
+  assert.equal(s.inventory.find(r => r.type === 'domain').url, 'https://portal.acme.test/');
+  // subdomain scheme is not recorded -> no guessed link; technologies never get a link
+  assert.equal(s.inventory.find(r => r.value === 'api.portal.acme.test').url, null);
+  assert.equal(s.inventory.find(r => r.value === 'React').url, null);
+
+  const bad = AS.buildSurface({ runs: [run({ baseUrl: 'javascript:alert(1)' })] }, [], []);
+  assert.ok(bad.inventory.every(r => r.url === null));
+});
+
+test('link scope follows the target scope', () => {
+  const runs = { runs: [run()] };
+  const ep = (scope) => AS.buildSurface(runs, scope, []).inventory.find(r => r.value === '/login');
+  assert.equal(ep([]).linkScope, 'undefined');
+  assert.equal(ep([{ type: 'domain', value: 'portal.acme.test', in_scope: true }]).linkScope, 'in');
+  assert.equal(ep([{ type: 'domain', value: 'portal.acme.test', in_scope: false }]).linkScope, 'out');
+  assert.equal(ep([{ type: 'domain', value: 'other.test', in_scope: true }]).linkScope, 'unknown');
+  assert.equal(AS.buildSurface(runs, [], []).inventory.find(r => r.value === 'React').linkScope, null);
+});
+
+test('static asset filter hides images/fonts/css but keeps js', () => {
+  const s = AS.buildSurface({ runs: [run({ endpoints: ['/login', '/img/a.PNG', '/s.css?v=2', '/f.woff2', '/app.js', '/x.svg#i'] })] }, [], []);
+  assert.equal(s.staticCount, 4);
+  const shown = AS.filterInventory(s.inventory, { type: 'endpoint', hideStatic: true }).map(r => r.value);
+  assert.deepEqual(shown.sort(), ['/app.js', '/login']);
+  assert.equal(AS.filterInventory(s.inventory, { type: 'endpoint' }).length, 6);
+});
