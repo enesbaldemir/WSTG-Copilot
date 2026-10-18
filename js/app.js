@@ -1076,6 +1076,14 @@
     asSuggestionsNote: "Her hedefin en son keşif kaydındaki öneriler; seviye ve gerekçeler kayıttan olduğu gibi gösterilir.",
     asLevel_high: "Yüksek öncelik", asLevel_medium: "Orta öncelik", asLevel_low: "Düşük öncelik", asLevel_info: "Bilgi",
     asShowAll: n => `Tümünü göster (${n})`, asShowLess: "Daha az göster",
+    asOpenInNewTab: "Yeni sekmede aç", asCopy: "Kopyala", asDetails: "Detay", asColActions: "İşlemler",
+    asLinkDisabledOut: "Hedef kapsam dışı olduğu için link kapatıldı; adresi kopyalayabilirsiniz.",
+    asLinkWarn_unknown: "hedef kapsam listesinde yok", asLinkWarn_undefined: "proje kapsamı tanımlanmamış",
+    asLinkNotice_unknown: target => `${target} kapsam listesinde yok. Linkleri açmadan önce bu hedefi test etme yetkiniz olduğunu doğrulayın.`,
+    asLinkNotice_undefined: target => `Bu proje için kapsam tanımlanmamış. ${target} linklerini açmadan önce yetkinizi doğrulayın.`,
+    asLinkNoticeOut: target => `${target} kapsam dışı olarak işaretli; bu hedefin linkleri kapatıldı. Adresleri yine de kopyalayabilirsiniz.`,
+    asHideStatic: "Görsel, font ve stil dosyalarını gizle",
+    copyFailedToast: "Kopyalanamadı; metni seçip elle kopyalayın.",
     navDashboard: "Genel Bakış",
     navCategories: "OWASP WSTG",
     themeLabel: "Tema",
@@ -1146,6 +1154,14 @@
     asSuggestionsNote: "Suggestions from each target's latest discovery record; level and reasons are shown exactly as recorded.",
     asLevel_high: "High priority", asLevel_medium: "Medium priority", asLevel_low: "Low priority", asLevel_info: "Info",
     asShowAll: n => `Show all (${n})`, asShowLess: "Show less",
+    asOpenInNewTab: "Open in new tab", asCopy: "Copy", asDetails: "Details", asColActions: "Actions",
+    asLinkDisabledOut: "Link disabled because the target is out of scope; you can still copy the address.",
+    asLinkWarn_unknown: "target is not in the scope list", asLinkWarn_undefined: "no project scope defined",
+    asLinkNotice_unknown: target => `${target} is not in the scope list. Confirm you are authorized to test it before opening links.`,
+    asLinkNotice_undefined: target => `No scope is defined for this project. Confirm your authorization before opening ${target} links.`,
+    asLinkNoticeOut: target => `${target} is marked out of scope, so its links are disabled. You can still copy the addresses.`,
+    asHideStatic: "Hide image, font and style files",
+    copyFailedToast: "Could not copy; select the text and copy it manually.",
     navDashboard: "Overview",
     navCategories: "OWASP WSTG",
     themeLabel: "Theme",
@@ -1920,7 +1936,21 @@
   }
 
   function copyToClipboard(text){
-    navigator.clipboard?.writeText(text).then(()=> showToast(t('copiedToast'))).catch(()=>{});
+    const fallback = ()=>{
+      try{
+        const ta = document.createElement('textarea');
+        ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        const ok = document.execCommand('copy');
+        ta.remove();
+        showToast(ok ? t('copiedToast') : t('copyFailedToast'));
+      }catch(e){ showToast(t('copyFailedToast')); }
+    };
+    if(navigator.clipboard && window.isSecureContext){
+      navigator.clipboard.writeText(text).then(()=> showToast(t('copiedToast'))).catch(fallback);
+    } else {
+      fallback();
+    }
   }
 
   /* ===================== OWASP TOP 10:2025 ===================== */
@@ -3194,7 +3224,10 @@
   // Hesaplamalar js/attack-surface.js içinde ve birim testlidir.
   // ========================
   let asState = null;          // { surface, findings }
-  let asFilters = { q: '', type: 'all', scope: 'all' };
+  const AS_HIDE_STATIC_KEY = 'wstg_as_hide_static_v1';
+  function loadHideStatic(){ try{ return localStorage.getItem(AS_HIDE_STATIC_KEY) === '1'; }catch(e){ return false; } }
+  function saveHideStatic(v){ try{ v ? localStorage.setItem(AS_HIDE_STATIC_KEY, '1') : localStorage.removeItem(AS_HIDE_STATIC_KEY); }catch(e){} }
+  let asFilters = { q: '', type: 'all', scope: 'all', hideStatic: loadHideStatic() };
   let asView = null;           // 'map' | 'list' (null -> ekran genişliğine göre)
   let asSelectedKey = null;
   let asShowAllSuggestions = false;
@@ -3210,13 +3243,54 @@
     chev: '<path d="m9 6 6 6-6 6"/>',
     map: '<rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-2h12v2"/>',
     list: '<path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/>',
-    shield: '<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/>'
+    shield: '<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/>',
+    copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>',
+    external: '<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+    info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+    warn: '<path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17h.01"/>'
   };
   function asIcon(name, cls){
     const key = name === 'subdomain' ? 'domain' : name;
     return `<svg class="i ${cls||''}" viewBox="0 0 24 24" aria-hidden="true">${asIcons[key] || asIcons.endpoint}</svg>`;
   }
   function asKey(row){ return `${row.type}|${row.target}|${row.value}`; }
+
+  // Varlık değeri: kayıtlı baseUrl'den güvenle üretilmiş bir adres varsa yeni
+  // sekmede açılan normal bir link (metin seçilip kopyalanabilir); hedef kapsam
+  // dışıysa link verilmez, sadece metin + kopyalama. Adres js/attack-surface.js
+  // safeUrl() ile yalnızca http(s) ve aynı origin için üretilir.
+  function asValueHtml(row){
+    if(row.url && row.linkScope !== 'out'){
+      const unverified = row.linkScope === 'unknown' || row.linkScope === 'undefined';
+      const title = `${t('asOpenInNewTab')}: ${row.url}` + (unverified ? ` — ${t('asLinkWarn_' + row.linkScope)}` : '');
+      return `<a class="asset-link ${unverified ? 'unverified' : ''}" href="${escapeHtml(row.url)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(title)}">${escapeHtml(row.value)}${asIcon('external', 'i-xs')}</a>`;
+    }
+    const off = row.url && row.linkScope === 'out';
+    return `<span class="asset-text" ${off ? `title="${escapeHtml(t('asLinkDisabledOut'))}"` : ''}>${escapeHtml(row.value)}</span>`;
+  }
+
+  function asActionsHtml(row){
+    const copyVal = row.url || row.value;
+    return `<span class="as-actions">
+      <button type="button" class="icon-btn sm" data-as-copy="${escapeHtml(copyVal)}" title="${escapeHtml(t('asCopy'))}" aria-label="${escapeHtml(t('asCopy') + ': ' + copyVal)}">${asIcon('copy')}</button>
+      <button type="button" class="icon-btn sm" data-as-key="${escapeHtml(asKey(row))}" title="${escapeHtml(t('asDetails'))}" aria-label="${escapeHtml(t('asDetails') + ': ' + row.value)}">${asIcon('info')}</button>
+    </span>`;
+  }
+
+  // Hedef bazında link uyarısı (satır satır tekrar etmemek için tek satır).
+  function asLinkNoticeHtml(){
+    const seen = new Set();
+    return asState.surface.inventory.filter(r => r.url && r.linkScope && r.linkScope !== 'in' && !seen.has(r.target) && seen.add(r.target))
+      .map(r => {
+        const out = r.linkScope === 'out';
+        return `<div class="as-link-notice ${out ? 'out' : ''}" role="note">${asIcon(out ? 'shield' : 'warn')}<span>${escapeHtml(t(out ? 'asLinkNoticeOut' : 'asLinkNotice_' + r.linkScope)(r.target))}</span></div>`;
+      }).join('');
+  }
+
+  function asShortDate(iso){
+    const d = iso ? new Date(iso) : null;
+    return d && !isNaN(d) ? d.toLocaleString(t('dateLocale'), { dateStyle: 'short', timeStyle: 'short' }) : '—';
+  }
   function asDate(iso){
     const d = iso ? new Date(iso) : null;
     return d && !isNaN(d) ? d.toLocaleString(t('dateLocale'), { dateStyle: 'medium', timeStyle: 'short' }) : '—';
@@ -3322,6 +3396,8 @@
           ${['all','in','out','unknown','undefined'].map(v => `<option value="${v}" ${asFilters.scope===v?'selected':''}>${v==='all' ? t('asFilterScopeAll') : t('asScope_'+v)}</option>`).join('')}
         </select>
         <button type="button" class="btn btn-secondary" data-as-action="clear-filters">${t('asClearFilters')}</button>
+        ${s.staticCount ? `<label class="as-check"><input type="checkbox" id="asHideStatic" ${asFilters.hideStatic ? 'checked' : ''}>
+          <span>${t('asHideStatic')} <span class="muted-count">(${s.staticCount})</span></span></label>` : ''}
       </div>
       <section class="card as-card" aria-labelledby="asMapTitle">
         <div class="card-head">
@@ -3409,10 +3485,16 @@
           const items = rows.filter(r => r.type === type && visible.has(asKey(r)));
           if(!items.length) return '';
           return `<li><span class="as-tree-group">${asIcon(type)}${t('asGroup_' + type)} <span class="muted-count">(${items.length})</span></span>
-            <ul>${items.map(r => `<li><button type="button" class="as-tree-item ${asSelectedKey===asKey(r)?'selected':''}" data-as-key="${escapeHtml(asKey(r))}">${escapeHtml(r.value)}<span class="as-tree-meta">${escapeHtml(asRecordLabel(r))}${r.tests.length ? ' · ' + t('asTestsCount')(r.tests.length) : ''}${r.scope === 'out' ? ' · ' + escapeHtml(t('asScope_out')) : ''}</span></button></li>`).join('')}</ul></li>`;
+            <ul>${items.map(r => `<li class="as-tree-row ${asSelectedKey===asKey(r)?'selected':''}">
+              <span class="as-tree-value">${asValueHtml(r)}</span>
+              <span class="as-tree-meta">${escapeHtml(asRecordLabel(r))}${r.tests.length ? ' · ' + t('asTestsCount')(r.tests.length) : ''}${r.scope === 'out' ? ' · ' + escapeHtml(t('asScope_out')) : ''}</span>
+              ${asActionsHtml(r)}
+            </li>`).join('')}</ul></li>`;
         }).join('');
         return `<ul class="as-tree" aria-label="${escapeHtml(tg.target)}">
-          <li><button type="button" class="as-tree-item as-tree-root ${root && asSelectedKey===asKey(root)?'selected':''}" ${root ? `data-as-key="${escapeHtml(asKey(root))}"` : ''}>${asIcon('domain')}${escapeHtml(tg.target)}<span class="as-tree-meta">${t('asRootNode')}</span></button>
+          <li><div class="as-tree-row as-tree-root ${root && asSelectedKey===asKey(root)?'selected':''}">${asIcon('domain')}
+              <span class="as-tree-value">${root ? asValueHtml(root) : escapeHtml(tg.target)}</span>
+              <span class="as-tree-meta">${t('asRootNode')}</span>${root ? asActionsHtml(root) : ''}</div>
             ${groups ? `<ul>${groups}</ul>` : `<p class="as-note">${t('asNoMatch')}</p>`}
           </li></ul>`;
       }).join('');
@@ -3448,9 +3530,10 @@
       box.innerHTML = `<div class="search-empty">${t('asNoMatch')}</div>`;
       return;
     }
-    box.innerHTML = `
+    box.innerHTML = asLinkNoticeHtml() + `
       <div class="table-wrap">
         <table class="table as-table">
+          <colgroup><col class="c-asset"><col class="c-type"><col class="c-record"><col class="c-scope"><col class="c-tests"><col class="c-seen"><col class="c-actions"></colgroup>
           <thead><tr>
             <th scope="col">${t('asColAsset')}</th>
             <th scope="col">${t('asColType')}</th>
@@ -3458,6 +3541,7 @@
             <th scope="col">${t('asColScope')}</th>
             <th scope="col">${t('asColTests')}</th>
             <th scope="col">${t('asColLastSeen')}</th>
+            <th scope="col"><span class="sr-only">${t('asColActions')}</span></th>
           </tr></thead>
           <tbody>
             ${rows.map(r => {
@@ -3465,17 +3549,18 @@
               const tests = r.tests.length
                 ? r.tests.map(x => `<button type="button" class="test-tag lv-${x.level} as-test-link" data-as-test="${escapeHtml(x.test_id)}" title="${escapeHtml(x.reason)}">${escapeHtml(x.test_id)}${x.done ? ' ✓' : ''}</button>`).join(' ')
                 : '<span class="cell-muted">—</span>';
-              return `<tr class="${asSelectedKey===key?'selected':''}">
-                <td data-label="${t('asColAsset')}"><button type="button" class="cell-asset as-row-btn" data-as-key="${escapeHtml(key)}">
+              return `<tr class="${asSelectedKey===key?'selected':''}" data-as-row="${escapeHtml(key)}">
+                <td data-label="${t('asColAsset')}"><div class="cell-asset">
                   <span class="type-ico type-${r.type}">${asIcon(r.type)}</span>
-                  <span class="cell-asset-text"><span class="asset-val">${escapeHtml(r.value)}</span>
-                  ${r.type !== 'domain' ? `<span class="asset-parent">${escapeHtml(r.target)}</span>` : ''}</span>
-                </button></td>
+                  <span class="cell-asset-text"><span class="asset-val">${asValueHtml(r)}</span>
+                  ${r.type !== 'domain' ? `<span class="asset-parent" title="${escapeHtml(r.target)}">${escapeHtml(r.target)}</span>` : ''}</span>
+                </div></td>
                 <td data-label="${t('asColType')}" class="cell-muted">${escapeHtml(asTypeLabel(r))}</td>
                 <td data-label="${t('asColRecord')}" class="cell-muted">${escapeHtml(asRecordLabel(r))}</td>
                 <td data-label="${t('asColScope')}">${asScopeBadge(r.scope)}</td>
                 <td data-label="${t('asColTests')}"><span class="as-tests">${tests}</span></td>
-                <td data-label="${t('asColLastSeen')}" class="cell-muted">${escapeHtml(asDate(r.lastSeen))}</td>
+                <td data-label="${t('asColLastSeen')}" class="cell-muted" title="${escapeHtml(asDate(r.lastSeen))}">${escapeHtml(asShortDate(r.lastSeen))}</td>
+                <td class="cell-actions">${asActionsHtml(r)}</td>
               </tr>`;
             }).join('')}
           </tbody>
@@ -3523,7 +3608,10 @@
     box.innerHTML = `
       <div class="asm-endpoint-detail-top">
         <div>
-          <div class="asm-endpoint-path">${escapeHtml(row.value)}</div>
+          <div class="asm-endpoint-path">${asValueHtml(row)}
+            <button type="button" class="btn btn-secondary btn-xs" data-as-copy="${escapeHtml(row.url || row.value)}">${asIcon('copy')}${t('asCopy')}</button>
+          </div>
+          ${row.url ? `<div class="as-note as-detail-url">${escapeHtml(row.url)}</div>` : ''}
           <div class="as-note">${escapeHtml(asTypeLabel(row))} · ${escapeHtml(asRecordLabel(row))} · ${t('asFirstSeen')}: ${escapeHtml(asDate(row.firstSeen))}</div>
         </div>
         ${row.type !== 'technology' ? `<button type="button" class="btn btn-primary btn-sm" id="asmCreateFindingBtn">${t('newFindingBtn')}</button>` : ''}
@@ -3571,7 +3659,7 @@
       if(action){
         const a = action.dataset.asAction;
         if(a === 'open-recon'){ closeProjectWorkspace(); openReconModal(); }
-        if(a === 'clear-filters'){ asFilters = { q: '', type: 'all', scope: 'all' }; renderAttackSurface(); }
+        if(a === 'clear-filters'){ asFilters = { q: '', type: 'all', scope: 'all', hideStatic: false }; saveHideStatic(false); renderAttackSurface(); }
         if(a === 'toggle-suggestions'){ asShowAllSuggestions = !asShowAllSuggestions; renderAsSuggestions(); }
         return;
       }
@@ -3587,8 +3675,14 @@
         if(meta){ closeProjectWorkspace(); openCategory(meta.catId, test.dataset.asTest); }
         return;
       }
+      const copy = e.target.closest('[data-as-copy]');
+      if(copy){ copyToClipboard(copy.dataset.asCopy); return; }
+      if(e.target.closest('a[href]')) return; // link: tarayıcı yeni sekmede açar
       const node = e.target.closest('[data-as-key]');
-      if(node) selectAsAsset(node.dataset.asKey);
+      if(node){ selectAsAsset(node.dataset.asKey); return; }
+      // Satırın boş bir yerine tıklama da detayı açar; metin seçiliyorsa açmaz.
+      const tr = e.target.closest('tr[data-as-row]');
+      if(tr && !(window.getSelection && String(window.getSelection()).trim())) selectAsAsset(tr.dataset.asRow);
     });
     content.addEventListener('input', e=>{
       if(activePwTab !== 'assets' || !asState || e.target.id !== 'asSearch') return;
@@ -3599,6 +3693,7 @@
       if(activePwTab !== 'assets' || !asState) return;
       if(e.target.id === 'asTypeFilter'){ asFilters.type = e.target.value; asRefreshLists(); }
       if(e.target.id === 'asScopeFilter'){ asFilters.scope = e.target.value; asRefreshLists(); }
+      if(e.target.id === 'asHideStatic'){ asFilters.hideStatic = e.target.checked; saveHideStatic(e.target.checked); asRefreshLists(); }
     });
   }
 

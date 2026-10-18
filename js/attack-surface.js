@@ -89,6 +89,31 @@
     return index;
   }
 
+  // Endpoint'in açılabilir adresi: yalnızca kayıttaki http(s) baseUrl ile aynı
+  // origin'de kalan yollar için üretilir. "//başka.site/x", "javascript:" gibi
+  // değerler veya http(s) olmayan baseUrl için null döner (link gösterilmez).
+  function safeUrl(baseUrl, path){
+    if(!baseUrl) return null;
+    let base;
+    try{ base = new URL(String(baseUrl)); }catch(e){ return null; }
+    if(base.protocol !== 'http:' && base.protocol !== 'https:') return null;
+    if(path === undefined || path === null) return base.href;
+    const p = String(path);
+    if(!p.startsWith('/') || p.startsWith('//')) return null;
+    let u;
+    try{ u = new URL(p, base.origin); }catch(e){ return null; }
+    return u.origin === base.origin ? u.href : null;
+  }
+
+  // Görsel, font, stil ve source map dosyaları. JS dosyaları bilerek dahil
+  // DEĞİL: istemci tarafı kod pentest için anlamlıdır.
+  const STATIC_RE = /\.(png|jpe?g|gif|svg|webp|avif|ico|bmp|css|map|woff2?|ttf|otf|eot)$/i;
+  function isStaticAsset(row){
+    if(!row || row.type !== 'endpoint') return false;
+    const path = String(row.value).split(/[?#]/)[0];
+    return STATIC_RE.test(path);
+  }
+
   function byLevelThenId(a, b){
     return (LEVEL_ORDER[b.level] || 0) - (LEVEL_ORDER[a.level] || 0) || String(a.test_id).localeCompare(String(b.test_id));
   }
@@ -168,9 +193,21 @@
       }
       let scope = null;
       if(row.type === 'domain' || row.type === 'subdomain') scope = scopeStatus(row.value, scopeItems);
+      // Link yalnızca kaydedilmiş baseUrl'den üretilebilen satırlar için:
+      // kök hedef (baseUrl'nin kendisi) ve o hedefte bulunan endpoint'ler.
+      // Alt alan adlarının şeması (http/https) kayıtlı değil -> link yok.
+      const latestRun = latestByTarget.get(tkey);
+      const baseUrl = latestRun ? latestRun.baseUrl : null;
+      let url = null;
+      if(row.type === 'domain') url = safeUrl(baseUrl);
+      if(row.type === 'endpoint') url = safeUrl(baseUrl, row.value);
+      const linkScope = url ? scopeStatus(row.target, scopeItems) : null;
       return Object.assign({}, row, {
         tests,
         scope,
+        url,
+        linkScope,
+        isStatic: isStaticAsset(row),
         lastSeen: row.lastSeen ? row.lastSeen.toISOString() : null,
         firstSeen: row.firstSeen ? row.firstSeen.toISOString() : null,
       });
@@ -214,6 +251,7 @@
         technologies: Array.from(g.technologies).sort(),
       })),
       inventory,
+      staticCount: inventory.filter(r => r.isStatic).length,
       counts: {
         domain: count('domain'), subdomain: count('subdomain'), endpoint: count('endpoint'),
         api: inventory.filter(r => r.type === 'endpoint' && r.isApi).length,
@@ -229,6 +267,7 @@
     return (inventory || []).filter(r => {
       if(f.type && f.type !== 'all' && r.type !== f.type) return false;
       if(f.scope && f.scope !== 'all' && r.scope !== f.scope) return false;
+      if(f.hideStatic && r.isStatic) return false;
       if(q){
         const hay = [r.value, r.target].concat((r.tests || []).map(x => x.test_id)).map(norm).join(' ');
         if(!hay.includes(q)) return false;
@@ -237,5 +276,5 @@
     });
   }
 
-  return { LEVEL_ORDER, parseDate, scopeItemMatches, scopeStatus, endpointTestIndex, buildSurface, filterInventory };
+  return { LEVEL_ORDER, parseDate, safeUrl, isStaticAsset, scopeItemMatches, scopeStatus, endpointTestIndex, buildSurface, filterInventory };
 });

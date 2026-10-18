@@ -12,8 +12,18 @@ sys.path.insert(0, '.')
 os.environ['FLASK_ENV'] = 'development'
 
 from unittest.mock import patch
+import pytest
 import app as app_module
 from models import db, ReconRun
+
+# Güvence: bu test gerçek veritabanına ASLA yazmamalı. Geçici veritabanı
+# conftest.py tarafından ayarlanır; herhangi bir nedenle (ör. conftest olmadan
+# çalıştırılma) gerçek wstg.db'ye bağlanılmışsa hiçbir şey yazmadan dur.
+_REAL_DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'database', 'wstg.db')
+_URI = app_module.app.config.get('SQLALCHEMY_DATABASE_URI', '')
+_DB_FILE = _URI[len('sqlite:///'):] if _URI.startswith('sqlite:///') else None
+if _DB_FILE and os.path.abspath(_DB_FILE) == os.path.abspath(_REAL_DB):
+    pytest.fail(f'Test gerçek veritabanına bağlı ({_URI}); geçici veritabanı için backend/conftest.py gerekli.', pytrace=False)
 
 RUN_FIELDS = {'id', 'project_id', 'target', 'baseUrl', 'subdomains', 'technologies', 'endpoints', 'apis',
               'interestingPaths', 'forms', 'cookiesPresent', 'suggestions', 'created_at'}

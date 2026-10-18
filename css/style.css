@@ -1282,8 +1282,6 @@ button.wstg-ref-chip:hover{ border-color:var(--accent-border); }
 .as-tree-meta{ font-family:var(--font); font-size:12px; color:var(--muted); margin-left:auto; }
 
 /* envanter */
-.as-table .as-row-btn{ text-align:left; width:100%; }
-.as-table .as-row-btn:hover .asset-val{ color:var(--accent-text); text-decoration:underline; }
 .as-table .cell-asset-text{ display:flex; flex-direction:column; min-width:0; }
 .as-table .type-ico{ display:inline-flex; }
 .as-table .type-ico .i{ width:20px; height:20px; }
@@ -1400,3 +1398,58 @@ button.wstg-ref-chip:hover{ border-color:var(--accent-border); }
 .test-row-item:hover .badge:not(.green){ background:var(--surface); }
 .test-tag{ white-space:nowrap; }
 .test-tag.lv-badge{ font-family:var(--font); font-weight:600; letter-spacing:0; }
+
+/* Saldırı Yüzeyi: linkler, kopyalama, detay ve dar ekrana sığan tablo */
+.sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
+.asset-link{ color:var(--accent-text); display:inline; overflow-wrap:anywhere; text-decoration:none; }
+.asset-link:hover{ text-decoration:underline; }
+.asset-link .i{ display:inline-block; vertical-align:-1px; margin-left:4px; opacity:.7; }
+.asset-link.unverified{ text-decoration:underline dotted; text-underline-offset:3px; }
+.asset-text{ overflow-wrap:anywhere; user-select:text; }
+.as-actions{ display:inline-flex; gap:2px; flex-shrink:0; }
+.as-actions .icon-btn.sm .i{ width:15px; height:15px; }
+.as-link-notice{ display:flex; gap:8px; align-items:flex-start; margin:8px 20px 10px; padding:9px 12px; border-radius:var(--radius); font-size:13px;
+  background:var(--amber-soft); color:var(--amber); border:1px solid var(--amber-border); }
+.as-link-notice.out{ background:var(--red-soft); color:var(--red); border-color:var(--red-border); }
+.as-link-notice .i{ width:16px; height:16px; margin-top:1px; }
+.as-check{ display:inline-flex; align-items:center; gap:8px; font-size:13.5px; font-weight:400; color:var(--text-2); cursor:pointer; }
+
+.as-table{ table-layout:fixed; }
+.as-table col.c-asset{ width:30%; }
+.as-table col.c-type{ width:10%; }
+.as-table col.c-record{ width:14%; }
+.as-table col.c-scope{ width:13%; }
+.as-table col.c-tests{ width:14%; }
+.as-table col.c-seen{ width:11%; }
+.as-table col.c-actions{ width:76px; }
+.as-table th, .as-table td{ padding:10px 10px; }
+.as-table th:first-child, .as-table td:first-child{ padding-left:20px; }
+.as-table .cell-muted{ white-space:normal; overflow-wrap:anywhere; }
+.as-table .cell-asset{ display:flex; align-items:flex-start; gap:10px; min-width:0; }
+.as-table .type-ico{ margin-top:1px; }
+.as-table .asset-val{ white-space:normal; max-width:none; overflow:visible; font-weight:500; }
+.as-table .asset-parent{ display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.as-table tbody tr{ cursor:pointer; }
+.as-table .cell-actions{ width:auto; text-align:right; padding-right:12px; }
+.as-table th{ white-space:normal; }
+.as-table .badge{ white-space:normal; line-height:1.35; padding:3px 8px; }
+
+.as-tree-row{ display:flex; align-items:center; gap:10px; padding:5px 8px; border-radius:6px; font-size:13.5px; flex-wrap:wrap; }
+.as-tree-row:hover{ background:var(--surface-3); }
+.as-tree-row.selected{ background:var(--accent-soft); }
+.as-tree-row > .i{ width:16px; height:16px; color:var(--accent-text); }
+.as-tree-value{ font-family:var(--mono); flex:1 1 220px; min-width:0; }
+.as-tree-root .as-tree-value{ font-weight:600; }
+.as-tree-row .as-tree-meta{ margin-left:0; }
+.asm-endpoint-path{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.as-detail-url{ padding:0; margin:4px 0 0; font-family:var(--mono); overflow-wrap:anywhere; }
+
+@media (max-width:700px){
+  .as-table{ table-layout:auto; }
+  .as-table colgroup{ display:none; }
+  .as-table td, .as-table td:first-child{ padding:3px 0; }
+  .as-table tr{ padding:12px 14px; }
+  .as-table .cell-actions{ justify-content:flex-start; padding:6px 0 0; }
+  .as-table td.cell-actions::before{ display:none; }
+  .as-link-notice{ margin:8px 12px 10px; }
+}
