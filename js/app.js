@@ -1035,7 +1035,19 @@
     ctxProject: "Proje", ctxSession: "Oturum",
     ctxNoProject: "Proje seçilmedi", ctxNoSession: "Oturum seçilmedi",
     dbBadgeOnline: "Backend bağlı", dbBadgeOffline: "Yerel mod",
-    progressLabel: "Genel ilerleme"
+    progressLabel: "Genel ilerleme",
+    openGuideBtn: "WSTG Rehberini Aç",
+    sortByPriorityBtn: "Önceliğe göre",
+    sortByPriorityTitle: "Attack Surface Discovery'nin önerdiği önceliğe göre sırala",
+    testsCountLabel: (n, total) => n === total ? `Testler (${n})` : `Testler (${n}/${total})`,
+    statusDoneLabel: "Tamamlandı", statusPendingLabel: "Bekliyor",
+    statusLabel: "Durum", lastUpdatedLabel: "Son güncelleme",
+    completeTestBtn: "Testi tamamla", completedUndoBtn: "Tamamlandı · geri al",
+    prevTest: "Önceki test (↑)", nextTest: "Sonraki test (↓)",
+    backToTests: "Testler",
+    notesAutosaveHint: "Notlar yazarken otomatik kaydedilir.",
+    selectTestTitle: "Bir test seçin",
+    selectTestHint: "Soldaki listeden bir test seçtiğinizde adımları, örnekleri ve notlarınız burada görünür."
   });
   Object.assign(I18N.en, {
     navDashboard: "Overview",
@@ -1045,7 +1057,19 @@
     ctxProject: "Project", ctxSession: "Session",
     ctxNoProject: "No project", ctxNoSession: "No session",
     dbBadgeOnline: "Backend connected", dbBadgeOffline: "Local mode",
-    progressLabel: "Overall progress"
+    progressLabel: "Overall progress",
+    openGuideBtn: "Open WSTG Guide",
+    sortByPriorityBtn: "By priority",
+    sortByPriorityTitle: "Sort by the priority suggested by Attack Surface Discovery",
+    testsCountLabel: (n, total) => n === total ? `Tests (${n})` : `Tests (${n}/${total})`,
+    statusDoneLabel: "Completed", statusPendingLabel: "Pending",
+    statusLabel: "Status", lastUpdatedLabel: "Last updated",
+    completeTestBtn: "Complete test", completedUndoBtn: "Completed · undo",
+    prevTest: "Previous test (↑)", nextTest: "Next test (↓)",
+    backToTests: "Tests",
+    notesAutosaveHint: "Notes are saved automatically as you type.",
+    selectTestTitle: "Select a test",
+    selectTestHint: "Pick a test from the list to see its steps, examples and your notes here."
   });
 
   let DATA = null;
@@ -1183,7 +1207,7 @@
 
   function scheduleFindingSave(testId){
     clearTimeout(saveTimers[testId]);
-    saveTimers[testId] = setTimeout(()=> saveFinding(testId), 700);
+    saveTimers[testId] = setTimeout(()=>{ delete saveTimers[testId]; saveFinding(testId); }, 700);
   }
 
   function readFindingInputs(testId){
@@ -1207,22 +1231,14 @@
 
   function refreshFindingBadge(testId){
     const safeId = CSS && CSS.escape ? CSS.escape(testId) : testId;
-    const head = document.querySelector(`.test-item[data-id="${safeId}"] .test-item-head`);
-    if(!head) return;
-    let badge = head.querySelector('.severity-badge');
-    const fd = getFindingData(testId);
-    if(fd.text && fd.text.trim()){
-      if(!badge){
-        badge = document.createElement('span');
-        badge.className = 'severity-badge';
-        const title = head.querySelector('.test-item-title');
-        if(title) title.insertAdjacentElement('afterend', badge);
-      }
-      badge.className = `severity-badge sev-${fd.severity || 'info'}`;
-      badge.textContent = t('severity_' + (fd.severity || 'info'));
-    } else if(badge){
-      badge.remove();
+    const row = document.querySelector(`#testList .test-row-item[data-id="${safeId}"]`);
+    const test = findTestInCurrentCategory(testId);
+    if(row && test){
+      const holder = document.createElement('div');
+      holder.innerHTML = renderTestRow(test);
+      row.replaceWith(holder.firstElementChild);
     }
+    if(testId === selectedTestId) updateDetailStatus();
   }
 
   function saveFinding(testId){
@@ -1245,14 +1261,18 @@
     if(!currentSession) return Promise.resolve();
     const payload = { finding: text, severity };
     const existing = sessionResults[testId];
+    inflightFindingSaves[testId] = (inflightFindingSaves[testId] || 0) + 1;
     const req = existing
       ? apiRequest(`/sessions/${currentSession.id}/results/${testId}`, { method: 'PUT', body: JSON.stringify(payload) })
       : apiRequest(`/sessions/${currentSession.id}/results`, { method: 'POST', body: JSON.stringify(Object.assign({ test_id: testId, status: 'pending' }, payload)) });
+    const done = () => { inflightFindingSaves[testId] = Math.max(0, (inflightFindingSaves[testId] || 1) - 1); };
     return req.then(result => {
+      done();
       sessionResults[testId] = result;
       refreshFindingBadge(testId);
       setFindingStatus(testId, t('findingSavedToast'), false);
     }).catch(err => {
+      done();
       setFindingStatus(testId, err.message || t('findingSaveError'), true);
     });
   }
@@ -1400,54 +1420,216 @@
     return String(s == null ? '' : s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   }
 
-  function renderTestItem(test){
-    const done = !!progress[test.id];
+  // ---------------------------------------------------------------------
+  // Checklist: solda test listesi, sağda seçili testin detayı.
+  // Not alanı yazarken otomatik kaydedilir (scheduleFindingSave); bu yüzden
+  // kullanıcı not yazarken detay paneli yeniden çizilmez, sadece durum
+  // rozetleri güncellenir (bkz. renderTestList -> updateDetailStatus).
+  // ---------------------------------------------------------------------
+  let selectedTestId = null;
+  const inflightFindingSaves = {}; // test_id -> devam eden kayıt isteği sayısı
+  let visibleTestIds = [];
+
+  const detailIcons = {
+    desc: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>',
+    steps: '<path d="M10 6h10M10 12h10M10 18h10"/><path d="M4 6h1M4 12h1M4 18h1"/>',
+    example: '<path d="m4 17 6-5-6-5"/><path d="M12 19h8"/>',
+    tools: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/>',
+    notes: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/>',
+    chev: '<path d="m9 6 6 6-6 6"/>',
+    back: '<path d="m15 6-6 6 6 6"/>',
+    check: '<path d="m5 12 4.5 4.5L19 7"/>'
+  };
+  function dIcon(name, cls){
+    return `<svg class="i ${cls||''}" viewBox="0 0 24 24">${detailIcons[name]}</svg>`;
+  }
+
+  function findTestInCurrentCategory(id){
+    const cat = getEffectiveCategories().find(c=>c.id===currentCategoryId);
+    return cat ? cat.tests.find(x => x.id === id) : null;
+  }
+
+  // Liste satırındaki durum etiketi: not varsa önem derecesi, yoksa tamamlandı/bekliyor.
+  function testStatusBadge(test){
     const fd = getFindingData(test.id);
-    const hasFinding = fd.text && fd.text.trim();
+    if(fd.text && fd.text.trim()){
+      return `<span class="severity-badge sev-${fd.severity || 'info'}">${t('severity_' + (fd.severity || 'info'))}</span>`;
+    }
+    return progress[test.id]
+      ? `<span class="badge green">${t('statusDoneLabel')}</span>`
+      : `<span class="badge">${t('statusPendingLabel')}</span>`;
+  }
+
+  function renderTestRow(test){
+    const done = !!progress[test.id];
     const rp = reconPriority[test.id];
-    return `<div class="test-item ${done?'done':''}" data-id="${test.id}">
-      <div class="test-item-head">
-        <button class="test-check ${done?'checked':''}" data-id="${test.id}" title="${t('testEditedTitle')}">
-          ${icon('code').replace('code','')}
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 6"/></svg>
-        </button>
-        <span class="test-item-code">${test.id}</span>
-        <span class="test-item-title">${escapeHtml(test.title)}</span>
-        ${hasFinding ? `<span class="severity-badge sev-${fd.severity}">${t('severity_'+fd.severity)}</span>` : ''}
-        ${rp ? `<span class="recon-priority-badge prio-${rp.level}" title="${escapeHtml((rp.reasons||[]).join(' · '))}">${t('reconPriorityBadge_'+rp.level)}</span>` : ''}
-        <svg class="test-item-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+    const selected = test.id === selectedTestId;
+    return `<div class="test-row-item ${done?'done':''} ${selected?'selected':''}" data-id="${escapeHtml(test.id)}" role="option" aria-selected="${selected}" tabindex="-1">
+      <button type="button" class="test-check ${done?'checked':''}" data-id="${escapeHtml(test.id)}" title="${t('testEditedTitle')}" aria-label="${t('testEditedTitle')}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 6"/></svg>
+      </button>
+      <div class="tri-body">
+        <div class="tri-top">
+          <span class="test-item-code">${escapeHtml(test.id)}</span>
+          <span class="tri-badges">
+            ${rp ? `<span class="recon-priority-badge prio-${rp.level}" title="${escapeHtml((rp.reasons||[]).join(' · '))}">${t('reconPriorityBadge_'+rp.level)}</span>` : ''}
+            ${testStatusBadge(test)}
+          </span>
+        </div>
+        <div class="tri-title">${escapeHtml(test.title)}</div>
       </div>
-      <div class="test-item-detail">
-        <div class="test-item-detail-inner">
-          <div class="detail-block">
-            <h5>${t('descriptionLabel')}</h5>
-            <p>${escapeHtml(test.description)}</p>
+      ${dIcon('chev', 'tri-chev')}
+    </div>`;
+  }
+
+  // Backend zaman damgaları UTC'dir ama saat dilimi eki taşımaz; ek yoksa 'Z' eklenir.
+  function parseApiDate(value){
+    if(!value) return null;
+    const str = String(value);
+    const d = new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(str) ? str : str + 'Z');
+    return isNaN(d) ? null : d;
+  }
+
+  function lastUpdatedFor(testId){
+    if(currentSession){
+      const r = sessionResults[testId];
+      return r && (r.updated_at || r.completed_at);
+    }
+    const f = findings[testId];
+    return f && f.updatedAt;
+  }
+
+  function renderTestDetail(){
+    const box = document.getElementById('testDetail');
+    const test = selectedTestId ? findTestInCurrentCategory(selectedTestId) : null;
+    if(!test){
+      box.innerHTML = `<div class="empty-state"><h3>${t('selectTestTitle')}</h3><p>${t('selectTestHint')}</p></div>`;
+      box.dataset.id = '';
+      renderDetailFoot(null);
+      return;
+    }
+    const fd = getFindingData(test.id);
+    const steps = test.steps || [];
+    const tools = test.tools || [];
+    box.dataset.id = test.id;
+    box.innerHTML = `
+      <button type="button" class="btn btn-ghost btn-sm detail-back" data-action="back">${dIcon('back')}<span>${t('backToTests')}</span></button>
+      <div class="detail-head">
+        <div class="detail-head-text">
+          <div class="detail-code">${escapeHtml(test.id)}</div>
+          <h2 class="detail-title">${escapeHtml(test.title)}</h2>
+        </div>
+        <div class="detail-badges" id="detailBadges"></div>
+      </div>
+      ${test.description ? `
+      <div class="detail-section">
+        ${dIcon('desc', 'ds-ico')}
+        <div class="ds-body"><h5>${t('descriptionLabel')}</h5><p>${escapeHtml(test.description)}</p></div>
+      </div>` : ''}
+      ${steps.length ? `
+      <div class="detail-section">
+        ${dIcon('steps', 'ds-ico')}
+        <div class="ds-body"><h5>${t('howToLabel')}</h5>
+          <ol class="step-list">${steps.map(s=>`<li>${escapeHtml(s)}</li>`).join('')}</ol>
+        </div>
+      </div>` : ''}
+      ${test.example ? `
+      <div class="detail-section">
+        ${dIcon('example', 'ds-ico')}
+        <div class="ds-body">
+          <div class="ds-head-row"><h5>${t('exampleLabel')}</h5>
+            <button type="button" class="btn btn-secondary btn-xs copy-btn" data-copy="${encodeURIComponent(test.example)}">${t('copyBtn')}</button>
           </div>
-          <div class="detail-block">
-            <h5>${t('howToLabel')}</h5>
-            <ol>${test.steps.map(s=>`<li>${escapeHtml(s)}</li>`).join('')}</ol>
-          </div>
-          <div class="detail-block">
-            <h5>${t('exampleLabel')}</h5>
-            <div class="example-box">${escapeHtml(test.example)}<button class="copy-btn" data-copy="${encodeURIComponent(test.example)}">${t('copyBtn')}</button></div>
-          </div>
-          <div class="detail-block">
-            <h5>${t('toolsLabel')}</h5>
-            <div class="tools-row">${test.tools.map(tool=>`<span class="tool-chip">${escapeHtml(tool)}</span>`).join('')}</div>
-          </div>
-          <div class="detail-block finding-block" style="margin-bottom:0">
-            <div class="finding-head">
-              <h5 style="margin:0">${t('findingsLabel')}</h5>
-              <select class="severity-select" data-id="${test.id}" title="${t('severityLabel')}">
+          <div class="example-box">${escapeHtml(test.example)}</div>
+        </div>
+      </div>` : ''}
+      ${tools.length ? `
+      <div class="detail-section">
+        ${dIcon('tools', 'ds-ico')}
+        <div class="ds-body"><h5>${t('toolsLabel')}</h5>
+          <div class="tools-row">${tools.map(tool=>`<span class="tool-chip">${escapeHtml(tool)}</span>`).join('')}</div>
+        </div>
+      </div>` : ''}
+      <div class="detail-section finding-block">
+        ${dIcon('notes', 'ds-ico')}
+        <div class="ds-body">
+          <div class="ds-head-row">
+            <h5>${t('findingsLabel')}</h5>
+            <label class="severity-field">
+              <span>${t('severityLabel')}</span>
+              <select class="severity-select" data-id="${escapeHtml(test.id)}">
                 ${SEVERITIES.map(s=>`<option value="${s}" ${fd.severity===s?'selected':''}>${t('severity_'+s)}</option>`).join('')}
               </select>
-            </div>
-            <textarea class="finding-textarea" data-id="${test.id}" placeholder="${t('findingsPlaceholder')}">${escapeHtml(fd.text)}</textarea>
-            <div class="finding-status" data-id="${test.id}"></div>
+            </label>
           </div>
+          <textarea class="finding-textarea" data-id="${escapeHtml(test.id)}" rows="4" placeholder="${t('findingsPlaceholder')}">${escapeHtml(fd.text)}</textarea>
+          <div class="hint">${t('notesAutosaveHint')}</div>
         </div>
+      </div>`;
+    box.scrollTop = 0;
+    updateDetailStatus();
+  }
+
+  function renderDetailFoot(test){
+    const foot = document.getElementById('testDetailFoot');
+    if(!test){ foot.innerHTML = ''; foot.style.display = 'none'; return; }
+    foot.style.display = '';
+    const done = !!progress[test.id];
+    const updated = parseApiDate(lastUpdatedFor(test.id));
+    const idx = visibleTestIds.indexOf(test.id);
+    foot.innerHTML = `
+      <div class="foot-meta">
+        ${updated ? `<span>${t('lastUpdatedLabel')}: ${escapeHtml(updated.toLocaleString(t('dateLocale'), {dateStyle:'medium', timeStyle:'short'}))}</span><span class="foot-sep"></span>` : ''}
+        <span>${t('statusLabel')}: ${done ? t('statusDoneLabel') : t('statusPendingLabel')}</span>
+        <span class="finding-status" data-id="${escapeHtml(test.id)}"></span>
       </div>
-    </div>`;
+      <div class="foot-actions">
+        <span class="foot-nav">
+          <button type="button" class="icon-btn sm bordered" data-action="prev" ${idx <= 0 ? 'disabled' : ''} title="${t('prevTest')}">${dIcon('back')}</button>
+          <button type="button" class="icon-btn sm bordered" data-action="next" ${idx < 0 || idx >= visibleTestIds.length - 1 ? 'disabled' : ''} title="${t('nextTest')}">${dIcon('chev')}</button>
+        </span>
+        <button type="button" class="btn ${done ? 'btn-secondary is-done' : 'btn-primary'}" data-action="toggle-done" data-id="${escapeHtml(test.id)}">
+          ${dIcon('check')}<span>${done ? t('completedUndoBtn') : t('completeTestBtn')}</span>
+        </button>
+      </div>`;
+  }
+
+  // Not/önem/tamamlanma değiştiğinde detay panelini baştan çizmeden günceller.
+  function updateDetailStatus(){
+    const test = selectedTestId ? findTestInCurrentCategory(selectedTestId) : null;
+    if(!test) return;
+    const badges = document.getElementById('detailBadges');
+    if(badges){
+      const fd = getFindingData(test.id);
+      const rp = reconPriority[test.id];
+      badges.innerHTML =
+        (rp ? `<span class="recon-priority-badge prio-${rp.level}">${t('reconPriorityBadge_'+rp.level)}</span>` : '') +
+        (fd.text && fd.text.trim() ? `<span class="severity-badge sev-${fd.severity || 'info'}">${t('severity_' + (fd.severity || 'info'))}</span>` : '');
+    }
+    renderDetailFoot(test);
+  }
+
+  function selectTest(id, opts){
+    opts = opts || {};
+    if(selectedTestId && saveTimers[selectedTestId]){
+      clearTimeout(saveTimers[selectedTestId]); delete saveTimers[selectedTestId];
+      saveFinding(selectedTestId);
+    }
+    selectedTestId = id;
+    document.querySelectorAll('#testList .test-row-item').forEach(row=>{
+      const on = row.dataset.id === id;
+      row.classList.toggle('selected', on);
+      row.setAttribute('aria-selected', on);
+      if(on && opts.scroll) row.scrollIntoView({block:'nearest'});
+    });
+    renderTestDetail();
+    if(opts.showDetail) document.getElementById('checklistBody').classList.add('show-detail');
+  }
+
+  function stepSelection(delta){
+    const idx = visibleTestIds.indexOf(selectedTestId);
+    const next = visibleTestIds[idx + delta];
+    if(next) selectTest(next, { scroll: true });
   }
 
   function openCategory(catId, focusTestId){
@@ -1462,38 +1644,44 @@
     document.getElementById('panelTitle').textContent = `${cat.code} · ${cat.name}`;
     document.getElementById('panelDesc').textContent = cat.description;
     document.getElementById('itemSearch').value = "";
-    renderTestList();
+    const guide = document.getElementById('openGuideBtn');
+    if(guide) guide.style.display = currentFramework === 'wstg' ? '' : 'none';
+    const focusExists = focusTestId && cat.tests.some(x => x.id === focusTestId);
+    selectedTestId = focusExists ? focusTestId : (cat.tests[0] && cat.tests[0].id) || null;
+    document.getElementById('checklistBody').classList.toggle('show-detail', !!focusExists);
+    renderTestList({ forceDetail: true });
     document.getElementById('categoryOverlay').classList.add('open');
     document.body.style.overflow = 'hidden';
     renderSidebar();
-    if(focusTestId){
-      setTimeout(()=>{
-        const el = document.querySelector(`.test-item[data-id="${focusTestId}"]`);
-        if(el){ el.classList.add('open'); el.scrollIntoView({behavior:'smooth', block:'center'}); }
-      }, 60);
-    }
+    setTimeout(()=>{
+      const row = document.querySelector(`#testList .test-row-item.selected`);
+      if(row) row.scrollIntoView({block:'nearest'});
+    }, 30);
   }
 
   function closeCategory(){
-    const wasOpen = document.getElementById('categoryOverlay').classList.contains('open');
-    document.getElementById('categoryOverlay').classList.remove('open');
+    const overlay = document.getElementById('categoryOverlay');
+    const wasOpen = overlay.classList.contains('open');
+    if(wasOpen && selectedTestId && saveTimers[selectedTestId]){
+      clearTimeout(saveTimers[selectedTestId]); delete saveTimers[selectedTestId];
+      saveFinding(selectedTestId);
+    }
+    overlay.classList.remove('open');
     document.body.style.overflow = '';
     if(wasOpen && DATA) renderSidebar();
   }
 
-  function renderTestList(){
+  function renderTestList(opts){
+    opts = opts || {};
     const cat = getEffectiveCategories().find(c=>c.id===currentCategoryId);
     if(!cat) return;
     const q = document.getElementById('itemSearch').value.trim().toLowerCase();
     let items = cat.tests;
     if(currentFilter === 'done') items = items.filter(t=>progress[t.id]);
     if(currentFilter === 'pending') items = items.filter(t=>!progress[t.id]);
-    if(q) items = items.filter(x => x.title.toLowerCase().includes(q) || x.id.toLowerCase().includes(q) || x.description.toLowerCase().includes(q));
+    if(q) items = items.filter(x => x.title.toLowerCase().includes(q) || x.id.toLowerCase().includes(q) || (x.description||'').toLowerCase().includes(q));
     // Varsayılan: resmi WSTG numaralandırma sırası korunur (JSON'daki sıra).
-    // Recon (Attack Surface Discovery) önceliğine göre sıralama, kullanıcı
-    // "Önceliğe Göre Sırala" düğmesini açıkça seçtiğinde devreye girer --
-    // aksi halde testler WSTG-XXXX-01, 02, 03... sırasından çıkıp karışık
-    // görünmesin diye sabit tutulur.
+    // Recon önceliğine göre sıralama yalnızca "Önceliğe göre" seçildiğinde.
     if(sortByReconPriority){
       const prioOrder = { high: 3, medium: 2, low: 1, info: 0 };
       items = items.slice().sort((a, b) => {
@@ -1502,19 +1690,34 @@
         return pb - pa;
       });
     }
+    visibleTestIds = items.map(x => x.id);
+    document.getElementById('testListHead').textContent = t('testsCountLabel')(items.length, cat.tests.length);
+
+    const prevSelected = selectedTestId;
+    if(!visibleTestIds.includes(selectedTestId)) selectedTestId = visibleTestIds[0] || null;
+
     const list = document.getElementById('testList');
-    if(!items.length){
-      list.innerHTML = `<div class="search-empty">${t('noMatchInCategory')}</div>`;
-      return;
+    list.innerHTML = items.length ? items.map(renderTestRow).join('') : `<div class="search-empty">${t('noMatchInCategory')}</div>`;
+
+    // Kullanıcı not yazıyorsa detay panelini yeniden çizme (imleç/yazı kaybolmasın).
+    const box = document.getElementById('testDetail');
+    const typing = box.contains(document.activeElement) && document.activeElement.matches('textarea, select, input');
+    const saving = selectedTestId && (saveTimers[selectedTestId] || inflightFindingSaves[selectedTestId]);
+    if(!opts.forceDetail && selectedTestId === prevSelected && box.dataset.id === selectedTestId && (typing || saving)){
+      updateDetailStatus();
+    } else {
+      renderTestDetail();
     }
-    list.innerHTML = items.map(renderTestItem).join('');
   }
 
   function toggleDone(id){
+    if(saveTimers[id]){ clearTimeout(saveTimers[id]); delete saveTimers[id]; saveFinding(id); }
     progress[id] = !progress[id];
     const done = progress[id];
     if(currentSession){
-      persistResult(id, done).catch(err => {
+      persistResult(id, done).then(()=>{
+        if(currentCategoryId && id === selectedTestId) updateDetailStatus();
+      }).catch(err => {
         // revert on failure
         progress[id] = !done;
         renderSidebar(); renderDashboard();
@@ -4804,21 +5007,37 @@
     document.getElementById('testList').addEventListener('click', e=>{
       const checkBtn = e.target.closest('.test-check');
       if(checkBtn){ e.stopPropagation(); toggleDone(checkBtn.dataset.id); return; }
-      const copyBtn = e.target.closest('.copy-btn');
-      if(copyBtn){ e.stopPropagation(); copyToClipboard(decodeURIComponent(copyBtn.dataset.copy)); return; }
-      if(e.target.closest('.finding-block')){ e.stopPropagation(); return; }
-      const head = e.target.closest('.test-item-head');
-      if(head){
-        head.closest('.test-item').classList.toggle('open');
-      }
+      const row = e.target.closest('.test-row-item');
+      if(row) selectTest(row.dataset.id, { showDetail: true });
     });
-    document.getElementById('testList').addEventListener('input', e=>{
+    const detailEl = document.getElementById('testDetail');
+    detailEl.addEventListener('click', e=>{
+      const copyBtn = e.target.closest('.copy-btn');
+      if(copyBtn){ copyToClipboard(decodeURIComponent(copyBtn.dataset.copy)); return; }
+      if(e.target.closest('[data-action="back"]')) document.getElementById('checklistBody').classList.remove('show-detail');
+    });
+    detailEl.addEventListener('input', e=>{
       const ta = e.target.closest('.finding-textarea');
       if(ta){ scheduleFindingSave(ta.dataset.id); }
     });
-    document.getElementById('testList').addEventListener('change', e=>{
+    detailEl.addEventListener('change', e=>{
       const sel = e.target.closest('.severity-select');
       if(sel){ saveFinding(sel.dataset.id); }
+    });
+    document.getElementById('testDetailFoot').addEventListener('click', e=>{
+      const btn = e.target.closest('[data-action]');
+      if(!btn || btn.disabled) return;
+      if(btn.dataset.action === 'toggle-done') toggleDone(btn.dataset.id);
+      if(btn.dataset.action === 'prev') stepSelection(-1);
+      if(btn.dataset.action === 'next') stepSelection(1);
+    });
+    // Liste klavyeyle gezilebilir: ↑/↓ test değiştirir (yazı alanındayken devre dışı).
+    document.addEventListener('keydown', e=>{
+      if(!document.getElementById('categoryOverlay').classList.contains('open')) return;
+      if(document.querySelector('.overlay.open:not(#categoryOverlay)')) return;
+      if(e.target.matches && e.target.matches('input, textarea, select, [contenteditable]')) return;
+      if(e.key === 'ArrowDown'){ e.preventDefault(); stepSelection(1); }
+      if(e.key === 'ArrowUp'){ e.preventDefault(); stepSelection(-1); }
     });
 
     const searchInput = document.getElementById('globalSearch');
