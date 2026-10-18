@@ -29,33 +29,7 @@
 
   const SEVERITIES = ["info", "low", "medium", "high", "critical"];
 
-  const THEMES = [
-    { id: "midnight",   name: "Midnight",        emoji: "🌌", primary: "#6366f1", secondary: "#8b5cf6", desc: { tr: "Klasik indigo karanlık tema", en: "Classic indigo dark theme" } },
-    { id: "cyberpunk",  name: "Cyberpunk",       emoji: "🤖", primary: "#ec4899", secondary: "#22d3ee", desc: { tr: "Neon pembe & elektrik camgöbeği", en: "Neon pink & electric cyan" } },
-    { id: "matrix",     name: "Matrix",          emoji: "💻", primary: "#22c55e", secondary: "#84cc16", desc: { tr: "Yeşil terminal, dijital yağmur", en: "Green terminal, digital rain" } },
-    { id: "crimson",    name: "Crimson",         emoji: "🩸", primary: "#ef4444", secondary: "#f97316", desc: { tr: "Yoğun kırmızı & turuncu ateş", en: "Bold red & fiery orange" } },
-    { id: "ocean",      name: "Ocean",           emoji: "🌊", primary: "#0ea5e9", secondary: "#06b6d4", desc: { tr: "Derin mavi okyanus tonları", en: "Deep blue ocean tones" } },
-    { id: "sunset",     name: "Sunset",          emoji: "🌇", primary: "#f59e0b", secondary: "#ef4444", desc: { tr: "Sıcak gün batımı tonları", en: "Warm sunset gradients" } },
-    { id: "royal",      name: "Royal",           emoji: "👑", primary: "#a855f7", secondary: "#eab308", desc: { tr: "Mor & altın, asil hava", en: "Purple & gold, regal feel" } },
-    { id: "dracula",    name: "Dracula",         emoji: "🧛", primary: "#bd93f9", secondary: "#ff79c6", desc: { tr: "Popüler koyu kod editörü paleti", en: "Popular dark editor palette" } },
-    { id: "nord",       name: "Nord",            emoji: "❄️", primary: "#88c0d0", secondary: "#81a1c1", desc: { tr: "Soğuk, sakin İskandinav tonları", en: "Cool, calm Nordic tones" } },
-    { id: "mono",       name: "Mono",            emoji: "⚫", primary: "#e5e5e5", secondary: "#a3a3a3", desc: { tr: "Siyah-beyaz minimalist görünüm", en: "Black & white minimalist look" } },
-    { id: "arctic",     name: "Arctic Light",    emoji: "☀️", primary: "#2563eb", secondary: "#0891b2", desc: { tr: "Aydınlık, temiz açık tema", en: "Bright, clean light theme" } },
-    { id: "vaporwave",  name: "Vaporwave",       emoji: "🌴", primary: "#ff6ec7", secondary: "#00fff0", desc: { tr: "90'lar estetiği, pembe & turkuaz", en: "90s aesthetic, pink & teal" } },
-    { id: "neontokyo",  name: "Neon Tokyo",      emoji: "🏮", primary: "#ff2d78", secondary: "#00e5ff", desc: { tr: "Gece şehri, parlak neon ışıklar", en: "Night city, blazing neon lights" } },
-    { id: "forest",     name: "Forest",          emoji: "🌲", primary: "#16a34a", secondary: "#65a30d", desc: { tr: "Doğal yeşil orman atmosferi", en: "Natural green forest vibe" } },
-    { id: "bloodmoon",  name: "Blood Moon",      emoji: "🌑", primary: "#dc2626", secondary: "#7f1d1d", desc: { tr: "Karanlık, tehditkar kızıl ay", en: "Dark, ominous crimson eclipse" } },
-    { id: "aurora",     name: "Aurora",          emoji: "🌠", primary: "#2dd4bf", secondary: "#a78bfa", desc: { tr: "Kuzey ışıkları, camgöbeği & mor", en: "Northern lights, teal & violet" } },
-    { id: "solarflare",  name: "Solar Flare",    emoji: "🔥", primary: "#f97316", secondary: "#facc15", desc: { tr: "Yanan turuncu & sarı enerji", en: "Blazing orange & yellow energy" } },
-    { id: "deepspace",  name: "Deep Space",      emoji: "🪐", primary: "#4f46e5", secondary: "#db2777", desc: { tr: "Yıldızlararası indigo & pembe", en: "Interstellar indigo & pink" } },
-    { id: "coralreef",  name: "Coral Reef",      emoji: "🐠", primary: "#fb7185", secondary: "#2dd4bf", desc: { tr: "Mercan pembesi & tropikal camgöbeği", en: "Coral pink & tropical teal" } },
-    { id: "toxic",      name: "Toxic",           emoji: "☣️", primary: "#a3e635", secondary: "#facc15", desc: { tr: "Asit yeşili, radyoaktif his", en: "Acid green, radioactive feel" } },
-    { id: "goldrush",   name: "Gold Rush",       emoji: "🏆", primary: "#d4af37", secondary: "#b8860b", desc: { tr: "Lüks siyah & parlak altın", en: "Luxury black & gleaming gold" } },
-    { id: "synthwave",  name: "Synthwave",       emoji: "🕹️", primary: "#ff2079", secondary: "#00d4ff", desc: { tr: "80'ler retro futurizm", en: "80s retro-futurism grid" } },
-    { id: "rosegold",   name: "Rose Gold",       emoji: "🌹", primary: "#b76e79", secondary: "#d4af8a", desc: { tr: "Zarif açık pembe-altın tema", en: "Elegant light pink-gold theme" } },
-    { id: "sakura",     name: "Sakura",          emoji: "🌸", primary: "#f472b6", secondary: "#fb7185", desc: { tr: "Yumuşak açık kiraz çiçeği teması", en: "Soft light cherry-blossom theme" } },
-    { id: "icefall",    name: "Icefall",         emoji: "🧊", primary: "#0ea5e9", secondary: "#38bdf8", desc: { tr: "Buzul mavisi, ferah açık tema", en: "Glacier blue, crisp light theme" } }
-  ];
+  const THEME_MODES = ['light', 'dark', 'system'];
 
   const I18N = {
     tr: {
@@ -91,7 +65,7 @@
       filterAll: "Tümü",
       filterPending: "Bekleyen",
       filterDone: "Tamamlanan",
-      sortByPriorityBtn: "🎯 Önceliğe Göre Sırala",
+      sortByPriorityBtn: "Önceliğe Göre Sırala",
       descriptionLabel: "Açıklama",
       howToLabel: "Nasıl Test Edilir",
       exampleLabel: "Örnek Payload / Komut",
@@ -102,7 +76,7 @@
       markDoneToast: "Test tamamlandı olarak işaretlendi",
       markPendingToast: "Test beklemede olarak işaretlendi",
       reportDownloadedToast: "Rapor indirildi",
-      exportProHint: "💡 İpucu: AI destekli PDF/HTML profesyonel rapor (bulgu seçimi, yönetici özeti) için bir Proje açıp 'Reports' sekmesini kullanın.",
+      exportProHint: "İpucu: AI destekli PDF/HTML profesyonel rapor (bulgu seçimi, yönetici özeti) için bir Proje açıp 'Reports' sekmesini kullanın.",
       progressResetToast: "İlerleme sıfırlandı",
       resetConfirm: "Tüm ilerleme sıfırlansın mı? Bu işlem geri alınamaz.",
       noMatchInCategory: "Bu kategoride eşleşen test bulunamadı.",
@@ -128,8 +102,8 @@
       newSessionTitle: "Yeni Test Oturumu",
       newSessionDesc: "Bu pentest sürecini tanımlayın. İlerlemeniz bu isimle veritabanına kaydedilecek.",
       noSessionsYet: "Henüz kayıtlı test oturumu yok. Yeni bir oturum başlatın.",
-      dbOnline: "🟢 Veritabanı bağlı",
-      dbOffline: "🟡 Veritabanı yok — backend/app.py çalıştırın (yerel modda devam edilecek)",
+      dbOnline: "Veritabanı bağlı",
+      dbOffline: "Veritabanı yok — backend/app.py çalıştırın (yerel modda devam edilecek)",
       sessionCreated: "Oturum oluşturuldu ve DB'ye kaydedildi",
       sessionDeleted: "Oturum silindi",
       sessionDeleteConfirm: "Bu oturumu ve tüm test sonuçlarını silmek istiyor musunuz? Bu işlem geri alınamaz.",
@@ -210,14 +184,14 @@
       reconNoSuggestions: "Önerilecek bir test önceliği bulunamadı.",
       reconAppliedToast: n => `${n} test maddesi önceliklendirildi`,
       reconBackendOffline: "Bu özellik backend gerektirir — lütfen backend/app.py'yi çalıştırın.",
-      reconResetBtn: "🔄 Sıfırla / Yeniden Tara",
+      reconResetBtn: "Sıfırla / Yeniden Tara",
       reconResetConfirm: "Bu proje/oturum için kayıtlı tarama sonuçları ve öncelik verisi silinsin mi? Bu işlem geri alınamaz.",
       reconResetToast: "Tarama verisi sıfırlandı",
       reconCachedNotice: (target, when) => `Son tarama: <b>${target}</b>${when ? ' · ' + when : ''} — yeniden taramadan gösteriliyor.`,
-      reconPriorityBadge_high: "🎯 Yüksek Öncelik",
-      reconPriorityBadge_medium: "🎯 Orta Öncelik",
-      reconPriorityBadge_low: "🎯 Düşük Öncelik",
-      reconPriorityBadge_info: "🎯 Önerilen",
+      reconPriorityBadge_high: "Yüksek Öncelik",
+      reconPriorityBadge_medium: "Orta Öncelik",
+      reconPriorityBadge_low: "Düşük Öncelik",
+      reconPriorityBadge_info: "Önerilen",
 
       navPlanner: "Test Planı",
       plannerModalTitle: "Test Planı",
@@ -227,8 +201,8 @@
       plannerGotoBtn: "Bu maddeye git",
       plannerScoreNote: "Skor: kanıt sayısı + öncelik seviyesi + WSTG metodoloji sırasına göre hesaplanır (sabit kurallar, model çağrısı yapılmaz).",
 
-      navAiNextTest: "🤖 AI: Sırada Ne Var?",
-      aiNextTestTitle: "🤖 AI: Sırada Ne Var?",
+      navAiNextTest: "AI: Sırada Ne Var?",
+      aiNextTestTitle: "AI: Sırada Ne Var?",
       aiNextTestDesc: "Şu ana kadar tamamladığınız testlere ve kaydettiğiniz bulgulara bakarak, AI bir sonraki mantıklı adımı gerekçesiyle birlikte önerir. Test Planı'ndan farkı: recon kanıtı gerekmez, sabit kural yerine AI akıl yürütmesi kullanır — bu yüzden her zaman bir öneri taslağıdır, kesin doğru kabul etmeyin.",
       aiNextTestAskBtn: "Öner",
       aiNextTestAllDone: "Tüm testler tamamlanmış görünüyor — önerecek bir şey yok!",
@@ -289,8 +263,8 @@
 
       pwAssetsEmpty: "Henüz asset yok — Recon sekmesinden Attack Surface Discovery çalıştırın.",
       pwAssetsSubdomains: "Subdomains", pwAssetsTechnologies: "Technologies", pwAssetsEndpoints: "Endpoints",
-      pwAssetsViewList: "📋 Liste",
-      pwAssetsViewMap: "🗺️ Harita",
+      pwAssetsViewList: "Liste",
+      pwAssetsViewMap: "Harita",
       pwAssetsMapFindingsLabel: "İlişkili Findings",
       pwAssetsMapNoFindings: "Bu endpoint'e bağlı bir finding yok.",
 
@@ -302,7 +276,7 @@
       pwToolsExcludedNote: "Not: nuclei ve ffuf bilerek dahil edilmedi — nuclei aktif zafiyet doğrulama şablonları içeriyor, ffuf agresif dizin fuzzing yapıyor. İkisi de ayrı, daha sıkı kapsamlı bir iterasyon gerektirir.",
       toolSelectLabel: "Araç",
       toolTargetLabel: "Hedef",
-      toolNotInstalled: "⚠️ Sisteminizde kurulu değil",
+      toolNotInstalled: "Sisteminizde kurulu değil",
       toolPreviewLabel: "Çalıştırılacak komut:",
       toolAuthLabel: "Bu hedefi test etmeye yetkili olduğumu onaylıyorum.",
       toolPreviewBtn: "Komutu Önizle",
@@ -311,9 +285,9 @@
       toolRunError: "Araç çalıştırılamadı",
       toolTargetRequired: "Lütfen bir hedef girin.",
       toolAuthRequired: "Devam etmek için yetkilendirme onay kutusunu işaretlemelisiniz.",
-      toolStatus_completed: "✅ Tamamlandı",
-      toolStatus_failed: "❌ Başarısız",
-      toolStatus_timeout: "⏱️ Zaman Aşımı",
+      toolStatus_completed: "Tamamlandı",
+      toolStatus_failed: "Başarısız",
+      toolStatus_timeout: "Zaman Aşımı",
       toolHistoryLabel: "Geçmiş Çalıştırmalar",
       toolHistoryEmpty: "Henüz bir araç çalıştırılmadı.",
       toolExitCodeLabel: "Çıkış kodu",
@@ -358,8 +332,8 @@
       aiNotConfigured: "AI sağlayıcısı yapılandırılmamış (.env dosyasını kontrol edin).",
       aiNoTextToRewrite: "Önce bir açıklama metni girin.",
 
-      navAiSettings: "🔑 AI Ayarları",
-      aiSettingsTitle: "🔑 AI Ayarları",
+      navAiSettings: "AI Ayarları",
+      aiSettingsTitle: "AI Ayarları",
       aiSettingsDesc: "API key'lerinizi buradan ekleyin, düzenleyin, test edin ve hangi sağlayıcının aktif olacağını seçin. Key'ler şifreli saklanır ve hiçbir zaman tam olarak gösterilmez.",
       aiApiKeyLabel: "API Key",
       aiModelLabel: "Model",
@@ -381,7 +355,7 @@
       aiStatusNotConfigured: "AI yapılandırılmamış",
 
       byokTopbarLabel: "Kendi Key'im",
-      byokTitle: "🔐 Kendi API Key'inle Kullan",
+      byokTitle: "Kendi API Key'inle Kullan",
       byokDesc: "Buraya girdiğiniz key yalnızca bu tarayıcı sekmesinde tutulur; sunucuya hiçbir zaman kaydedilmez ve sekmeyi kapattığınızda otomatik olarak silinir. Aktif ettiğinizde tüm AI istekleriniz bu key ve modelle çalışır — paylaşılan/varsayılan AI Ayarları etkilenmez.",
       byokStatusOff: "Şu anda paylaşılan/varsayılan AI sağlayıcısı kullanılıyor.",
       byokStatusOn: "Bu oturumda aktif: {provider} {model}",
@@ -397,7 +371,7 @@
       byokMissingKey: "Lütfen bir API key girin",
       byokMissingProvider: "Lütfen bir sağlayıcı seçin",
 
-      dupAlertTitle: "⚠️ Olası Tekrarlanan Bulgu Tespit Edildi",
+      dupAlertTitle: "Olası Tekrarlanan Bulgu Tespit Edildi",
       dupAlertDesc: "Bu bulguya benzer, projede zaten kayıtlı bulgular var.",
       dupMergeBtn: "Seçilenleri Birleştir",
       dupCreateAnywayBtn: "Yine de Oluştur",
@@ -445,12 +419,12 @@
 
       lifecycleRemediationRate: "Remediation Oranı",
       lifecycleStatusUpdated: "Bulgu durumu güncellendi",
-      lifecycleStatus_open: "🔴 Open",
-      lifecycleStatus_retesting: "🔵 Retesting",
-      lifecycleStatus_fixed: "🟡 Fixed",
-      lifecycleStatus_resolved: "🟢 Resolved",
-      lifecycleStatus_wont_fix: "⚪ Won't Fix",
-      lifecycleStatus_accepted_risk: "⚪ Accepted Risk",
+      lifecycleStatus_open: "Open",
+      lifecycleStatus_retesting: "Retesting",
+      lifecycleStatus_fixed: "Fixed",
+      lifecycleStatus_resolved: "Resolved",
+      lifecycleStatus_wont_fix: "Won't Fix",
+      lifecycleStatus_accepted_risk: "Accepted Risk",
 
       customTestsCategoryName: "Custom Tests",
       customTestsCategoryDesc: "Bu projeye özel, kuruluşunuza ait ek test maddeleri (resmi WSTG veri setinden gelmez).",
@@ -468,7 +442,7 @@
       pwEvidenceUploading: "Yükleniyor...",
       pwEvidenceEmpty: "Henüz kanıt yüklenmedi.",
       pwEvidenceUploadError: "Yükleme başarısız",
-      pwEvidenceAiOff: "🔌 AI analizi devre dışı — etkinleştirmek için backend/.env dosyasına ANTHROPIC_API_KEY ekleyin.",
+      pwEvidenceAiOff: "AI analizi devre dışı — etkinleştirmek için backend/.env dosyasına ANTHROPIC_API_KEY ekleyin.",
       pwEvidenceAiError: "AI analizi başarısız",
       pwEvidenceAiConfidence: "Güven",
       pwEvidenceSuggested: "Önerilen WSTG testleri",
@@ -485,8 +459,8 @@
       pwEvidenceHttpResponseLabel: "HTTP Response",
       pwEvidenceRedactionNote: "Authorization/Cookie/JWT/API key/parola/e-posta/kredi kartı gibi hassas veriler kaydedilirken otomatik olarak maskelenir (redaction). Ham metin sadece 'Ham Metni Göster' ile açıkça görüntülenir.",
       pwEvidenceHttpRequired: "En az bir request veya response girilmelidir.",
-      pwEvidenceShowRaw: "🔓 Ham Metni Göster/Gizle",
-      pwEvidenceRawWarning: "⚠️ Ham (redakte edilmemiş) metin — hassas veri içerebilir, dikkatli paylaşın.",
+      pwEvidenceShowRaw: "Ham Metni Göster/Gizle",
+      pwEvidenceRawWarning: "Ham (redakte edilmemiş) metin — hassas veri içerebilir, dikkatli paylaşın.",
       pwEvidenceReviewPending: "İnceleme bekliyor",
       pwEvidenceReviewAccepted: "Kabul edildi",
       pwEvidenceReviewRejected: "Reddedildi",
@@ -546,13 +520,13 @@
       kanbanCol_confirmed: "Onaylandı",
       kanbanCol_done: "Tamamlandı",
 
-      pwEventType_project_created: "🆕 Proje oluşturuldu",
-      pwEventType_session_created: "📋 Oturum oluşturuldu",
-      pwEventType_session_completed: "✅ Oturum tamamlandı",
-      pwEventType_test_completed: "☑️ Test tamamlandı",
-      pwEventType_finding_created: "🚩 Yeni bulgu",
-      pwEventType_scope_updated: "🎯 Kapsam güncellendi",
-      pwEventType_recon_run: "🌐 Recon çalıştırıldı"
+      pwEventType_project_created: "Proje oluşturuldu",
+      pwEventType_session_created: "Oturum oluşturuldu",
+      pwEventType_session_completed: "Oturum tamamlandı",
+      pwEventType_test_completed: "Test tamamlandı",
+      pwEventType_finding_created: "Yeni bulgu",
+      pwEventType_scope_updated: "Kapsam güncellendi",
+      pwEventType_recon_run: "Recon çalıştırıldı"
     },
     en: {
       navWorkspace: "Workspace",
@@ -587,7 +561,7 @@
       filterAll: "All",
       filterPending: "Pending",
       filterDone: "Completed",
-      sortByPriorityBtn: "🎯 Sort By Priority",
+      sortByPriorityBtn: "Sort By Priority",
       descriptionLabel: "Description",
       howToLabel: "How to Test",
       exampleLabel: "Example Payload / Command",
@@ -598,7 +572,7 @@
       markDoneToast: "Test marked as completed",
       markPendingToast: "Test marked as pending",
       reportDownloadedToast: "Report downloaded",
-      exportProHint: "💡 Tip: for an AI-assisted PDF/HTML professional report (finding selection, executive summary), open a Project and use its 'Reports' tab.",
+      exportProHint: "Tip: for an AI-assisted PDF/HTML professional report (finding selection, executive summary), open a Project and use its 'Reports' tab.",
       progressResetToast: "Progress reset",
       resetConfirm: "Reset all progress? This action cannot be undone.",
       noMatchInCategory: "No matching test found in this category.",
@@ -624,8 +598,8 @@
       newSessionTitle: "New Test Session",
       newSessionDesc: "Describe this pentest run. Your progress will be saved to the database under this name.",
       noSessionsYet: "No saved test sessions yet. Start a new one.",
-      dbOnline: "🟢 Database connected",
-      dbOffline: "🟡 No database — run backend/app.py (continuing in local mode)",
+      dbOnline: "Database connected",
+      dbOffline: "No database — run backend/app.py (continuing in local mode)",
       sessionCreated: "Session created and saved to the database",
       sessionDeleted: "Session deleted",
       sessionDeleteConfirm: "Delete this session and all its test results? This cannot be undone.",
@@ -706,14 +680,14 @@
       reconNoSuggestions: "No test priority suggestions found.",
       reconAppliedToast: n => `${n} test items prioritized`,
       reconBackendOffline: "This feature requires the backend — please run backend/app.py.",
-      reconResetBtn: "🔄 Reset / Re-scan",
+      reconResetBtn: "Reset / Re-scan",
       reconResetConfirm: "Delete the saved scan results and priority data for this project/session? This cannot be undone.",
       reconResetToast: "Scan data reset",
       reconCachedNotice: (target, when) => `Last scan: <b>${target}</b>${when ? ' · ' + when : ''} — showing without re-scanning.`,
-      reconPriorityBadge_high: "🎯 High Priority",
-      reconPriorityBadge_medium: "🎯 Medium Priority",
-      reconPriorityBadge_low: "🎯 Low Priority",
-      reconPriorityBadge_info: "🎯 Suggested",
+      reconPriorityBadge_high: "High Priority",
+      reconPriorityBadge_medium: "Medium Priority",
+      reconPriorityBadge_low: "Low Priority",
+      reconPriorityBadge_info: "Suggested",
 
       navPlanner: "Test Plan",
       plannerModalTitle: "Test Plan",
@@ -723,8 +697,8 @@
       plannerGotoBtn: "Go to this item",
       plannerScoreNote: "Score is computed from evidence count + priority level + WSTG methodology order (fixed rules, no model call involved).",
 
-      navAiNextTest: "🤖 AI: What's Next?",
-      aiNextTestTitle: "🤖 AI: What's Next?",
+      navAiNextTest: "AI: What's Next?",
+      aiNextTestTitle: "AI: What's Next?",
       aiNextTestDesc: "Looking at the tests you've completed so far and the findings you've recorded, the AI suggests the next logical step along with its reasoning. Unlike the Test Plan: no recon evidence is required, and it uses AI reasoning instead of fixed rules — so it's always a draft suggestion, not a guaranteed-correct answer.",
       aiNextTestAskBtn: "Suggest",
       aiNextTestAllDone: "All tests appear to be completed — nothing left to suggest!",
@@ -785,8 +759,8 @@
 
       pwAssetsEmpty: "No assets yet — run Attack Surface Discovery from the Recon tab.",
       pwAssetsSubdomains: "Subdomains", pwAssetsTechnologies: "Technologies", pwAssetsEndpoints: "Endpoints",
-      pwAssetsViewList: "📋 List",
-      pwAssetsViewMap: "🗺️ Map",
+      pwAssetsViewList: "List",
+      pwAssetsViewMap: "Map",
       pwAssetsMapFindingsLabel: "Associated Findings",
       pwAssetsMapNoFindings: "No findings linked to this endpoint.",
 
@@ -798,7 +772,7 @@
       pwToolsExcludedNote: "Note: nuclei and ffuf are deliberately not included — nuclei's templates include active exploit-verification checks, and ffuf performs aggressive directory fuzzing. Both would need a separate, more tightly-scoped iteration.",
       toolSelectLabel: "Tool",
       toolTargetLabel: "Target",
-      toolNotInstalled: "⚠️ Not installed on your system",
+      toolNotInstalled: "Not installed on your system",
       toolPreviewLabel: "Command that will run:",
       toolAuthLabel: "I confirm that I am authorized to test this target.",
       toolPreviewBtn: "Preview Command",
@@ -807,9 +781,9 @@
       toolRunError: "Tool execution failed",
       toolTargetRequired: "Please enter a target.",
       toolAuthRequired: "You must check the authorization box to continue.",
-      toolStatus_completed: "✅ Completed",
-      toolStatus_failed: "❌ Failed",
-      toolStatus_timeout: "⏱️ Timed Out",
+      toolStatus_completed: "Completed",
+      toolStatus_failed: "Failed",
+      toolStatus_timeout: "Timed Out",
       toolHistoryLabel: "Run History",
       toolHistoryEmpty: "No tool has been run yet.",
       toolExitCodeLabel: "Exit code",
@@ -854,8 +828,8 @@
       aiNotConfigured: "No AI provider configured (check your .env file).",
       aiNoTextToRewrite: "Enter a description first.",
 
-      navAiSettings: "🔑 AI Settings",
-      aiSettingsTitle: "🔑 AI Settings",
+      navAiSettings: "AI Settings",
+      aiSettingsTitle: "AI Settings",
       aiSettingsDesc: "Add, edit, and test your API keys here, and choose which provider is active. Keys are stored encrypted and never shown in full.",
       aiApiKeyLabel: "API Key",
       aiModelLabel: "Model",
@@ -877,7 +851,7 @@
       aiStatusNotConfigured: "AI not configured",
 
       byokTopbarLabel: "My Own Key",
-      byokTitle: "🔐 Use Your Own API Key",
+      byokTitle: "Use Your Own API Key",
       byokDesc: "The key you enter here is kept only in this browser tab; it is never saved to the server and is automatically discarded when you close the tab. Once activated, all your AI requests use this key and model — the shared/default AI Settings are not affected.",
       byokStatusOff: "Currently using the shared/default AI provider.",
       byokStatusOn: "Active for this session: {provider} {model}",
@@ -893,7 +867,7 @@
       byokMissingKey: "Please enter an API key",
       byokMissingProvider: "Please choose a provider",
 
-      dupAlertTitle: "⚠️ Potential Duplicate Finding Detected",
+      dupAlertTitle: "Potential Duplicate Finding Detected",
       dupAlertDesc: "Findings similar to this one already exist in the project.",
       dupMergeBtn: "Merge Selected",
       dupCreateAnywayBtn: "Create Anyway",
@@ -941,12 +915,12 @@
 
       lifecycleRemediationRate: "Remediation Rate",
       lifecycleStatusUpdated: "Finding status updated",
-      lifecycleStatus_open: "🔴 Open",
-      lifecycleStatus_retesting: "🔵 Retesting",
-      lifecycleStatus_fixed: "🟡 Fixed",
-      lifecycleStatus_resolved: "🟢 Resolved",
-      lifecycleStatus_wont_fix: "⚪ Won't Fix",
-      lifecycleStatus_accepted_risk: "⚪ Accepted Risk",
+      lifecycleStatus_open: "Open",
+      lifecycleStatus_retesting: "Retesting",
+      lifecycleStatus_fixed: "Fixed",
+      lifecycleStatus_resolved: "Resolved",
+      lifecycleStatus_wont_fix: "Won't Fix",
+      lifecycleStatus_accepted_risk: "Accepted Risk",
 
       customTestsCategoryName: "Custom Tests",
       customTestsCategoryDesc: "Additional test items specific to this project/organization (not from the official WSTG dataset).",
@@ -964,7 +938,7 @@
       pwEvidenceUploading: "Uploading...",
       pwEvidenceEmpty: "No evidence uploaded yet.",
       pwEvidenceUploadError: "Upload failed",
-      pwEvidenceAiOff: "🔌 AI analysis disabled — add ANTHROPIC_API_KEY to backend/.env to enable it.",
+      pwEvidenceAiOff: "AI analysis disabled — add ANTHROPIC_API_KEY to backend/.env to enable it.",
       pwEvidenceAiError: "AI analysis failed",
       pwEvidenceAiConfidence: "Confidence",
       pwEvidenceSuggested: "Suggested WSTG tests",
@@ -981,8 +955,8 @@
       pwEvidenceHttpResponseLabel: "HTTP Response",
       pwEvidenceRedactionNote: "Sensitive data (Authorization/Cookie/JWT/API keys/passwords/emails/credit cards) is automatically masked (redacted) on save. Raw text is only shown when you explicitly click 'Show Raw Text'.",
       pwEvidenceHttpRequired: "At least a request or a response must be entered.",
-      pwEvidenceShowRaw: "🔓 Show/Hide Raw Text",
-      pwEvidenceRawWarning: "⚠️ Raw (unredacted) text — may contain sensitive data, share carefully.",
+      pwEvidenceShowRaw: "Show/Hide Raw Text",
+      pwEvidenceRawWarning: "Raw (unredacted) text — may contain sensitive data, share carefully.",
       pwEvidenceReviewPending: "Pending review",
       pwEvidenceReviewAccepted: "Accepted",
       pwEvidenceReviewRejected: "Rejected",
@@ -1042,15 +1016,37 @@
       kanbanCol_confirmed: "Confirmed",
       kanbanCol_done: "Done",
 
-      pwEventType_project_created: "🆕 Project created",
-      pwEventType_session_created: "📋 Session created",
-      pwEventType_session_completed: "✅ Session completed",
-      pwEventType_test_completed: "☑️ Test completed",
-      pwEventType_finding_created: "🚩 New finding",
-      pwEventType_scope_updated: "🎯 Scope updated",
-      pwEventType_recon_run: "🌐 Recon run"
+      pwEventType_project_created: "Project created",
+      pwEventType_session_created: "Session created",
+      pwEventType_session_completed: "Session completed",
+      pwEventType_test_completed: "Test completed",
+      pwEventType_finding_created: "New finding",
+      pwEventType_scope_updated: "Scope updated",
+      pwEventType_recon_run: "Recon run"
     }
   };
+
+  // Yeni arayüz (açık/koyu tema, üst çubuk) için ek metinler
+  Object.assign(I18N.tr, {
+    navDashboard: "Genel Bakış",
+    navCategories: "OWASP WSTG",
+    themeLabel: "Tema",
+    theme_light: "Açık", theme_dark: "Koyu", theme_system: "Sistem",
+    ctxProject: "Proje", ctxSession: "Oturum",
+    ctxNoProject: "Proje seçilmedi", ctxNoSession: "Oturum seçilmedi",
+    dbBadgeOnline: "Backend bağlı", dbBadgeOffline: "Yerel mod",
+    progressLabel: "Genel ilerleme"
+  });
+  Object.assign(I18N.en, {
+    navDashboard: "Overview",
+    navCategories: "OWASP WSTG",
+    themeLabel: "Theme",
+    theme_light: "Light", theme_dark: "Dark", theme_system: "System",
+    ctxProject: "Project", ctxSession: "Session",
+    ctxNoProject: "No project", ctxNoSession: "No session",
+    dbBadgeOnline: "Backend connected", dbBadgeOffline: "Local mode",
+    progressLabel: "Overall progress"
+  });
 
   let DATA = null;
   let TOP10 = null;
@@ -1087,7 +1083,8 @@
     try{ localStorage.setItem(FRAMEWORK_KEY, f); }catch(e){}
   }
   function loadTheme(){
-    try{ return localStorage.getItem(THEME_KEY) || "midnight"; }catch(e){ return "midnight"; }
+    // Eski sürümlerden kalan renk teması adları (midnight, cyberpunk...) sisteme göre moda çevrilir.
+    try{ const v = localStorage.getItem(THEME_KEY); return THEME_MODES.includes(v) ? v : "system"; }catch(e){ return "system"; }
   }
   function saveTheme(t){
     try{ localStorage.setItem(THEME_KEY, t); }catch(e){}
@@ -1298,82 +1295,79 @@
       const key = el.getAttribute('data-i18n-placeholder');
       el.setAttribute('placeholder', t(key));
     });
+    document.querySelectorAll('[data-i18n-title]').forEach(el=>{
+      el.setAttribute('title', t(el.getAttribute('data-i18n-title')));
+    });
+    updateThemeTrigger();
+    updateProjectChip();
     const langSelect = document.getElementById('langSelect');
     if(langSelect) langSelect.value = currentLang;
     const frameworkSelect = document.getElementById('frameworkSelect');
     if(frameworkSelect) frameworkSelect.value = currentFramework;
   }
 
+  const darkQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+
+  function resolvedTheme(){
+    if(currentTheme === 'system') return darkQuery && darkQuery.matches ? 'dark' : 'light';
+    return currentTheme;
+  }
+
   function applyTheme(){
-    document.documentElement.setAttribute('data-theme', currentTheme);
+    document.documentElement.setAttribute('data-theme', resolvedTheme());
     updateThemeTrigger();
   }
 
-  function currentThemeObj(){
-    return THEMES.find(th => th.id === currentTheme) || THEMES[0];
-  }
-
   function updateThemeTrigger(){
-    const th = currentThemeObj();
-    const swatch = document.getElementById('themeTriggerSwatch');
-    const name = document.getElementById('themeTriggerName');
-    if(swatch) swatch.style.background = `linear-gradient(135deg,${th.primary},${th.secondary})`;
-    if(name) name.textContent = `${th.emoji||''} ${th.name}`.trim();
+    const btn = document.getElementById('themeTrigger');
+    const use = document.querySelector('#themeTriggerIcon use');
+    const iconId = { light: 'ic-sun', dark: 'ic-moon', system: 'ic-monitor' }[currentTheme] || 'ic-sun';
+    if(use) use.setAttribute('href', '#' + iconId);
+    if(btn) btn.title = `${t('themeLabel')}: ${t('theme_' + currentTheme)}`;
   }
 
-  function renderThemeGrid(){
-    const grid = document.getElementById('themeGrid');
-    if(!grid) return;
-    grid.innerHTML = THEMES.map(th => `
-      <button type="button" class="theme-card ${th.id===currentTheme?'active':''}" data-theme-id="${th.id}">
-        <span class="theme-card-preview" style="background:linear-gradient(135deg,${th.primary},${th.secondary})">
-          <span class="theme-card-emoji">${th.emoji||''}</span>
-          <span class="theme-card-check">✓</span>
-        </span>
-        <span class="theme-card-info">
-          <span class="theme-card-name">${th.name}</span>
-          <span class="theme-card-desc">${(th.desc && th.desc[currentLang]) || ''}</span>
-        </span>
-      </button>
-    `).join('');
-    grid.querySelectorAll('.theme-card').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        currentTheme = btn.dataset.themeId;
-        saveTheme(currentTheme);
-        applyTheme();
-        grid.querySelectorAll('.theme-card').forEach(b=>b.classList.remove('active'));
-        btn.classList.add('active');
-      });
-    });
+  // Açık → Koyu → Sistem döngüsü
+  function cycleTheme(){
+    const idx = THEME_MODES.indexOf(currentTheme);
+    currentTheme = THEME_MODES[(idx + 1) % THEME_MODES.length];
+    saveTheme(currentTheme);
+    applyTheme();
+    showToast(`${t('themeLabel')}: ${t('theme_' + currentTheme)}`);
   }
 
-  function openThemeModal(){
-    renderThemeGrid();
-    document.getElementById('themeOverlay').classList.add('open');
-  }
-  function closeThemeModal(){
-    document.getElementById('themeOverlay').classList.remove('open');
+  if(darkQuery && darkQuery.addEventListener){
+    darkQuery.addEventListener('change', ()=>{ if(currentTheme === 'system') applyTheme(); });
   }
 
   function renderSidebar(){
     const nav = document.getElementById('categoryNav');
     nav.innerHTML = getEffectiveCategories().map(c => {
       const done = c.tests.filter(t => progress[t.id]).length;
-      return `<button class="nav-item" data-cat="${c.id}">
-        <span class="dot"></span>${c.name}
+      const all = c.tests.length && done === c.tests.length;
+      const active = currentCategoryId === c.id && document.getElementById('categoryOverlay').classList.contains('open');
+      return `<button class="nav-sub ${all?'done':''} ${active?'active':''}" data-cat="${c.id}" title="${escapeHtml(c.code)}">
+        <span class="nav-sub-name">${escapeHtml(c.name)}</span>
         <span class="count">${done}/${c.tests.length}</span>
       </button>`;
     }).join('');
-    nav.querySelectorAll('.nav-item').forEach(el=>{
-      el.addEventListener('click', ()=> openCategory(el.dataset.cat));
+    nav.querySelectorAll('.nav-sub').forEach(el=>{
+      el.addEventListener('click', ()=>{ closeSidebar(); openCategory(el.dataset.cat); });
     });
+    const label = document.getElementById('categoryToggleLabel');
+    if(label) label.textContent = currentFramework === 'llm-security' ? 'OWASP LLM Top 10' : 'OWASP WSTG';
   }
 
   function renderDashboard(){
     const s = stats();
     document.getElementById('ringFill').style.background =
-      `conic-gradient(#6366f1 0 ${s.pct}%, rgba(255,255,255,.08) ${s.pct}% 100%)`;
+      `conic-gradient(var(--accent) 0 ${s.pct}%, var(--track) ${s.pct}% 100%)`;
     document.getElementById('ringPct').textContent = s.pct + '%';
+    const progressSub = document.getElementById('progressSub');
+    if(progressSub){
+      progressSub.textContent = currentSession
+        ? `${currentSession.name} · ${s.done}/${s.total}`
+        : `${t('sessionLocalMode')} · ${s.done}/${s.total}`;
+    }
     document.getElementById('statDone').textContent = s.done;
     document.getElementById('statPending').textContent = s.pending;
     document.getElementById('statCategories').textContent = s.categories;
@@ -1382,12 +1376,14 @@
     const grid = document.getElementById('categoriesGrid');
     grid.innerHTML = getEffectiveCategories().map(c => {
       const done = c.tests.filter(t => progress[t.id]).length;
-      const pct = Math.round((done/c.tests.length)*100);
-      return `<div class="category-card" data-cat="${c.id}">
-        <div class="badge">${c.code}</div>
-        ${icon(c.icon)}
-        <h4>${c.name}</h4>
-        <p>${c.description}</p>
+      const pct = c.tests.length ? Math.round((done/c.tests.length)*100) : 0;
+      return `<div class="category-card ${pct===100?'done-all':''}" data-cat="${c.id}" tabindex="0" role="button">
+        <div class="cc-top">
+          <span class="cc-ico">${icon(c.icon)}</span>
+          <span class="badge">${escapeHtml(c.code)}</span>
+        </div>
+        <h4>${escapeHtml(c.name)}</h4>
+        <p>${escapeHtml(c.description || '')}</p>
         <div class="cat-progress-row">
           <div class="cat-progress-bar"><div class="cat-progress-fill" style="width:${pct}%"></div></div>
           <div class="cat-progress-text">${done}/${c.tests.length}</div>
@@ -1396,11 +1392,12 @@
     }).join('');
     grid.querySelectorAll('.category-card').forEach(el=>{
       el.addEventListener('click', ()=> openCategory(el.dataset.cat));
+      el.addEventListener('keydown', e=>{ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openCategory(el.dataset.cat); } });
     });
   }
 
   function escapeHtml(s){
-    return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    return String(s == null ? '' : s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   }
 
   function renderTestItem(test){
@@ -1468,6 +1465,7 @@
     renderTestList();
     document.getElementById('categoryOverlay').classList.add('open');
     document.body.style.overflow = 'hidden';
+    renderSidebar();
     if(focusTestId){
       setTimeout(()=>{
         const el = document.querySelector(`.test-item[data-id="${focusTestId}"]`);
@@ -1477,8 +1475,10 @@
   }
 
   function closeCategory(){
+    const wasOpen = document.getElementById('categoryOverlay').classList.contains('open');
     document.getElementById('categoryOverlay').classList.remove('open');
     document.body.style.overflow = '';
+    if(wasOpen && DATA) renderSidebar();
   }
 
   function renderTestList(){
@@ -1528,6 +1528,13 @@
     renderDashboard();
     if(currentCategoryId) renderTestList();
     showToast(progress[id] ? t('markDoneToast') : t('markPendingToast'));
+  }
+
+  function closeSidebar(){
+    const sb = document.getElementById('sidebar');
+    if(sb) sb.classList.remove('open');
+    const scrim = document.getElementById('sidebarScrim');
+    if(scrim) scrim.classList.remove('open');
   }
 
   function showToast(msg){
@@ -1850,22 +1857,44 @@
 
   function updateSessionUI(){
     const chip = document.getElementById('sessionChip');
+    const topName = document.getElementById('topbarSessionName');
     const topBtn = document.getElementById('topbarSessionBtn');
-    if(!chip || !topBtn) return;
     if(currentSession){
       const done = Object.values(sessionResults).filter(r => r.status && r.status !== 'pending').length;
       const total = allTests().length;
-      chip.style.display = 'flex';
-      document.getElementById('sessionChipName').textContent = currentSession.name;
-      document.getElementById('sessionChipSub').textContent = `${done}/${total}`;
-      topBtn.style.display = 'inline-flex';
-      topBtn.textContent = `📋 ${currentSession.name}`;
-      topBtn.title = t('navSessions');
+      if(chip){
+        chip.style.display = 'flex';
+        document.getElementById('sessionChipName').textContent = currentSession.name;
+        document.getElementById('sessionChipSub').textContent = `${done}/${total}`;
+      }
+      if(topName) topName.textContent = currentSession.name;
+      if(topBtn) topBtn.classList.remove('placeholder');
     } else {
-      chip.style.display = 'none';
-      topBtn.style.display = dbOnline ? 'inline-flex' : 'none';
-      topBtn.textContent = `📂 ${t('navSessions')}`;
+      if(chip) chip.style.display = 'none';
+      if(topName) topName.textContent = dbOnline ? t('ctxNoSession') : t('sessionLocalMode');
+      if(topBtn) topBtn.classList.add('placeholder');
     }
+    const badge = document.getElementById('dbBadge');
+    if(badge){
+      badge.className = 'scope-badge ' + (dbOnline ? 'verified' : 'unverified');
+      badge.textContent = dbOnline ? t('dbBadgeOnline') : t('dbBadgeOffline');
+      badge.title = dbOnline ? t('dbOnline') : t('dbOffline');
+    }
+    renderProgressSub();
+    const avatar = document.getElementById('avatar');
+    if(avatar){
+      const name = (currentSession && currentSession.tester_name) || '';
+      const initials = name.trim().split(/\s+/).filter(Boolean).slice(0,2).map(w => w[0].toLocaleUpperCase(t('dateLocale'))).join('');
+      avatar.textContent = initials || 'PW';
+      avatar.title = name || 'Pentest Workspace';
+    }
+  }
+
+  function renderProgressSub(){
+    const el = document.getElementById('progressSub');
+    if(!el || !DATA) return;
+    const s = stats();
+    el.textContent = `${currentSession ? currentSession.name : t('sessionLocalMode')} · ${s.done}/${s.total}`;
   }
 
   function progressFromResults(results){
@@ -1885,12 +1914,30 @@
         progress = progressFromResults(results);
         saveSessionId(session.id);
         setSkipFlag(false);
+        syncProjectFromSession(session);
         reloadReconContext();
         renderSidebar(); renderDashboard();
         if(currentCategoryId) renderTestList();
         updateSessionUI();
         closeSessionGate();
       });
+  }
+
+  // Bir projeye bağlı oturum açıldığında üst çubuktaki proje bağlamını da
+  // o projeye getirir (oturum projesiz ise mevcut proje bağlamına dokunmaz).
+  function syncProjectFromSession(session){
+    if(!session || !session.project_id || session.project_id === currentProjectId) return;
+    apiRequest(`/projects/${session.project_id}`).then(project => {
+      if(!currentSession || currentSession.id !== session.id) return;
+      currentProjectId = project.id;
+      currentProjectObj = project;
+      updateProjectChip();
+      reloadReconContext();
+      return apiRequest(`/projects/${project.id}/custom-tests`).then(items => {
+        customTests = items || [];
+        renderSidebar(); renderDashboard();
+      });
+    }).catch(()=>{});
   }
 
   function renderSessionList(){
@@ -1909,11 +1956,11 @@
         return `<div class="session-card" data-id="${s.id}">
           <div class="session-card-top">
             <div>
-              <div class="session-card-name">${escapeHtml(s.name)}${active ? ' ✅' : ''}</div>
+              <div class="session-card-name">${escapeHtml(s.name)}${active ? ' ' : ''}</div>
               <div class="session-card-meta">
-                <span>👤 ${escapeHtml(s.tester_name || '—')}</span>
-                <span>🎯 ${escapeHtml(s.target_url || '—')}</span>
-                <span>📅 ${new Date(s.created_at).toLocaleString(t('dateLocale'))}</span>
+                <span>${escapeHtml(s.tester_name || '—')}</span>
+                <span>${escapeHtml(s.target_url || '—')}</span>
+                <span>${new Date(s.created_at).toLocaleString(t('dateLocale'))}</span>
               </div>
             </div>
             <span class="session-status-pill ${s.status === 'completed' ? 'completed' : 'active'}">${s.status === 'completed' ? t('statusCompleted') : t('statusActive')}</span>
@@ -1924,7 +1971,7 @@
           </div>
           <div class="session-card-actions">
             <button data-action="open" data-id="${s.id}">${t('startTest')}</button>
-            <button data-action="delete" data-id="${s.id}" class="danger">🗑️</button>
+            <button data-action="delete" data-id="${s.id}" class="danger">${t('pwEvidenceDelete')}</button>
           </div>
         </div>`;
       }).join('')}</div>`;
@@ -2485,7 +2532,7 @@
     resultEl.style.display = '';
 
     if(s.all_done){
-      resultEl.innerHTML = `<div class="ant-all-done">🎉 ${escapeHtml(t('aiNextTestAllDone'))}</div>`;
+      resultEl.innerHTML = `<div class="ant-all-done">${escapeHtml(t('aiNextTestAllDone'))}</div>`;
       return;
     }
     if(!s.suggested_test_id){
@@ -2496,7 +2543,7 @@
     const meta = testInfoById(s.suggested_test_id);
     const priority = (s.priority || 'medium').toLowerCase();
     const groundedWarning = s.suggestion_grounded === false
-      ? `<div class="ant-grounded-warning">⚠️ ${escapeHtml(t('aiNextTestUngrounded'))}</div>` : '';
+      ? `<div class="ant-grounded-warning">${escapeHtml(t('aiNextTestUngrounded'))}</div>` : '';
     const altsHtml = (s.alternative_test_ids && s.alternative_test_ids.length)
       ? `<div class="ant-alts">${escapeHtml(t('aiNextTestAltsLabel'))}: ${s.alternative_test_ids.map(escapeHtml).join(', ')}</div>` : '';
 
@@ -2536,12 +2583,16 @@
   function updateProjectChip(){
     const chip = document.getElementById('projectChip');
     if(!chip) return;
+    const name = document.getElementById('projectChipName');
     if(currentProjectObj){
-      chip.style.display = 'flex';
-      document.getElementById('projectChipName').textContent = currentProjectObj.name;
-      document.getElementById('projectChipSub').textContent = currentProjectObj.client || t('navProjects');
+      chip.classList.remove('placeholder');
+      name.textContent = currentProjectObj.name;
+      chip.title = currentProjectObj.client || t('navProjects');
+      document.getElementById('projectChipSub').textContent = currentProjectObj.client || '';
     } else {
-      chip.style.display = 'none';
+      chip.classList.add('placeholder');
+      name.textContent = t('ctxNoProject');
+      chip.title = t('navProjects');
     }
   }
 
@@ -2574,9 +2625,9 @@
             <div>
               <div class="project-card-name">${escapeHtml(p.name)}</div>
               <div class="project-card-meta">
-                ${p.client ? `<span>🏢 ${escapeHtml(p.client)}</span>` : ''}
-                <span>📁 ${t('projectSessionsLabel')(p.session_count || 0)}</span>
-                ${p.start_date ? `<span>📅 ${escapeHtml(p.start_date)}${p.end_date ? ' → ' + escapeHtml(p.end_date) : ''}</span>` : ''}
+                ${p.client ? `<span>${escapeHtml(p.client)}</span>` : ''}
+                <span>${t('projectSessionsLabel')(p.session_count || 0)}</span>
+                ${p.start_date ? `<span>${escapeHtml(p.start_date)}${p.end_date ? ' → ' + escapeHtml(p.end_date) : ''}</span>` : ''}
               </div>
             </div>
             <span class="project-status-pill ${p.status}">${t('projectStatus_'+p.status)}</span>
@@ -2585,7 +2636,7 @@
           <div class="project-card-actions">
             <button data-action="open" data-id="${p.id}">${t('openProjectBtn')}</button>
             <button data-action="edit" data-id="${p.id}">${t('editBtn')}</button>
-            <button data-action="delete" data-id="${p.id}" class="danger">🗑️</button>
+            <button data-action="delete" data-id="${p.id}" class="danger">${t('pwEvidenceDelete')}</button>
           </div>
         </div>`).join('');
     }).catch(err => {
@@ -2882,7 +2933,7 @@
       const rootLabel = (a.runs && a.runs[0] && a.runs[0].target) || (currentProjectObj && currentProjectObj.name) || '—';
       content.innerHTML = toggleHtml + `
         <div class="asm-tree" style="margin-top:16px">
-          <div class="asm-root">🌐 ${escapeHtml(rootLabel)}</div>
+          <div class="asm-root">${escapeHtml(rootLabel)}</div>
           <div class="asm-branches">
             <div class="asm-branch">
               <div class="asm-branch-title">${t('pwAssetsSubdomains')} (${a.subdomains.length})</div>
@@ -3460,10 +3511,10 @@
 
   // --- BYOK: Kendi API Key'inle Kullan (bu oturuma özel, sunucuya kaydedilmez) ---
   const BYOK_PROVIDERS_META = [
-    { id: 'anthropic', icon: '🟣', label: 'Anthropic', defaultModel: 'claude-sonnet-5', needsKey: true, needsBaseUrl: false, placeholder: 'sk-ant-...' },
-    { id: 'openai', icon: '⚪', label: 'OpenAI', defaultModel: 'gpt-5.6-terra', needsKey: true, needsBaseUrl: false, placeholder: 'sk-...' },
-    { id: 'gemini', icon: '🔵', label: 'Gemini', defaultModel: 'gemini-3.7-flash', needsKey: true, needsBaseUrl: false, placeholder: 'AIza...' },
-    { id: 'ollama', icon: '🟢', label: 'Ollama', defaultModel: 'llama3.1', needsKey: false, needsBaseUrl: true, placeholder: '(gerekmez)' },
+    { id: 'anthropic', icon: 'A', label: 'Anthropic', defaultModel: 'claude-sonnet-5', needsKey: true, needsBaseUrl: false, placeholder: 'sk-ant-...' },
+    { id: 'openai', icon: 'O', label: 'OpenAI', defaultModel: 'gpt-5.6-terra', needsKey: true, needsBaseUrl: false, placeholder: 'sk-...' },
+    { id: 'gemini', icon: 'G', label: 'Gemini', defaultModel: 'gemini-3.7-flash', needsKey: true, needsBaseUrl: false, placeholder: 'AIza...' },
+    { id: 'ollama', icon: 'L', label: 'Ollama', defaultModel: 'llama3.1', needsKey: false, needsBaseUrl: true, placeholder: '(gerekmez)' },
   ];
   let byokSelectedProvider = 'anthropic';
 
@@ -3633,10 +3684,10 @@
     if(!badge) return;
     apiRequest('/ai/status').then(res => {
       if(res.configured){
-        badge.textContent = `⚡ ${res.provider} ${t('aiStatusWorkingWith')}`;
+        badge.textContent = `${res.provider} ${t('aiStatusWorkingWith')}`;
         badge.className = 'ai-status-badge configured';
       } else {
-        badge.textContent = `⚠️ ${t('aiStatusNotConfigured')}`;
+        badge.textContent = `${t('aiStatusNotConfigured')}`;
         badge.className = 'ai-status-badge not-configured';
       }
     }).catch(()=>{ badge.textContent = ''; });
@@ -3676,7 +3727,7 @@
               <label>${t('aiApiKeyLabel')}</label>
               <div class="ai-key-input-wrap">
                 <input type="password" class="ai-key-input" placeholder="${escapeHtml(keyPlaceholder)}">
-                <button type="button" class="ai-key-toggle-btn" title="${t('aiToggleVisibility')}">👁</button>
+                <button type="button" class="ai-key-toggle-btn" title="${t('aiToggleVisibility')}"><svg class="i i-sm" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
               </div>
             </div>` : ''}
             <div>
@@ -3756,11 +3807,11 @@
         if(baseUrlInput) payload.base_url = baseUrlInput.value.trim();
         apiRequest('/ai/settings/test', { method: 'POST', body: JSON.stringify(payload) })
           .then(res => {
-            statusEl.textContent = `✅ ${t('aiTestSuccess')} (${res.latency_ms}ms)`;
+            statusEl.textContent = `${t('aiTestSuccess')} (${res.latency_ms}ms)`;
             statusEl.className = 'ai-provider-status success';
           })
           .catch(err => {
-            statusEl.textContent = `❌ ${err.message || t('aiTestFailed')}`;
+            statusEl.textContent = `${err.message || t('aiTestFailed')}`;
             statusEl.className = 'ai-provider-status failure';
           });
       }
@@ -3811,13 +3862,13 @@
           </div>
           <div class="finding-card-title">${escapeHtml(f.title)}</div>
           <div class="finding-card-meta">
-            ${f.test_id ? `<span>🔗 ${escapeHtml(f.test_id)}</span>` : ''}
-            ${f.endpoint ? `<span>🌐 ${escapeHtml(f.endpoint)}</span>` : ''}
-            ${f.assigned_to ? `<span>👤 ${escapeHtml(f.assigned_to)}</span>` : ''}
+            ${f.test_id ? `<span>${escapeHtml(f.test_id)}</span>` : ''}
+            ${f.endpoint ? `<span>${escapeHtml(f.endpoint)}</span>` : ''}
+            ${f.assigned_to ? `<span>${escapeHtml(f.assigned_to)}</span>` : ''}
           </div>
           <div class="project-card-actions">
             <button data-action="edit" data-id="${f.id}">${t('editBtn')}</button>
-            <button data-action="delete" data-id="${f.id}" class="danger">🗑️</button>
+            <button data-action="delete" data-id="${f.id}" class="danger">${t('pwEvidenceDelete')}</button>
           </div>
         </div>`).join('') : `<div class="search-empty">${t('pwFindingsProEmpty')}</div>`;
 
@@ -3963,12 +4014,12 @@
     return `<div class="kanban-card" draggable="true" data-id="${card.id}">
       <div class="kanban-card-top">
         <span class="kanban-card-testid">${escapeHtml(card.test_id)}</span>
-        ${card.findings_count ? `<span class="kanban-badge kanban-badge-finding">🔴 ${card.findings_count}</span>` : ''}
+        ${card.findings_count ? `<span class="kanban-badge kanban-badge-finding">${card.findings_count} ${t('pwStatFindings').toLowerCase()}</span>` : ''}
       </div>
       <div class="kanban-card-title">${escapeHtml(card.test_title || '')}</div>
       <div class="kanban-card-meta">
-        ${card.evidence_count ? `<span>📎 ${card.evidence_count}</span>` : ''}
-        <span class="kanban-time-row">⏱ <input type="number" min="0" class="kanban-time-input" data-id="${card.id}" value="${card.time_spent_minutes || 0}"> ${t('kanbanMinutesShort')}</span>
+        ${card.evidence_count ? `<span>${card.evidence_count} ${t('pwTabEvidence').toLowerCase()}</span>` : ''}
+        <span class="kanban-time-row"><input type="number" min="0" class="kanban-time-input" data-id="${card.id}" value="${card.time_spent_minutes || 0}"> ${t('kanbanMinutesShort')}</span>
       </div>
       <input type="text" class="kanban-assignee-input" data-id="${card.id}" placeholder="${t('kanbanAssignPlaceholder')}" value="${escapeHtml(card.assigned_to || '')}">
     </div>`;
@@ -4117,9 +4168,9 @@
           <label data-i18n="reportExecSummaryLabel">${t('reportExecSummaryLabel')}</label>
           <textarea id="reportExecSummaryInput" rows="3" placeholder="${t('reportExecSummaryPlaceholder')}"></textarea>
           <div class="hero-actions" style="margin-top:8px">
-            <button type="button" class="btn btn-sm" id="reportGenSummaryBtn">🤖 ${t('reportGenSummaryBtn')}</button>
-            <button type="button" class="btn btn-primary btn-sm" id="openHtmlReportBtn">🌐 ${t('reportOpenHtmlBtn')}</button>
-            <button type="button" class="btn btn-primary btn-sm" id="downloadPdfReportBtn">📄 ${t('reportDownloadPdfBtn')}</button>
+            <button type="button" class="btn btn-sm" id="reportGenSummaryBtn">${t('reportGenSummaryBtn')}</button>
+            <button type="button" class="btn btn-primary btn-sm" id="openHtmlReportBtn">${t('reportOpenHtmlBtn')}</button>
+            <button type="button" class="btn btn-primary btn-sm" id="downloadPdfReportBtn">${t('reportDownloadPdfBtn')}</button>
           </div>
           <div class="import-status" id="reportBuilderStatus"></div>
         </div>
@@ -4255,17 +4306,17 @@
           <p class="import-preview-source" style="margin-bottom:14px">${t('pwProReportsDesc')}</p>
           <div class="pro-report-cards">
             <a class="pro-report-card" href="${API_BASE}/projects/${currentProjectId}/reports/technical" target="_blank">
-              <div class="pro-report-icon">📋</div>
+              <div class="pro-report-icon"><svg class="i"><use href="#ic-file"/></svg></div>
               <div class="pro-report-name">${t('pwReportTypeTechnical')}</div>
               <div class="pro-report-desc">${t('pwReportTypeTechnicalDesc')}</div>
             </a>
             <a class="pro-report-card" href="${API_BASE}/projects/${currentProjectId}/reports/executive" target="_blank">
-              <div class="pro-report-icon">📊</div>
+              <div class="pro-report-icon"><svg class="i"><use href="#ic-grid"/></svg></div>
               <div class="pro-report-name">${t('pwReportTypeExecutive')}</div>
               <div class="pro-report-desc">${t('pwReportTypeExecutiveDesc')}</div>
             </a>
             <a class="pro-report-card" href="${API_BASE}/projects/${currentProjectId}/reports/developer" target="_blank">
-              <div class="pro-report-icon">🛠️</div>
+              <div class="pro-report-icon"><svg class="i"><use href="#ic-list"/></svg></div>
               <div class="pro-report-name">${t('pwReportTypeDeveloper')}</div>
               <div class="pro-report-desc">${t('pwReportTypeDeveloperDesc')}</div>
             </a>
@@ -4285,8 +4336,8 @@
             <div>
               <div class="session-card-name">${escapeHtml(s.name)}</div>
               <div class="session-card-meta">
-                <span>👤 ${escapeHtml(s.tester_name || '—')}</span>
-                <span>📅 ${new Date(s.created_at).toLocaleString(t('dateLocale'))}</span>
+                <span>${escapeHtml(s.tester_name || '—')}</span>
+                <span>${new Date(s.created_at).toLocaleString(t('dateLocale'))}</span>
               </div>
             </div>
             <span class="session-status-pill ${s.status === 'completed' ? 'completed' : 'active'}">${s.status === 'completed' ? t('statusCompleted') : t('statusActive')}</span>
@@ -4311,9 +4362,9 @@
     const content = document.getElementById('pwContent');
     content.innerHTML = `
       <div class="evidence-upload-row">
-        <label class="evidence-upload-btn" for="evidenceFileInput">📎 ${t('pwEvidenceUploadLabel')}</label>
+        <label class="evidence-upload-btn" for="evidenceFileInput">${t('pwEvidenceUploadLabel')}</label>
         <input type="file" id="evidenceFileInput" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none">
-        <button type="button" class="evidence-upload-btn" id="toggleHttpEvidenceBtn">🌐 ${t('pwEvidenceAddHttpLabel')}</button>
+        <button type="button" class="evidence-upload-btn" id="toggleHttpEvidenceBtn">${t('pwEvidenceAddHttpLabel')}</button>
         <span class="import-status" id="evidenceUploadStatus"></span>
       </div>
       <div id="httpEvidenceForm" class="http-evidence-form" style="display:none">
@@ -4404,14 +4455,14 @@
         const statusLabel = { pending: t('pwEvidenceReviewPending'), accepted: t('pwEvidenceReviewAccepted'), rejected: t('pwEvidenceReviewRejected'), manual: t('pwEvidenceReviewAccepted') }[ev.review_status] || ev.review_status;
 
         const linkFooter = `
-            ${ev.linked_test_id ? `<div class="evidence-linked">🔗 ${t('pwEvidenceLinkedTo')}: ${escapeHtml(ev.linked_test_id)}</div>` : ''}
+            ${ev.linked_test_id ? `<div class="evidence-linked">${t('pwEvidenceLinkedTo')}: ${escapeHtml(ev.linked_test_id)}</div>` : ''}
             <label class="evidence-finding-link-label">${t('pwEvidenceLinkFindingLabel')}</label>
             <select class="evidence-finding-select" data-id="${ev.id}">
               <option value="">${t('pwEvidenceLinkFindingNone')}</option>
               ${findingOptions}
             </select>
             <div class="evidence-actions">
-              <button class="evidence-delete-btn" data-id="${ev.id}">🗑️ ${t('pwEvidenceDelete')}</button>
+              <button class="evidence-delete-btn" data-id="${ev.id}">${t('pwEvidenceDelete')}</button>
             </div>`;
 
         if(ev.evidence_type === 'http_transaction'){
@@ -4419,7 +4470,7 @@
           <div class="evidence-card http-evidence-card" data-id="${ev.id}">
             <div class="evidence-body">
               <div class="evidence-top">
-                <span class="evidence-filename">🌐 ${escapeHtml(ev.filename)}</span>
+                <span class="evidence-filename">${escapeHtml(ev.filename)}</span>
                 <span class="evidence-status-badge status-${statusClass}">${statusLabel}</span>
               </div>
               ${ev.http_request_redacted ? `<div class="http-evidence-label">${t('pwEvidenceHttpRequestLabel')}</div><pre class="tool-output">${escapeHtml(ev.http_request_redacted)}</pre>` : ''}
@@ -4442,7 +4493,7 @@
                 ${ev.ai_suggested_test_ids.map(tid => `<button class="evidence-suggest-chip" data-evidence="${ev.id}" data-test="${tid}">${escapeHtml(tid)} ✓</button>`).join('')}
               </div>` : ''}`;
         } else if(ev.ai_error){
-          aiBlock = `<div class="evidence-ai-off">⚠️ ${t('pwEvidenceAiError')}: ${escapeHtml(ev.ai_error)}</div>`;
+          aiBlock = `<div class="evidence-ai-off">${t('pwEvidenceAiError')}: ${escapeHtml(ev.ai_error)}</div>`;
         } else {
           aiBlock = `<div class="evidence-ai-off">${t('pwEvidenceAiOff')}</div>`;
         }
@@ -4555,10 +4606,34 @@
       if(e.target.id === 'top10Overlay') closeTop10Detail();
     });
 
-    document.getElementById('themeTrigger').addEventListener('click', openThemeModal);
-    document.getElementById('closeThemeOverlay').addEventListener('click', closeThemeModal);
-    document.getElementById('themeOverlay').addEventListener('click', e=>{
-      if(e.target.id === 'themeOverlay') closeThemeModal();
+    document.getElementById('themeTrigger').addEventListener('click', cycleTheme);
+
+    // Mobil kenar çubuğu
+    document.getElementById('menuToggle').addEventListener('click', ()=>{
+      const open = !document.getElementById('sidebar').classList.contains('open');
+      document.getElementById('sidebar').classList.toggle('open', open);
+      document.getElementById('sidebarScrim').classList.toggle('open', open);
+    });
+    document.getElementById('sidebarScrim').addEventListener('click', closeSidebar);
+    document.querySelectorAll('.sidebar .nav-link[id]').forEach(btn=>{
+      if(btn.id !== 'categoryToggle') btn.addEventListener('click', closeSidebar);
+    });
+    document.getElementById('categoryToggle').addEventListener('click', ()=>{
+      const list = document.getElementById('categoryNav');
+      const hidden = list.classList.toggle('hidden');
+      document.getElementById('categoryToggle').classList.toggle('collapsed', hidden);
+    });
+    document.getElementById('brandLink').addEventListener('click', e=>{
+      e.preventDefault(); window.scrollTo({top:0, behavior:'smooth'});
+    });
+    document.getElementById('sessionChip').addEventListener('click', ()=> openSessionGate(true));
+    document.getElementById('mobileSearchBtn').addEventListener('click', e=>{
+      e.stopPropagation();
+      document.querySelector('.topbar').classList.add('search-open');
+      setTimeout(()=> document.getElementById('globalSearch').focus(), 20);
+    });
+    document.getElementById('globalSearch').addEventListener('blur', ()=>{
+      setTimeout(()=> document.querySelector('.topbar').classList.remove('search-open'), 150);
     });
 
     document.getElementById('sessionsNavBtn').addEventListener('click', ()=> openSessionGate(true));
@@ -4683,6 +4758,7 @@
     });
     document.getElementById('projectChip').addEventListener('click', ()=>{
       if(currentProjectId) openProjectWorkspace(currentProjectId);
+      else openProjectsModal();
     });
 
     document.getElementById('importNavBtn').addEventListener('click', openImportModal);
@@ -4701,7 +4777,7 @@
 
     document.addEventListener('keydown', e=>{
       if(e.key === 'Escape'){
-        closeCategory(); closeThemeModal(); closeNewSessionOverlay(); closeTop10Detail(); closeImportModal(); closeReconModal(); closePlannerModal(); closeAiNextTestModal();
+        closeCategory(); closeSidebar(); closeNewSessionOverlay(); closeTop10Detail(); closeImportModal(); closeReconModal(); closePlannerModal(); closeAiNextTestModal();
         closeProjectsModal(); closeNewProjectModal(); closeProjectWorkspace(); closeFindingModal(); closeDuplicateAlert(); closeAiSettingsModal(); closeByokModal();
         if(document.getElementById('closeSessionGate').style.display !== 'none') closeSessionGate();
       }

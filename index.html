@@ -4,179 +4,226 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pentest Workspace | OWASP WSTG v4.2</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script>
+  (function(){
+    try{
+      var m = localStorage.getItem('wstg_theme_v1');
+      if(m !== 'light' && m !== 'dark') m = 'system';
+      var dark = m === 'dark' || (m === 'system' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    }catch(e){ document.documentElement.setAttribute('data-theme','light'); }
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-<div class="grid"></div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="ic-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></symbol>
+    <symbol id="ic-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+    <symbol id="ic-clipboard" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M9 10h6M9 14h6M9 18h3"/></symbol>
+    <symbol id="ic-sitemap" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-2h12v2"/></symbol>
+    <symbol id="ic-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><path d="m3 6 1.5 1.5L7 5M3 12l1.5 1.5L7 11M3 18l1.5 1.5L7 17"/></symbol>
+    <symbol id="ic-spark" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/></symbol>
+    <symbol id="ic-upload" viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5"/><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></symbol>
+    <symbol id="ic-book" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5M19 19v2H6"/></symbol>
+    <symbol id="ic-shield" viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/></symbol>
+    <symbol id="ic-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></symbol>
+    <symbol id="ic-reset" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></symbol>
+    <symbol id="ic-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m10.8 12.2 8.7-8.7M16 6l3 3M14 8l2 2"/></symbol>
+    <symbol id="ic-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
+    <symbol id="ic-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+    <symbol id="ic-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></symbol>
+    <symbol id="ic-monitor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></symbol>
+    <symbol id="ic-chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="ic-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+    <symbol id="ic-play" viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></symbol>
+    <symbol id="ic-check" viewBox="0 0 24 24"><path d="m5 12 4.5 4.5L19 7"/></symbol>
+    <symbol id="ic-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="ic-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol>
+    <symbol id="ic-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></symbol>
+  </defs>
+</svg>
 
-<div class="app">
+<div class="shell">
 
-  <!-- Sidebar -->
-  <aside class="sidebar">
-    <div class="logo">
-      <div class="logo-icon">P</div>
+  <!-- Üst çubuk -->
+  <header class="topbar">
+    <button class="icon-btn menu-toggle" id="menuToggle" type="button" aria-label="Menü"><svg class="i"><use href="#ic-menu"/></svg></button>
+    <a class="brand" href="#" id="brandLink">
+      <svg class="brand-mark" viewBox="0 0 30 34" aria-hidden="true">
+        <path d="M15 1 2 5.5v10.2C2 24.6 7.6 30.6 15 33c7.4-2.4 13-8.4 13-17.3V5.5z" fill="#1f63d6"/>
+        <path d="M15 1v32c7.4-2.4 13-8.4 13-17.3V5.5z" fill="#174ba6"/>
+        <path d="M9.5 16.5 13.5 20.5 21 12.5" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
       <div>
-        <h1>Pentest Workspace</h1>
-        <p>OWASP WSTG v4.2</p>
+        <div class="brand-name">Pentest Workspace</div>
+        <div class="brand-sub">OWASP WSTG v4.2</div>
       </div>
+    </a>
+
+    <div class="topbar-context">
+      <div class="ctx-item">
+        <span class="ctx-label" data-i18n="ctxProject">Proje</span>
+        <button type="button" class="ctx-select placeholder" id="projectChip">
+          <span id="projectChipName" data-i18n="ctxNoProject">Proje seçilmedi</span>
+          <svg class="i i-sm"><use href="#ic-chev"/></svg>
+        </button>
+        <span id="projectChipSub" hidden></span>
+      </div>
+      <span class="ctx-sep"></span>
+      <div class="ctx-item">
+        <span class="ctx-label" data-i18n="ctxSession">Oturum</span>
+        <button type="button" class="ctx-select" id="topbarSessionBtn">
+          <span id="topbarSessionName">—</span>
+          <svg class="i i-sm"><use href="#ic-chev"/></svg>
+        </button>
+      </div>
+      <span class="scope-badge" id="dbBadge"></span>
     </div>
 
-    <nav class="nav">
-      <div class="nav-title" data-i18n="navWorkspace">Workspace</div>
-      <button class="nav-item active" id="dashboardNav">
-        <span class="dot"></span><span data-i18n="navDashboard">Dashboard</span>
+    <div class="topbar-actions">
+      <button class="icon-btn mobile-search-btn" id="mobileSearchBtn" type="button" aria-label="Ara"><svg class="i"><use href="#ic-search"/></svg></button>
+      <div class="search header-search" id="headerSearch">
+        <div class="search-input">
+          <svg class="i"><use href="#ic-search"/></svg>
+          <input type="text" id="globalSearch" data-i18n-placeholder="searchPlaceholder" placeholder="WSTG testi, XSS, SQLi, JWT, SSRF ara..." autocomplete="off">
+        </div>
+        <div class="search-results header-results" id="searchResults"></div>
+      </div>
+      <button class="icon-btn" id="topbarByokBtn" type="button" data-i18n-title="byokTopbarLabel" title="Kendi API Key'im">
+        <svg class="i"><use href="#ic-key"/></svg>
+        <span class="byok-dot" id="byokDot"></span>
       </button>
-
-      <div class="nav-title" data-i18n="navCategories">WSTG Kategorileri</div>
-      <div id="categoryNav"><!-- JS ile doldurulur --></div>
-
-      <div class="nav-title" data-i18n="navReference">Referans</div>
-      <button class="nav-item" id="top10NavBtn">
-        <span class="dot"></span><span data-i18n="navTop10">OWASP Top 10:2025</span>
+      <button class="icon-btn" id="themeTrigger" type="button" title="Tema">
+        <svg class="i" id="themeTriggerIcon"><use href="#ic-sun"/></svg>
       </button>
+      <span class="avatar" id="avatar">PW</span>
+    </div>
+  </header>
+
+  <!-- Kenar çubuğu -->
+  <aside class="sidebar" id="sidebar">
+    <nav class="nav-group">
+      <button class="nav-link active" id="dashboardNav"><svg class="i"><use href="#ic-home"/></svg><span data-i18n="navDashboard">Genel Bakış</span></button>
+      <button class="nav-link" id="projectsNavBtn"><svg class="i"><use href="#ic-folder"/></svg><span data-i18n="navProjects">Projeler</span></button>
+      <button class="nav-link" id="sessionsNavBtn"><svg class="i"><use href="#ic-clipboard"/></svg><span data-i18n="navSessions">Test Oturumları</span></button>
+      <button class="nav-link" id="reconNavBtn"><svg class="i"><use href="#ic-sitemap"/></svg><span data-i18n="navRecon">Attack Surface Discovery</span></button>
+      <button class="nav-link" id="plannerNavBtn"><svg class="i"><use href="#ic-list"/></svg><span data-i18n="navPlanner">Test Planı</span></button>
+      <button class="nav-link" id="aiNextTestNavBtn"><svg class="i"><use href="#ic-spark"/></svg><span data-i18n="navAiNextTest">AI: Sırada Ne Var?</span></button>
+      <button class="nav-link" id="importNavBtn"><svg class="i"><use href="#ic-upload"/></svg><span data-i18n="navImport">Bulgu İçe Aktar</span></button>
     </nav>
 
-    <div class="sidebar-footer">
-      <div class="session-chip" id="projectChip" style="display:none">
-        <span class="session-chip-dot" style="background:#a855f7"></span>
-        <div class="session-chip-info">
-          <span class="session-chip-name" id="projectChipName">-</span>
-          <span class="session-chip-sub" id="projectChipSub">-</span>
-        </div>
-      </div>
-      <div class="session-chip" id="sessionChip" style="display:none">
+    <div class="nav-divider"></div>
+
+    <nav class="nav-group">
+      <button class="nav-link" id="categoryToggle" type="button">
+        <svg class="i"><use href="#ic-book"/></svg><span id="categoryToggleLabel" data-i18n="navCategories">OWASP WSTG</span>
+        <svg class="i chev"><use href="#ic-chev"/></svg>
+      </button>
+      <div class="nav-sub-list" id="categoryNav"><!-- JS ile doldurulur --></div>
+      <button class="nav-link" id="top10NavBtn"><svg class="i"><use href="#ic-shield"/></svg><span data-i18n="navTop10">OWASP Top 10:2025</span></button>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <button type="button" class="session-chip" id="sessionChip" style="display:none">
         <span class="session-chip-dot"></span>
-        <div class="session-chip-info">
+        <span class="session-chip-info">
           <span class="session-chip-name" id="sessionChipName">-</span>
           <span class="session-chip-sub" id="sessionChipSub">0/0</span>
-        </div>
-      </div>
-      <button class="nav-item" id="projectsNavBtn"><span class="dot"></span><span data-i18n="navProjects">Projeler</span></button>
-      <button class="nav-item" id="sessionsNavBtn"><span class="dot"></span><span data-i18n="navSessions">Test Oturumları</span></button>
-      <button class="nav-item" id="reconNavBtn"><span class="dot"></span><span data-i18n="navRecon">Attack Surface Discovery</span></button>
-      <button class="nav-item" id="plannerNavBtn"><span class="dot"></span><span data-i18n="navPlanner">Test Planı</span></button>
-      <button class="nav-item" id="aiNextTestNavBtn"><span class="dot"></span><span data-i18n="navAiNextTest">🤖 AI: Sırada Ne Var?</span></button>
-      <button class="nav-item" id="importNavBtn"><span class="dot"></span><span data-i18n="navImport">Bulgu İçe Aktar</span></button>
-      <button class="nav-item" id="exportBtn"><span class="dot"></span><span data-i18n="exportReport">Raporu Dışa Aktar</span></button>
-      <button class="nav-item" id="resetBtn"><span class="dot"></span><span data-i18n="resetProgress">İlerlemeyi Sıfırla</span></button>
-      <button class="nav-item" id="aiSettingsNavBtn"><span class="dot"></span><span data-i18n="navAiSettings">🔑 AI Ayarları</span></button>
-      <div class="ai-status-badge" id="aiStatusBadge"></div>
-
-      <div class="settings-block">
-        <span class="settings-label" data-i18n="frameworkLabel">Checklist</span>
-        <div class="lang-select">
+        </span>
+      </button>
+      <button class="nav-link" id="exportBtn"><svg class="i"><use href="#ic-file"/></svg><span data-i18n="exportReport">Raporu Dışa Aktar</span></button>
+      <button class="nav-link" id="aiSettingsNavBtn"><svg class="i"><use href="#ic-key"/></svg><span data-i18n="navAiSettings">AI Ayarları</span></button>
+      <div class="ai-status-line"><span class="ai-status-badge" id="aiStatusBadge"></span></div>
+      <button class="nav-link" id="resetBtn"><svg class="i"><use href="#ic-reset"/></svg><span data-i18n="resetProgress">İlerlemeyi Sıfırla</span></button>
+      <div class="sidebar-settings">
+        <label class="sidebar-setting">
+          <span data-i18n="frameworkLabel">Checklist</span>
           <select id="frameworkSelect">
             <option value="wstg" data-i18n="frameworkWstg">OWASP WSTG (Web)</option>
             <option value="llm-security" data-i18n="frameworkLlm">OWASP LLM Top 10 (AI Security)</option>
           </select>
-        </div>
-      </div>
-
-      <div class="settings-block">
-        <span class="settings-label" data-i18n="langLabel">Dil</span>
-        <div class="lang-select">
+        </label>
+        <label class="sidebar-setting">
+          <span data-i18n="langLabel">Dil</span>
           <select id="langSelect">
             <option value="tr">Türkçe</option>
             <option value="en">English</option>
           </select>
-        </div>
-      </div>
-
-      <div class="settings-block">
-        <span class="settings-label" data-i18n="themeLabel">Tema</span>
-        <button type="button" class="theme-trigger" id="themeTrigger">
-          <span class="theme-trigger-swatch" id="themeTriggerSwatch"></span>
-          <span class="theme-trigger-name" id="themeTriggerName">Midnight</span>
-          <svg class="theme-trigger-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-        </button>
+        </label>
       </div>
     </div>
   </aside>
+  <div class="sidebar-scrim" id="sidebarScrim"></div>
 
-  <!-- Main -->
+  <!-- Ana içerik -->
   <main class="main">
-    <div class="topbar">
-      <div class="search">
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.3-4.3M10.8 18a7.2 7.2 0 1 1 0-14.4 7.2 7.2 0 0 1 0 14.4z"/>
-        </svg>
-        <input type="text" id="globalSearch" data-i18n-placeholder="searchPlaceholder" placeholder="WSTG testi, XSS, SQLi, JWT, SSRF ara...">
-        <div class="search-results" id="searchResults"></div>
+    <div class="page active">
+      <div class="page-head">
+        <div>
+          <h1 class="page-title" data-i18n="heroTitle">Web Pentest Workspace</h1>
+          <p class="page-desc" data-i18n="heroDesc">OWASP Web Security Testing Guide v4.2 tabanlı, tıklanabilir checklist ile her test maddesinin nasıl uygulanacağını adım adım ve örnekli şekilde gösteren pentest çalışma alanı.</p>
+        </div>
+        <div class="page-actions">
+          <a href="wstg-v4_2.pdf" target="_blank" class="btn btn-secondary"><svg class="i"><use href="#ic-file"/></svg><span data-i18n="openPdf">WSTG PDF'i Aç</span></a>
+          <button class="btn btn-primary" id="startBtn"><svg class="i"><use href="#ic-play"/></svg><span data-i18n="startTest">Teste Başla</span></button>
+        </div>
       </div>
-      <div class="profile">
-        <button class="topbar-session-btn" id="topbarSessionBtn" style="display:none"></button>
-        <button class="topbar-byok-btn" id="topbarByokBtn" type="button" title="Kendi API Key'inle Kullan">
-          <span class="byok-btn-icon">🔐</span>
-          <span class="byok-btn-label" data-i18n="byokTopbarLabel">Kendi Key'im</span>
-          <span class="byok-dot" id="byokDot"></span>
-        </button>
-        <div class="avatar">P</div>
-      </div>
+
+      <section class="kpi-grid">
+        <div class="card kpi kpi-progress">
+          <div class="ring" id="ringFill">
+            <div class="ring-inner"><span id="ringPct">0%</span><small data-i18n="completedLabel">Tamamlandı</small></div>
+          </div>
+          <div>
+            <div class="kpi-label" data-i18n="progressLabel">Genel ilerleme</div>
+            <div class="kpi-sub" id="progressSub">—</div>
+          </div>
+        </div>
+        <div class="card kpi">
+          <div class="kpi-label"><svg class="i"><use href="#ic-check"/></svg><span data-i18n="statDoneLabel">Tamamlanan</span></div>
+          <div class="kpi-value" id="statDone">0</div>
+          <div class="kpi-sub" data-i18n="statDoneSub">Bitirilen testler</div>
+        </div>
+        <div class="card kpi">
+          <div class="kpi-label"><svg class="i"><use href="#ic-clock"/></svg><span data-i18n="statPendingLabel">Bekleyen</span></div>
+          <div class="kpi-value" id="statPending">0</div>
+          <div class="kpi-sub" data-i18n="statPendingSub">Kalan testler</div>
+        </div>
+        <div class="card kpi">
+          <div class="kpi-label"><svg class="i"><use href="#ic-grid"/></svg><span data-i18n="statCategoriesLabel">Kategori</span></div>
+          <div class="kpi-value" id="statCategories">0</div>
+          <div class="kpi-sub" data-i18n="statCategoriesSub">WSTG modülü</div>
+        </div>
+        <div class="card kpi">
+          <div class="kpi-label"><svg class="i"><use href="#ic-target"/></svg><span data-i18n="statTotalLabel">Toplam Test</span></div>
+          <div class="kpi-value" id="statTotal">0</div>
+          <div class="kpi-sub" data-i18n="statTotalSub">WSTG v4.2 madde sayısı</div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2 class="section-title" data-i18n="sectionTitle">OWASP WSTG Kategorileri</h2>
+          <span class="section-sub" data-i18n="sectionSub">Başlamak için bir modül seçin</span>
+        </div>
+        <div class="categories" id="categoriesGrid"><!-- JS ile doldurulur --></div>
+      </section>
+
+      <section class="section" id="top10Section">
+        <div class="section-head">
+          <h2 class="section-title" data-i18n="top10SectionTitle">OWASP Top 10:2025 — En Kritik Web Uygulaması Riskleri</h2>
+          <a href="https://owasp.org/Top10/2025/" target="_blank" class="section-sub" data-i18n="top10SectionSub">owasp.org/Top10/2025 kaynağına dayanır ↗</a>
+        </div>
+        <div class="categories" id="top10Grid"><!-- JS ile doldurulur --></div>
+      </section>
     </div>
-
-    <!-- Hero -->
-    <section class="hero">
-      <div>
-        <h2 data-i18n="heroTitle">Web Pentest Workspace</h2>
-        <p data-i18n="heroDesc">OWASP Web Security Testing Guide v4.2 tabanlı, tıklanabilir checklist ile her test maddesinin nasıl uygulanacağını adım adım ve örnekli şekilde gösteren pentest çalışma alanı.</p>
-        <div class="hero-actions">
-          <button class="btn btn-primary" id="startBtn" data-i18n="startTest">Teste Başla</button>
-          <a href="wstg-v4_2.pdf" target="_blank" class="btn btn-secondary" style="text-decoration:none;display:inline-flex;align-items:center" data-i18n="openPdf">WSTG PDF'i Aç</a>
-        </div>
-      </div>
-      <div class="ring" id="ringFill">
-        <div class="ring-inner">
-          <span id="ringPct">0%</span>
-          <small data-i18n="completedLabel">Tamamlandı</small>
-        </div>
-      </div>
-    </section>
-
-    <!-- Stats -->
-    <section class="stats">
-      <div class="card">
-        <div class="label" data-i18n="statDoneLabel">Tamamlanan</div>
-        <div class="value" id="statDone">0</div>
-        <div class="sub" data-i18n="statDoneSub">Bitirilen testler</div>
-      </div>
-      <div class="card">
-        <div class="label" data-i18n="statPendingLabel">Bekleyen</div>
-        <div class="value" id="statPending">0</div>
-        <div class="sub" data-i18n="statPendingSub">Kalan testler</div>
-      </div>
-      <div class="card">
-        <div class="label" data-i18n="statCategoriesLabel">Kategori</div>
-        <div class="value" id="statCategories">0</div>
-        <div class="sub" data-i18n="statCategoriesSub">WSTG modülü</div>
-      </div>
-      <div class="card">
-        <div class="label" data-i18n="statTotalLabel">Toplam Test</div>
-        <div class="value" id="statTotal">0</div>
-        <div class="sub" data-i18n="statTotalSub">WSTG v4.2 madde sayısı</div>
-      </div>
-    </section>
-
-    <!-- Categories -->
-    <section>
-      <div class="section-header">
-        <h3 data-i18n="sectionTitle">OWASP WSTG Kategorileri</h3>
-        <span style="color:var(--muted);font-size:.9rem" data-i18n="sectionSub">Başlamak için bir modül seçin</span>
-      </div>
-      <div class="categories" id="categoriesGrid"><!-- JS ile doldurulur --></div>
-    </section>
-
-    <!-- OWASP Top 10:2025 -->
-    <section id="top10Section">
-      <div class="section-header">
-        <h3 data-i18n="top10SectionTitle">OWASP Top 10:2025 — En Kritik Web Uygulaması Riskleri</h3>
-        <a href="https://owasp.org/Top10/2025/" target="_blank" style="color:var(--muted);font-size:.9rem;text-decoration:none" data-i18n="top10SectionSub">owasp.org/Top10/2025 kaynağına dayanır ↗</a>
-      </div>
-      <div class="categories" id="top10Grid"><!-- JS ile doldurulur --></div>
-    </section>
   </main>
-
 </div>
 
 <!-- OWASP Top 10 Detay Paneli -->
@@ -211,26 +258,10 @@
         <button data-filter="pending" data-i18n="filterPending">Bekleyen</button>
         <button data-filter="done" data-i18n="filterDone">Tamamlanan</button>
       </div>
-      <button type="button" class="sort-priority-toggle" id="sortPriorityToggle" title="Attack Surface Discovery'nin önerdiği önceliğe göre sırala" data-i18n="sortByPriorityBtn">🎯 Önceliğe Göre Sırala</button>
+      <button type="button" class="sort-priority-toggle" id="sortPriorityToggle" title="Attack Surface Discovery'nin önerdiği önceliğe göre sırala" data-i18n="sortByPriorityBtn">Önceliğe Göre Sırala</button>
     </div>
     <div class="panel-body">
       <div id="testList"><!-- JS ile doldurulur --></div>
-    </div>
-  </div>
-</div>
-
-<!-- Tema Seçim Penceresi -->
-<div class="overlay theme-overlay" id="themeOverlay">
-  <div class="panel theme-panel">
-    <div class="panel-header">
-      <div>
-        <h3 data-i18n="themeModalTitle">Tema Seç</h3>
-        <p data-i18n="themeModalDesc">Çalışma alanının görünümünü kişiselleştir. Seçimin otomatik olarak kaydedilir.</p>
-      </div>
-      <button class="close-btn" id="closeThemeOverlay">&times;</button>
-    </div>
-    <div class="panel-body">
-      <div class="theme-grid" id="themeGrid"><!-- JS ile doldurulur --></div>
     </div>
   </div>
 </div>
@@ -252,7 +283,7 @@
     <div class="panel-body">
       <div id="sessionListBody"><!-- JS ile doldurulur --></div>
       <div class="session-gate-footer">
-        <button class="nav-item" id="skipSessionBtn" style="width:auto;display:inline-flex" data-i18n="continueLocal">Oturumsuz / yerel modda devam et</button>
+        <button id="skipSessionBtn" type="button" data-i18n="continueLocal">Oturumsuz / yerel modda devam et</button>
       </div>
     </div>
   </div>
@@ -394,7 +425,7 @@
   <div class="panel ai-next-test-panel" style="max-width:640px">
     <div class="panel-header">
       <div>
-        <h3 data-i18n="aiNextTestTitle">🤖 AI: Sırada Ne Var?</h3>
+        <h3 data-i18n="aiNextTestTitle">AI: Sırada Ne Var?</h3>
         <p data-i18n="aiNextTestDesc">Şu ana kadar tamamladığınız testlere ve kaydettiğiniz bulgulara bakarak, AI bir sonraki mantıklı adımı gerekçesiyle birlikte önerir. Test Planı'ndan farkı: recon kanıtı gerekmez, sabit kural yerine AI akıl yürütmesi kullanır — bu yüzden her zaman bir öneri taslağıdır, kesin doğru kabul etmeyin.</p>
       </div>
       <button class="close-btn" id="closeAiNextTestOverlay">&times;</button>
@@ -516,10 +547,9 @@
 <!-- Kendi API Key'inle Kullan (BYOK — bu oturuma özel, sunucuya kaydedilmez) -->
 <div class="overlay" id="byokOverlay">
   <div class="panel byok-panel">
-    <div class="byok-panel-glow"></div>
-    <div class="panel-header">
+        <div class="panel-header">
       <div>
-        <h3 data-i18n="byokTitle">🔐 Kendi API Key'inle Kullan</h3>
+        <h3 data-i18n="byokTitle">Kendi API Key'inle Kullan</h3>
         <p data-i18n="byokDesc">Buraya girdiğiniz key yalnızca bu tarayıcı sekmesinde tutulur; sunucuya hiçbir zaman kaydedilmez ve sekmeyi kapattığınızda otomatik olarak silinir. Aktif ettiğinizde tüm AI istekleriniz (bulgu analizi, açıklama/remediation üretimi, sırada ne var, rapor özeti) bu key ve modelle çalışır — paylaşılan/varsayılan AI Ayarları etkilenmez.</p>
       </div>
       <button class="close-btn" id="closeByokOverlay">&times;</button>
@@ -537,7 +567,7 @@
         <label id="byokKeyLabel" data-i18n="byokKeyLabel">API Key</label>
         <div class="ai-key-input-wrap">
           <input type="password" id="byokKeyInput" class="ai-key-input" placeholder="sk-... / AIza... / sk-ant-...">
-          <button type="button" class="ai-key-toggle-btn" id="byokKeyToggleBtn" title="Göster/Gizle">👁</button>
+          <button type="button" class="ai-key-toggle-btn" id="byokKeyToggleBtn" title="Göster/Gizle"><svg class="i i-sm" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
         </div>
 
         <label data-i18n="byokModelLabel">Model (opsiyonel — boş bırakılırsa varsayılan kullanılır)</label>
@@ -564,7 +594,7 @@
   <div class="panel" style="max-width:760px">
     <div class="panel-header">
       <div>
-        <h3 data-i18n="aiSettingsTitle">🔑 AI Ayarları</h3>
+        <h3 data-i18n="aiSettingsTitle">AI Ayarları</h3>
         <p data-i18n="aiSettingsDesc">API key'lerinizi buradan ekleyin, düzenleyin, test edin ve hangi sağlayıcının aktif olacağını seçin. Key'ler şifreli saklanır ve hiçbir zaman tam olarak gösterilmez.</p>
       </div>
       <button class="close-btn" id="closeAiSettingsOverlay">&times;</button>
@@ -580,7 +610,7 @@
   <div class="panel" style="max-width:640px">
     <div class="panel-header">
       <div>
-        <h3 data-i18n="dupAlertTitle">⚠️ Potential Duplicate Finding Detected</h3>
+        <h3 data-i18n="dupAlertTitle">Potential Duplicate Finding Detected</h3>
         <p data-i18n="dupAlertDesc">Bu bulguya benzer, projede zaten kayıtlı bulgular var.</p>
       </div>
       <button class="close-btn" id="closeDuplicateAlert">&times;</button>
@@ -608,7 +638,7 @@
     <div class="panel-body">
       <div id="reconCachedNotice" class="recon-cached-notice" style="display:none">
         <span id="reconCachedText"></span>
-        <button type="button" class="btn btn-sm" id="reconResetBtn" data-i18n="reconResetBtn">🔄 Sıfırla / Yeniden Tara</button>
+        <button type="button" class="btn btn-sm" id="reconResetBtn" data-i18n="reconResetBtn">Sıfırla / Yeniden Tara</button>
       </div>
       <div class="import-form">
         <label data-i18n="reconTargetLabel">Hedef Domain</label>
