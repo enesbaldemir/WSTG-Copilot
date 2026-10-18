@@ -241,28 +241,42 @@
   </div>
 </div>
 
-<!-- Kategori Detay Paneli -->
+<!-- Kategori Detay Paneli: solda test listesi, sağda seçili testin detayı -->
 <div class="overlay" id="categoryOverlay">
-  <div class="panel">
+  <div class="panel checklist-panel">
     <div class="panel-header">
-      <div>
+      <div class="checklist-head-text">
         <h3 id="panelTitle">Kategori Adı</h3>
         <p id="panelDesc">Kategori açıklaması</p>
       </div>
-      <button class="close-btn" id="closeOverlay">&times;</button>
+      <div class="checklist-head-actions">
+        <a href="wstg-v4_2.pdf" target="_blank" class="btn btn-secondary btn-sm" id="openGuideBtn"><svg class="i"><use href="#ic-file"/></svg><span data-i18n="openGuideBtn">WSTG Rehberini Aç</span></a>
+        <button class="close-btn" id="closeOverlay" aria-label="Kapat">&times;</button>
+      </div>
     </div>
-    <div class="filter-bar">
-      <input type="text" id="itemSearch" data-i18n-placeholder="itemSearchPlaceholder" placeholder="Bu kategoride ara...">
+    <div class="checklist-toolbar">
+      <div class="search-input checklist-search">
+        <svg class="i"><use href="#ic-search"/></svg>
+        <input type="text" id="itemSearch" data-i18n-placeholder="itemSearchPlaceholder" placeholder="Bu kategoride ara...">
+      </div>
       <div class="filter-toggle">
         <button class="active" data-filter="all" data-i18n="filterAll">Tümü</button>
         <button data-filter="pending" data-i18n="filterPending">Bekleyen</button>
         <button data-filter="done" data-i18n="filterDone">Tamamlanan</button>
       </div>
-      <button type="button" class="sort-priority-toggle" id="sortPriorityToggle" title="Attack Surface Discovery'nin önerdiği önceliğe göre sırala" data-i18n="sortByPriorityBtn">Önceliğe Göre Sırala</button>
+      <button type="button" class="sort-priority-toggle" id="sortPriorityToggle" data-i18n-title="sortByPriorityTitle" title="Attack Surface Discovery'nin önerdiği önceliğe göre sırala">
+        <svg class="i i-sm" viewBox="0 0 24 24"><path d="M3 6h11M3 12h7M3 18h4"/><path d="M18 4v16M15 17l3 3 3-3"/></svg>
+        <span data-i18n="sortByPriorityBtn">Önceliğe göre</span>
+      </button>
     </div>
-    <div class="panel-body">
-      <div id="testList"><!-- JS ile doldurulur --></div>
+    <div class="checklist-body" id="checklistBody">
+      <section class="checklist-list">
+        <div class="checklist-list-head" id="testListHead">Testler</div>
+        <div id="testList" class="checklist-list-items" role="listbox"><!-- JS ile doldurulur --></div>
+      </section>
+      <section class="checklist-detail" id="testDetail" aria-live="polite"><!-- JS ile doldurulur --></section>
     </div>
+    <div class="checklist-foot" id="testDetailFoot"><!-- JS ile doldurulur --></div>
   </div>
 </div>
 
