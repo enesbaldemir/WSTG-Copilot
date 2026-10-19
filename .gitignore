@@ -20,3 +20,6 @@ backend/uploads/
 *.swp
 .vscode/
 .idea/
+
+# Otomatik üretilen SECRET_KEY (bkz. backend/security.py)
+backend/instance/

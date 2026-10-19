@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+from security import DEFAULT_CORS_ORIGINS, DEFAULT_ALLOWED_HOSTS, TRUE_VALUES
 
 load_dotenv()
 
@@ -8,8 +9,14 @@ class Config:
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', f'sqlite:///{os.path.join(BASE_DIR, "database", "wstg.db")}')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
-    CORS_ORIGINS = os.getenv('CORS_ORIGINS', 'http://localhost:8000,http://localhost:3000')
+    # Boş bırakılırsa app.py rastgele bir anahtar üretip SECRET_KEY_FILE'a
+    # kaydeder (koddaki sabit bir değer artık kullanılmaz; bkz. security.py).
+    SECRET_KEY = os.getenv('SECRET_KEY', '')
+    SECRET_KEY_FILE = os.getenv('WSTG_SECRET_KEY_FILE', os.path.join(BASE_DIR, 'instance', 'secret_key'))
+    CORS_ORIGINS = os.getenv('CORS_ORIGINS', DEFAULT_CORS_ORIGINS)
+    # Kabul edilen Host başlıkları (DNS rebinding koruması). API'yi ağa
+    # açarsanız (WSTG_HOST) bu makinenin adını/IP'sini buraya ekleyin.
+    ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', DEFAULT_ALLOWED_HOSTS)
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024
     UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
     LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
@@ -42,7 +49,8 @@ class Config:
     ENCRYPTION_KEY = os.getenv('ENCRYPTION_KEY', '')
 
 class DevelopmentConfig(Config):
-    DEBUG = True
+    # Debug yalnızca FLASK_DEBUG=1 ile açılır (bkz. security.run_settings).
+    DEBUG = os.getenv('FLASK_DEBUG', '').strip().lower() in TRUE_VALUES
     ENV = 'development'
 
 class ProductionConfig(Config):
