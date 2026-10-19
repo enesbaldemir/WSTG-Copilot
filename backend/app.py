@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from datetime import datetime
 import os
+import sys
 import json
 import re
 import uuid
@@ -24,6 +25,7 @@ import ai_report_assistant
 import finding_analysis
 import next_test_suggestion
 import crypto_utils
+import security
 from ai.factory import get_ai_provider, _build_provider, DEFAULT_MODELS
 from ai.base import AIConfigError, AIRequestError
 
@@ -35,8 +37,37 @@ if env == 'production':
 else:
     app.config.from_object(DevelopmentConfig)
 
+# SECRET_KEY tanımlı değilse koddaki sabit değer yerine kalıcı, rastgele bir
+# anahtar kullan (bkz. security.load_or_create_secret_key).
+if not app.config.get('SECRET_KEY'):
+    app.config['SECRET_KEY'], _secret_created = security.load_or_create_secret_key(app.config['SECRET_KEY_FILE'])
+    if _secret_created:
+        print(f"[güvenlik] SECRET_KEY tanımlı değil; rastgele bir anahtar oluşturuldu: {app.config['SECRET_KEY_FILE']}",
+              file=sys.stderr)
+elif app.config['SECRET_KEY'] == security.LEGACY_DEFAULT_SECRET:
+    print('[güvenlik] UYARI: SECRET_KEY herkesin bildiği varsayılan değere ayarlı; .env dosyasında değiştirin.',
+          file=sys.stderr)
+
 db.init_app(app)
-CORS(app, resources={r"/*": {"origins": "*"}})
+
+# CORS yalnızca izin verilen frontend adreslerine (CORS_ORIGINS) açıktır.
+_cors_origins = security.parse_list(app.config['CORS_ORIGINS'])
+_allowed_hosts = security.parse_list(app.config['ALLOWED_HOSTS'])
+CORS(app, resources={r"/api/*": {"origins": _cors_origins}})
+
+
+@app.before_request
+def _enforce_local_origin_policy():
+    # DNS rebinding: başka bir alan adı 127.0.0.1'e çözülse bile Host başlığı
+    # izin verilenler dışında kalır.
+    if not security.host_header_allowed(request.host, _allowed_hosts):
+        return jsonify({'error': 'Host başlığına izin verilmiyor (ALLOWED_HOSTS).'}), 400
+    # CORS yanıtın okunmasını engeller ama isteğin gönderilmesini engellemez;
+    # izinsiz bir siteden gelen durum değiştiren istekleri burada reddediyoruz.
+    if request.method in ('POST', 'PUT', 'PATCH', 'DELETE') and \
+            not security.origin_allowed(request.headers.get('Origin'), _cors_origins):
+        return jsonify({'error': 'Bu kaynaktan (Origin) gelen isteğe izin verilmiyor (CORS_ORIGINS).'}), 403
+
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'evidence'), exist_ok=True)
 os.makedirs(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'database'), exist_ok=True)
@@ -131,8 +162,31 @@ def ensure_schema():
         db.session.rollback()
 
 
+def migrate_legacy_ai_keys():
+    """Eski sürümler SECRET_KEY tanımlı değilken AI anahtarlarını sabit bir
+    değerden türetilen anahtarla şifreliyordu. Yeni (rastgele) anahtara geçerken
+    bu kayıtları yeniden şifreler; böylece kayıtlı anahtarlar kaybolmaz."""
+    if app.config.get('SECRET_KEY') == security.LEGACY_DEFAULT_SECRET:
+        return 0
+    moved = 0
+    try:
+        for setting in AIProviderSetting.query.all():
+            new_token = crypto_utils.reencrypt_from_legacy(
+                app.config, setting.api_key_encrypted, [security.LEGACY_DEFAULT_SECRET])
+            if new_token:
+                setting.api_key_encrypted = new_token
+                moved += 1
+        if moved:
+            db.session.commit()
+            print(f'[güvenlik] {moved} kayıtlı AI anahtarı yeni SECRET_KEY ile yeniden şifrelendi.', file=sys.stderr)
+    except Exception:
+        db.session.rollback()
+    return moved
+
+
 with app.app_context():
     ensure_schema()
+    migrate_legacy_ai_keys()
 
 
 def log_event(project_id, event_type, message, meta=None):
@@ -2413,7 +2467,18 @@ def download_session_report(session_id):
 # ========================
 
 if __name__ == '__main__':
+    # Varsayılan: yalnızca 127.0.0.1, debug kapalı. Debug ancak FLASK_DEBUG=1 ile
+    # ve yalnızca localhost'ta açılabilir (bkz. security.run_settings).
+    try:
+        run = security.run_settings()
+    except ValueError as e:
+        print(f'[güvenlik] {e}', file=sys.stderr)
+        sys.exit(2)
+    if not security.is_loopback(run['host']):
+        print(f"[güvenlik] UYARI: API {run['host']} adresinde ağa açık ve henüz kimlik doğrulaması yok. "
+              "Erişecek makinenin adını/IP'sini ALLOWED_HOSTS'a, frontend adresini CORS_ORIGINS'e ekleyin.",
+              file=sys.stderr)
     with app.app_context():
         ensure_schema()
-        print('✅ Veritabanı oluşturuldu!')
-    app.run(host='0.0.0.0', port=5000, debug=True)
+        print('Veritabanı hazır.')
+    app.run(host=run['host'], port=run['port'], debug=run['debug'])

@@ -59,6 +59,35 @@ def decrypt(app_config, ciphertext: str) -> str:
         return ''
 
 
+def reencrypt_from_legacy(app_config, ciphertext: str, legacy_secrets):
+    """Mevcut anahtarla çözülemeyen bir değeri eski SECRET_KEY'lerden biriyle
+    çözmeyi dener; başarılı olursa mevcut anahtarla yeniden şifreler.
+
+    Döndürür: yeni şifreli metin ya da None (zaten güncel / çözülemiyor).
+    ENCRYPTION_KEY tanımlıysa SECRET_KEY şifrelemede kullanılmadığı için None döner."""
+    if not ciphertext:
+        return None
+    try:
+        explicit = app_config['ENCRYPTION_KEY']
+    except (TypeError, KeyError):
+        explicit = getattr(app_config, 'ENCRYPTION_KEY', '')
+    if (explicit or '').strip():
+        return None
+    token = ciphertext.encode('utf-8')
+    try:
+        get_fernet(app_config).decrypt(token)
+        return None  # zaten mevcut anahtarla şifreli
+    except InvalidToken:
+        pass
+    for legacy in legacy_secrets:
+        try:
+            plain = Fernet(_derive_fernet_key(legacy)).decrypt(token)
+        except InvalidToken:
+            continue
+        return get_fernet(app_config).encrypt(plain).decode('utf-8')
+    return None
+
+
 def mask_key(raw: str) -> str:
     """'AIzaSyD-abc123xyz789' -> 'AIza...z789'. Kisa/bos key'ler tamamen maskelenir."""
     if not raw:

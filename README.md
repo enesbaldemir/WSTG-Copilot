@@ -133,8 +133,11 @@ All variables are optional and are read from `backend/.env`. AI keys are normall
 | Variable | Default | Description |
 |---|---|---|
 | `DATABASE_URL` | `sqlite:///<backend>/database/wstg.db` | SQLAlchemy database URL |
-| `SECRET_KEY` | development value | Flask secret key; change it in production |
-| `CORS_ORIGINS` | `http://localhost:8000,http://localhost:3000` | Allowed frontend origins |
+| `SECRET_KEY` | generated | Flask secret key. If empty, a random key is generated on first start and stored in `backend/instance/secret_key` (file mode `0600`, ignored by git) |
+| `CORS_ORIGINS` | `http://localhost:8000,http://127.0.0.1:8000,http://localhost:3000,http://127.0.0.1:3000` | Allowed frontend origins. `POST`/`PUT`/`PATCH`/`DELETE` requests sent from any other origin are rejected with `403` |
+| `ALLOWED_HOSTS` | `localhost,127.0.0.1,::1` | Accepted `Host` headers (DNS rebinding protection). Add this machine's name/IP if you expose the API with `WSTG_HOST` |
+| `WSTG_HOST` / `WSTG_PORT` | `127.0.0.1` / `5000` | Address `python app.py` listens on. Anything other than loopback exposes the API to the network; there is no authentication yet |
+| `FLASK_DEBUG` | off | `1` enables the Werkzeug debugger. Refused unless the host is loopback, because a network-reachable debugger allows remote code execution |
 | `LOG_LEVEL` | `INFO` | Log level |
 | `ANTHROPIC_API_KEY` | empty | Enables AI vision analysis of evidence screenshots; also the Anthropic fallback key |
 | `AI_PROVIDER` | `gemini` | Fallback provider: `gemini`, `openai`, `anthropic` or `ollama` |
@@ -155,7 +158,7 @@ Do not commit `backend/.env`; it is already listed in `.gitignore`.
    python app.py
    ```
 
-   The API listens on `http://localhost:5000` (debug mode).
+   The API listens on `http://127.0.0.1:5000` with the debugger off. On first start it creates `backend/instance/secret_key` if `SECRET_KEY` is not set; AI keys saved by older versions under the old built-in key are re-encrypted automatically.
 
 2. Serve the frontend from the repository root in a second terminal:
 
@@ -360,8 +363,11 @@ Tüm değişkenler opsiyoneldir ve `backend/.env` dosyasından okunur. AI key'le
 | Değişken | Varsayılan | Açıklama |
 |---|---|---|
 | `DATABASE_URL` | `sqlite:///<backend>/database/wstg.db` | SQLAlchemy veritabanı adresi |
-| `SECRET_KEY` | geliştirme değeri | Flask gizli anahtarı; production'da değiştirin |
-| `CORS_ORIGINS` | `http://localhost:8000,http://localhost:3000` | İzin verilen frontend origin'leri |
+| `SECRET_KEY` | otomatik üretilir | Flask gizli anahtarı. Boşsa ilk açılışta rastgele bir anahtar üretilip `backend/instance/secret_key` dosyasına (`0600` izinle, git'e girmez) kaydedilir |
+| `CORS_ORIGINS` | `http://localhost:8000,http://127.0.0.1:8000,http://localhost:3000,http://127.0.0.1:3000` | İzin verilen frontend origin'leri. Başka bir origin'den gelen `POST`/`PUT`/`PATCH`/`DELETE` istekleri `403` ile reddedilir |
+| `ALLOWED_HOSTS` | `localhost,127.0.0.1,::1` | Kabul edilen `Host` başlıkları (DNS rebinding koruması). API'yi `WSTG_HOST` ile ağa açarsanız bu makinenin adını/IP'sini ekleyin |
+| `WSTG_HOST` / `WSTG_PORT` | `127.0.0.1` / `5000` | `python app.py`'nin dinlediği adres. Loopback dışındaki her değer API'yi ağa açar; henüz kimlik doğrulaması yoktur |
+| `FLASK_DEBUG` | kapalı | `1` Werkzeug debugger'ını açar. Ağdan erişilebilen debugger uzaktan kod çalıştırmaya izin verdiği için host loopback değilse uygulama başlamaz |
 | `LOG_LEVEL` | `INFO` | Log seviyesi |
 | `ANTHROPIC_API_KEY` | boş | Kanıt ekran görüntülerinin AI görsel analizini etkinleştirir; Anthropic için fallback key'dir |
 | `AI_PROVIDER` | `gemini` | Fallback sağlayıcı: `gemini`, `openai`, `anthropic` veya `ollama` |
@@ -382,7 +388,7 @@ Tüm değişkenler opsiyoneldir ve `backend/.env` dosyasından okunur. AI key'le
    python app.py
    ```
 
-   API `http://localhost:5000` adresinde (debug modunda) çalışır.
+   API `http://127.0.0.1:5000` adresinde, debugger kapalı olarak çalışır. `SECRET_KEY` tanımlı değilse ilk açılışta `backend/instance/secret_key` oluşturulur; eski sürümlerin sabit anahtarla şifrelediği AI key'leri otomatik olarak yeni anahtarla yeniden şifrelenir.
 
 2. İkinci bir terminalde frontend'i depo kök dizininden servis edin:
 

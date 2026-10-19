@@ -18,6 +18,9 @@ TEST_DB_PATH = os.path.join(_TMP_DIR, "wstg-test.db")
 REAL_DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "database", "wstg.db")
 
 os.environ["DATABASE_URL"] = f"sqlite:///{TEST_DB_PATH}"
+# Testler gerçek backend/instance/secret_key dosyasını üretmesin/okumasın.
+os.environ["SECRET_KEY"] = "test-only-secret-key"
+os.environ["WSTG_SECRET_KEY_FILE"] = os.path.join(_TMP_DIR, "secret_key")
 
 
 def pytest_sessionfinish(session, exitstatus):
