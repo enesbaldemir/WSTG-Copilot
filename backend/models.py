@@ -498,6 +498,22 @@ class AIInteractionLog(db.Model):
         }
 
 
+class AuthSettings(db.Model):
+    """Tek kullanıcılı yerel kimlik doğrulama (bkz. auth.py).
+
+    Tek satır tutulur. Parola yalnızca tuzlanmış hash olarak saklanır
+    (werkzeug.security). session_version her parola değişiminde artar; oturum
+    çerezindeki sürüm eşleşmezse oturum geçersiz sayılır (diğer tarayıcılardaki
+    oturumlar düşer)."""
+    __tablename__ = 'auth_settings'
+
+    id = db.Column(db.Integer, primary_key=True)
+    password_hash = db.Column(db.String(512), nullable=False)
+    session_version = db.Column(db.Integer, nullable=False, default=1)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class AIProviderSetting(db.Model):
     """Uygulama arayuzunden yonetilen AI sağlayici ayarlari.
 
