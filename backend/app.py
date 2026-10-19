@@ -1,15 +1,19 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, session
 from flask_cors import CORS
 from datetime import datetime
+import getpass
 import os
 import sys
 import json
 import re
+import time
 import uuid
 from werkzeug.utils import secure_filename
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 from config import DevelopmentConfig, ProductionConfig
-from models import db, Session, TestResult, Project, ScopeItem, TimelineEvent, ReconRun, Evidence, CustomTest, ToolRun, Finding, AIInteractionLog, AIProviderSetting
+from models import db, Session, TestResult, Project, ScopeItem, TimelineEvent, ReconRun, Evidence, CustomTest, ToolRun, Finding, AIInteractionLog, AIProviderSetting, AuthSettings
+import auth
 import recon
 import attack_chains
 import report_builder
@@ -51,9 +55,11 @@ elif app.config['SECRET_KEY'] == security.LEGACY_DEFAULT_SECRET:
 db.init_app(app)
 
 # CORS yalnızca izin verilen frontend adreslerine (CORS_ORIGINS) açıktır.
+# supports_credentials: frontend oturum çerezini fetch(..., {credentials:
+# 'include'}) ile gönderir; bu yalnızca listedeki origin'ler için geçerlidir.
 _cors_origins = security.parse_list(app.config['CORS_ORIGINS'])
 _allowed_hosts = security.parse_list(app.config['ALLOWED_HOSTS'])
-CORS(app, resources={r"/api/*": {"origins": _cors_origins}})
+CORS(app, resources={r"/api/*": {"origins": _cors_origins}}, supports_credentials=True)
 
 
 @app.before_request
@@ -67,6 +73,163 @@ def _enforce_local_origin_policy():
     if request.method in ('POST', 'PUT', 'PATCH', 'DELETE') and \
             not security.origin_allowed(request.headers.get('Origin'), _cors_origins):
         return jsonify({'error': 'Bu kaynaktan (Origin) gelen isteğe izin verilmiyor (CORS_ORIGINS).'}), 403
+
+
+# ========================
+# KİMLİK DOĞRULAMA (bkz. auth.py)
+# ========================
+
+# Giriş yapılmadan erişilebilen uçlar. Diğer her istek (bilinmeyen yollar
+# dahil) oturum ister; yeni eklenen rotalar varsayılan olarak korunur.
+AUTH_OPEN_ENDPOINTS = frozenset({'auth_status', 'auth_setup', 'auth_login', 'auth_logout'})
+login_throttle = auth.LoginThrottle()
+
+
+def _now():
+    return time.time()
+
+
+def _auth_settings():
+    return db.session.get(AuthSettings, 1)
+
+
+def _session_is_authenticated():
+    """Çerez geçerli bir girişe mi ait? İmza Flask tarafından doğrulanır;
+    burada parola değişiminden önceki oturumlar (session_version) ve
+    girişten bu yana PERMANENT_SESSION_LIFETIME'ı aşanlar reddedilir."""
+    if not session.get('auth'):
+        return False
+    settings = _auth_settings()
+    if settings is None or session.get('v') != settings.session_version:
+        return False
+    iat = session.get('iat')
+    if not isinstance(iat, (int, float)):
+        return False
+    return 0 <= _now() - iat <= app.permanent_session_lifetime.total_seconds()
+
+
+def _start_auth_session(settings):
+    session.clear()
+    session.permanent = True
+    session['auth'] = True
+    session['v'] = settings.session_version
+    session['iat'] = int(_now())
+
+
+def _client_key():
+    return request.remote_addr or 'unknown'
+
+
+def _too_many_attempts(wait):
+    resp = jsonify({'error': f'Çok fazla hatalı deneme. {wait} saniye sonra tekrar deneyin.',
+                    'code': 'too_many_attempts', 'retry_after': wait})
+    resp.status_code = 429
+    resp.headers['Retry-After'] = str(wait)
+    return resp
+
+
+@app.before_request
+def _require_login():
+    # Preflight (OPTIONS) çerez taşımaz; CORS yanıtını flask-cors üretir.
+    if request.method == 'OPTIONS' or request.endpoint in AUTH_OPEN_ENDPOINTS:
+        return None
+    if not _session_is_authenticated():
+        return jsonify({'error': 'Oturum açmanız gerekiyor.', 'code': 'auth_required'}), 401
+    return None
+
+
+@app.route('/api/auth/status', methods=['GET'])
+def auth_status():
+    configured = _auth_settings() is not None
+    return jsonify({
+        'configured': configured,
+        'authenticated': configured and _session_is_authenticated(),
+        'setup_allowed': not configured and auth.is_loopback_addr(request.remote_addr),
+        'min_password_length': auth.MIN_PASSWORD_LENGTH,
+    })
+
+
+@app.route('/api/auth/setup', methods=['POST'])
+def auth_setup():
+    """İlk parola. Yalnızca bu bilgisayardan ve yalnızca bir kez."""
+    if not auth.is_loopback_addr(request.remote_addr):
+        return jsonify({'error': 'İlk parola yalnızca bu bilgisayardan belirlenebilir '
+                                 '(veya: python app.py set-password).', 'code': 'setup_loopback_only'}), 403
+    if _auth_settings() is not None:
+        return jsonify({'error': 'Parola zaten belirlenmiş.', 'code': 'already_configured'}), 409
+    data = request.get_json(silent=True) or {}
+    try:
+        password_hash = auth.hash_password(data.get('password'))
+    except auth.PasswordPolicyError as e:
+        return jsonify({'error': str(e), 'code': e.code}), 400
+    settings = AuthSettings(id=1, password_hash=password_hash, session_version=1)
+    db.session.add(settings)
+    try:
+        db.session.commit()
+    except IntegrityError:  # eşzamanlı ikinci kurulum isteği
+        db.session.rollback()
+        return jsonify({'error': 'Parola zaten belirlenmiş.', 'code': 'already_configured'}), 409
+    _start_auth_session(settings)
+    return jsonify({'ok': True}), 201
+
+
+@app.route('/api/auth/login', methods=['POST'])
+def auth_login():
+    key = _client_key()
+    wait = login_throttle.retry_after(key)
+    if wait:
+        return _too_many_attempts(wait)
+    settings = _auth_settings()
+    if settings is None:
+        return jsonify({'error': 'Önce parola belirlenmeli.', 'code': 'setup_required'}), 409
+    data = request.get_json(silent=True) or {}
+    if not auth.verify_password(settings.password_hash, data.get('password')):
+        login_throttle.failure(key)
+        wait = login_throttle.retry_after(key)
+        if wait:
+            return _too_many_attempts(wait)
+        return jsonify({'error': 'Parola hatalı.', 'code': 'invalid_password'}), 401
+    login_throttle.success(key)
+    _start_auth_session(settings)
+    return jsonify({'ok': True})
+
+
+@app.route('/api/auth/logout', methods=['POST'])
+def auth_logout():
+    session.clear()
+    return jsonify({'ok': True})
+
+
+@app.route('/api/auth/change-password', methods=['POST'])
+def auth_change_password():
+    """Mevcut parolayı ister. session_version artar: diğer tarayıcılardaki
+    oturumlar düşer, bu oturum yeni sürümle devam eder."""
+    key = _client_key()
+    wait = login_throttle.retry_after(key)
+    if wait:
+        return _too_many_attempts(wait)
+    settings = _auth_settings()
+    data = request.get_json(silent=True) or {}
+    if not auth.verify_password(settings.password_hash, data.get('current_password')):
+        login_throttle.failure(key)
+        wait = login_throttle.retry_after(key)
+        if wait:
+            return _too_many_attempts(wait)
+        # 401 değil: frontend 401'i "oturum düştü" olarak yorumlar.
+        return jsonify({'error': 'Mevcut parola hatalı.', 'code': 'invalid_current_password'}), 403
+    new_password = data.get('new_password')
+    try:
+        new_hash = auth.hash_password(new_password)
+    except auth.PasswordPolicyError as e:
+        return jsonify({'error': str(e), 'code': e.code}), 400
+    if auth.verify_password(settings.password_hash, new_password):
+        return jsonify({'error': 'Yeni parola mevcut paroladan farklı olmalıdır.', 'code': 'password_unchanged'}), 400
+    settings.password_hash = new_hash
+    settings.session_version = (settings.session_version or 0) + 1
+    db.session.commit()
+    login_throttle.success(key)
+    _start_auth_session(settings)
+    return jsonify({'ok': True})
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'evidence'), exist_ok=True)
@@ -2466,19 +2629,70 @@ def download_session_report(session_id):
 # VERİTABANI BAŞLATMA
 # ========================
 
-if __name__ == '__main__':
+def set_password_command(prompt=None, out=None, err=None):
+    """`python app.py set-password`: parolayı terminalden belirler/sıfırlar.
+
+    Parola komut satırı argümanı olarak alınmaz (shell geçmişine düşmesin).
+    session_version artar; açık tüm oturumlar düşer."""
+    prompt = prompt or getpass.getpass
+    out = out or sys.stdout
+    err = err or sys.stderr
+    try:
+        password = prompt('Yeni parola: ')
+        confirm = prompt('Yeni parola (tekrar): ')
+    except (EOFError, KeyboardInterrupt):
+        print('\nİptal edildi.', file=err)
+        return 1
+    if password != confirm:
+        print('Parolalar eşleşmiyor.', file=err)
+        return 1
+    try:
+        password_hash = auth.hash_password(password)
+    except auth.PasswordPolicyError as e:
+        print(str(e), file=err)
+        return 1
+    with app.app_context():
+        ensure_schema()
+        settings = _auth_settings()
+        if settings is None:
+            db.session.add(AuthSettings(id=1, password_hash=password_hash, session_version=1))
+        else:
+            settings.password_hash = password_hash
+            settings.session_version = (settings.session_version or 0) + 1
+        db.session.commit()
+    print('Parola kaydedildi. Açık oturumlar kapatıldı.', file=out)
+    return 0
+
+
+def main(argv=None):
+    argv = sys.argv[1:] if argv is None else list(argv)
+    if argv == ['set-password']:
+        return set_password_command()
+    if argv:
+        print('Kullanım: python app.py [set-password]', file=sys.stderr)
+        return 2
+
     # Varsayılan: yalnızca 127.0.0.1, debug kapalı. Debug ancak FLASK_DEBUG=1 ile
     # ve yalnızca localhost'ta açılabilir (bkz. security.run_settings).
     try:
         run = security.run_settings()
     except ValueError as e:
         print(f'[güvenlik] {e}', file=sys.stderr)
-        sys.exit(2)
+        return 2
     if not security.is_loopback(run['host']):
-        print(f"[güvenlik] UYARI: API {run['host']} adresinde ağa açık ve henüz kimlik doğrulaması yok. "
+        print(f"[güvenlik] UYARI: API {run['host']} adresinde ağa açık. Trafik şifresiz (HTTP); "
+              "ilk parola yalnızca bu bilgisayardan veya `python app.py set-password` ile belirlenebilir. "
               "Erişecek makinenin adını/IP'sini ALLOWED_HOSTS'a, frontend adresini CORS_ORIGINS'e ekleyin.",
               file=sys.stderr)
     with app.app_context():
         ensure_schema()
         print('Veritabanı hazır.')
+        if _auth_settings() is None:
+            print('Henüz parola yok: arayüzü bu bilgisayarda açıp parolayı belirleyin '
+                  '(veya: python app.py set-password).')
     app.run(host=run['host'], port=run['port'], debug=run['debug'])
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

@@ -14,6 +14,7 @@ Tek kullanıcılı yerel kimlik doğrulama.
 Flask'a bağımlı yardımcılar burada; rotalar app.py içinde.
 """
 
+import ipaddress
 import threading
 import time
 
@@ -28,18 +29,22 @@ MAX_LOCK_SECONDS = 15 * 60
 
 
 class PasswordPolicyError(ValueError):
-    pass
+    """`code` frontend'in çeviri anahtarı olarak kullandığı makine-okunur sebeptir."""
+
+    def __init__(self, message, code):
+        super().__init__(message)
+        self.code = code
 
 
 def validate_password(password):
     if not isinstance(password, str) or not password:
-        raise PasswordPolicyError('Parola zorunludur.')
+        raise PasswordPolicyError('Parola zorunludur.', 'password_required')
     if len(password) < MIN_PASSWORD_LENGTH:
-        raise PasswordPolicyError(f'Parola en az {MIN_PASSWORD_LENGTH} karakter olmalıdır.')
+        raise PasswordPolicyError(f'Parola en az {MIN_PASSWORD_LENGTH} karakter olmalıdır.', 'password_too_short')
     if len(password) > MAX_PASSWORD_LENGTH:
-        raise PasswordPolicyError(f'Parola en fazla {MAX_PASSWORD_LENGTH} karakter olabilir.')
-    if password.strip() != password or not password.strip():
-        raise PasswordPolicyError('Parola başında/sonunda boşluk içeremez.')
+        raise PasswordPolicyError(f'Parola en fazla {MAX_PASSWORD_LENGTH} karakter olabilir.', 'password_too_long')
+    if password.strip() != password:
+        raise PasswordPolicyError('Parola başında/sonunda boşluk içeremez.', 'password_whitespace')
 
 
 def hash_password(password):
@@ -48,12 +53,26 @@ def hash_password(password):
 
 
 def verify_password(password_hash, password):
-    if not password_hash or not isinstance(password, str):
+    # Aşırı uzun girdi hash'lenmeden reddedilir (scrypt'i boşuna yormasın).
+    if not password_hash or not isinstance(password, str) or len(password) > MAX_PASSWORD_LENGTH:
         return False
     try:
         return check_password_hash(password_hash, password)
     except Exception:
         return False
+
+
+def is_loopback_addr(addr):
+    """İstemcinin TCP adresi (request.remote_addr) bu bilgisayar mı?
+
+    ProxyFix kullanılmadığı için remote_addr başlıklarla taklit edilemez.
+    '::ffff:127.0.0.1' gibi IPv4-mapped adresler de loopback sayılır."""
+    try:
+        ip = ipaddress.ip_address(str(addr or '').strip().strip('[]'))
+    except ValueError:
+        return False
+    mapped = getattr(ip, 'ipv4_mapped', None)
+    return ip.is_loopback or bool(mapped and mapped.is_loopback)
 
 
 class LoginThrottle:

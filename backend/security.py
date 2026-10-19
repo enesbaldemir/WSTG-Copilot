@@ -2,7 +2,8 @@
 Yerel (localhost) kullanım için güvenli varsayılanlar.
 
 Bu araç müşteri bulgularını, ham HTTP kayıtlarını ve şifreli AI anahtarlarını
-saklar; henüz kimlik doğrulaması yoktur. Bu yüzden varsayılan davranış:
+saklar. Parola ile giriş auth.py'dedir; bu modüldeki kontroller ondan önce,
+her istekte çalışır. Varsayılan davranış:
 
   - API yalnızca 127.0.0.1'de dinler. Ağa açmak için WSTG_HOST açıkça
     verilmelidir.

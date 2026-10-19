@@ -33,3 +33,29 @@ def pytest_sessionfinish(session, exitstatus):
     except Exception:
         pass
     shutil.rmtree(_TMP_DIR, ignore_errors=True)
+
+
+# ---------------------------------------------------------------------------
+# Kimlik doğrulama
+#
+# Uygulamada kimlik doğrulamayı kapatan bir ayar/ortam değişkeni YOKTUR. Mevcut
+# rota testleri giriş yapmadan çalışsın diye oturum kontrolü burada, yalnızca
+# test sürecinde monkeypatch ile "giriş yapılmış" sayılır. Kimlik doğrulamanın
+# kendisini test eden modüller `pytestmark = pytest.mark.real_auth` ile bu
+# fixture'dan çıkar (bkz. test_auth.py).
+# ---------------------------------------------------------------------------
+import pytest
+
+
+def pytest_configure(config):
+    config.addinivalue_line("markers", "real_auth: gerçek oturum kontrolüyle çalışır (giriş gerekir)")
+
+
+@pytest.fixture(autouse=True)
+def _bypass_login_for_route_tests(request, monkeypatch):
+    if request.node.get_closest_marker("real_auth"):
+        yield
+        return
+    import app as app_module
+    monkeypatch.setattr(app_module, "_session_is_authenticated", lambda: True)
+    yield

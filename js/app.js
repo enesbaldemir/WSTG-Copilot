@@ -9,7 +9,9 @@
   const SKIP_SESSION_KEY = "wstg_skip_session_v1";
   const RECON_PRIORITY_KEY = "wstg_recon_priority_v1";
   const RECON_CACHE_KEY = "wstg_recon_cache_v1";
-  const API_BASE = "http://localhost:5000/api";
+  // Sayfanın açıldığı host'a göre (127.0.0.1:8000 -> 127.0.0.1:5000); oturum
+  // çerezi SameSite=Strict olduğundan API aynı host'ta olmalı (bkz. js/auth.js).
+  const API_BASE = window.WSTGAuth.apiBaseFor(window.location);
 
   const DATA_FILES = {
     tr: "data/wstg-checklist.tr.json",
@@ -526,7 +528,44 @@
       pwEventType_test_completed: "Test tamamlandı",
       pwEventType_finding_created: "Yeni bulgu",
       pwEventType_scope_updated: "Kapsam güncellendi",
-      pwEventType_recon_run: "Recon çalıştırıldı"
+      pwEventType_recon_run: "Recon çalıştırıldı",
+      authSetupTitle: "Parolanızı belirleyin",
+      authSetupDesc: "Bu çalışma alanı müşteri bulgularını ve kanıtları saklar. Devam etmeden önce bir parola belirleyin; parolanın kendisi değil, yalnızca tuzlanmış hash'i saklanır.",
+      authLoginTitle: "Giriş yap",
+      authLoginDesc: "Pentest Workspace'e devam etmek için parolanızı girin.",
+      authSetupRemoteTitle: "Parola henüz belirlenmemiş",
+      authSetupRemoteDesc: "İlk parola yalnızca API'nin çalıştığı bilgisayardan belirlenebilir. Arayüzü o bilgisayarda açın ya da orada terminalde şu komutu çalıştırın:",
+      authPasswordLabel: "Parola",
+      authNewPasswordLabel: "Yeni parola",
+      authConfirmPasswordLabel: "Yeni parola (tekrar)",
+      authCurrentPasswordLabel: "Mevcut parola",
+      authPasswordHint: "En az 12 karakter. Bir parola yöneticisi ya da birkaç kelimelik bir cümle iyi bir seçimdir.",
+      authSetupBtn: "Parolayı belirle ve devam et",
+      authLoginBtn: "Giriş yap",
+      authRetry: "Tekrar kontrol et",
+      authContinueLocal: "Backend olmadan yerel checklist modunda devam et",
+      authChangePassword: "Parolayı değiştir",
+      authLogout: "Çıkış yap",
+      authChangeTitle: "Parolayı değiştir",
+      authChangeDesc: "Parola değişince diğer tarayıcılardaki açık oturumlar kapanır; bu oturum devam eder.",
+      authChangeBtn: "Parolayı güncelle",
+      authChangedToast: "Parola güncellendi. Diğer oturumlar kapatıldı.",
+      authSessionExpiredNotice: "Oturumunuz sona erdi. Devam etmek için tekrar giriş yapın.",
+      authReloggedToast: "Tekrar giriş yapıldı. Son işlemi yeniden deneyin.",
+      authErrPasswordRequired: "Parola zorunludur.",
+      authErrPasswordTooShort: "Parola en az 12 karakter olmalıdır.",
+      authErrPasswordTooLong: "Parola en fazla 256 karakter olabilir.",
+      authErrPasswordWhitespace: "Parola başında veya sonunda boşluk olamaz.",
+      authErrPasswordUnchanged: "Yeni parola mevcut paroladan farklı olmalıdır.",
+      authErrPasswordMismatch: "Parolalar eşleşmiyor.",
+      authErrInvalidPassword: "Parola hatalı.",
+      authErrInvalidCurrentPassword: "Mevcut parola hatalı.",
+      authErrTooManyAttempts: "Çok fazla hatalı deneme. {s} saniye sonra tekrar deneyin.",
+      authErrSetupLoopbackOnly: "İlk parola yalnızca API'nin çalıştığı bilgisayardan belirlenebilir.",
+      authErrAlreadyConfigured: "Parola zaten belirlenmiş. Giriş yapın.",
+      authErrSetupRequired: "Önce bir parola belirlenmeli.",
+      authErrSessionExpired: "Oturumunuz sona erdi. Tekrar giriş yapın.",
+      authErrNetwork: "API'ye ulaşılamadı. Backend çalışıyor mu?"
     },
     en: {
       navWorkspace: "Workspace",
@@ -1022,7 +1061,44 @@
       pwEventType_test_completed: "Test completed",
       pwEventType_finding_created: "New finding",
       pwEventType_scope_updated: "Scope updated",
-      pwEventType_recon_run: "Recon run"
+      pwEventType_recon_run: "Recon run",
+      authSetupTitle: "Set your password",
+      authSetupDesc: "This workspace stores client findings and evidence. Set a password before you continue. Only a salted hash is stored, never the password itself.",
+      authLoginTitle: "Sign in",
+      authLoginDesc: "Enter your password to continue to Pentest Workspace.",
+      authSetupRemoteTitle: "No password set yet",
+      authSetupRemoteDesc: "The first password can only be set from the computer running the API. Open the interface on that computer, or run this command in a terminal there:",
+      authPasswordLabel: "Password",
+      authNewPasswordLabel: "New password",
+      authConfirmPasswordLabel: "New password (again)",
+      authCurrentPasswordLabel: "Current password",
+      authPasswordHint: "At least 12 characters. A password manager or a short sentence of a few words works well.",
+      authSetupBtn: "Set password and continue",
+      authLoginBtn: "Sign in",
+      authRetry: "Check again",
+      authContinueLocal: "Continue in local checklist mode without the backend",
+      authChangePassword: "Change password",
+      authLogout: "Sign out",
+      authChangeTitle: "Change password",
+      authChangeDesc: "Changing the password signs out sessions in other browsers. This session stays signed in.",
+      authChangeBtn: "Update password",
+      authChangedToast: "Password updated. Other sessions were signed out.",
+      authSessionExpiredNotice: "Your session has ended. Sign in again to continue.",
+      authReloggedToast: "Signed in again. Retry your last action.",
+      authErrPasswordRequired: "Password is required.",
+      authErrPasswordTooShort: "Password must be at least 12 characters.",
+      authErrPasswordTooLong: "Password can be at most 256 characters.",
+      authErrPasswordWhitespace: "Password cannot start or end with a space.",
+      authErrPasswordUnchanged: "The new password must differ from the current one.",
+      authErrPasswordMismatch: "Passwords do not match.",
+      authErrInvalidPassword: "Incorrect password.",
+      authErrInvalidCurrentPassword: "Current password is incorrect.",
+      authErrTooManyAttempts: "Too many failed attempts. Try again in {s} seconds.",
+      authErrSetupLoopbackOnly: "The first password can only be set from the computer running the API.",
+      authErrAlreadyConfigured: "A password is already set. Sign in instead.",
+      authErrSetupRequired: "A password must be set first.",
+      authErrSessionExpired: "Your session has ended. Sign in again.",
+      authErrNetwork: "Could not reach the API. Is the backend running?"
     }
   };
 
@@ -1198,6 +1274,8 @@
   let currentFramework = loadFramework(); // 'wstg' | 'llm-security'
   let currentTheme = loadTheme();
   let dbOnline = false;
+  let authBooted = false;      // giriş yapılıp backend'li mod başlatıldı mı
+  let authMode = null;         // giriş/kurulum ekranı açıksa modu
   let currentSession = null;   // {id, name, tester_name, target_url, status, ...}
   let sessionResults = {};     // test_id -> backend result row (only when a session is active)
   let currentProjectId = null; // Project/Engagement Management: açık olan proje
@@ -1434,6 +1512,8 @@
     updateProjectChip();
     const langSelect = document.getElementById('langSelect');
     if(langSelect) langSelect.value = currentLang;
+    const authLangSelect = document.getElementById('authLangSelect');
+    if(authLangSelect) authLangSelect.value = currentLang;
     const frameworkSelect = document.getElementById('frameworkSelect');
     if(frameworkSelect) frameworkSelect.value = currentFramework;
   }
@@ -2142,13 +2222,15 @@
       timeoutId = setTimeout(()=> ctrl.abort(), AI_REQUEST_UI_TIMEOUT_MS);
     }
 
-    return fetch(API_BASE + path, Object.assign({}, options, { headers, signal })).then(async res => {
+    return fetch(API_BASE + path, Object.assign({}, options, { headers, signal, credentials: 'include' })).then(async res => {
       if(timeoutId) clearTimeout(timeoutId);
       if(!res.ok){
         let msg = res.statusText;
         let body = null;
         try{ body = await res.json(); msg = body.error || msg; }catch(e){}
+        if(window.WSTGAuth.isSessionLost(res.status, body)) handleSessionLost();
         const err = new Error(msg);
+        err.status = res.status;
         err.body = body;
         throw err;
       }
@@ -2163,12 +2245,27 @@
     });
   }
 
+  // apiRequest JSON beklemeyen çağrılar (blob/text/FormData) için: çerezi
+  // gönderir, oturum düştüyse giriş ekranını açar, yanıtı olduğu gibi döndürür.
+  function apiFetch(path, options){
+    return fetch(API_BASE + path, Object.assign({}, options, { credentials: 'include' })).then(res => {
+      if(res.status === 401){
+        res.clone().json().then(body => {
+          if(window.WSTGAuth.isSessionLost(res.status, body)) handleSessionLost();
+        }).catch(()=>{});
+      }
+      return res;
+    });
+  }
+
+  // Backend var mı ve oturum durumu ne? Backend yoksa null döner (yerel mod).
+  // /auth/status giriş istemeyen tek okuma ucudur; /sessions artık 401 döner.
   function checkDb(){
     const ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
     const timer = ctrl ? setTimeout(()=>ctrl.abort(), 2500) : null;
-    return fetch(API_BASE + '/sessions', { signal: ctrl ? ctrl.signal : undefined })
-      .then(res => { clearTimeout(timer); return res.ok; })
-      .catch(() => { clearTimeout(timer); return false; });
+    return fetch(API_BASE + '/auth/status', { signal: ctrl ? ctrl.signal : undefined, credentials: 'include' })
+      .then(res => { clearTimeout(timer); return res.ok ? res.json() : null; })
+      .catch(() => { clearTimeout(timer); return null; });
   }
 
   function loadSavedSessionId(){
@@ -4357,7 +4454,7 @@
       if(values.api_key) headers['X-AI-Api-Key'] = values.api_key;
       if(values.model) headers['X-AI-Model'] = values.model;
       if(values.base_url) headers['X-AI-Base-Url'] = values.base_url;
-      fetch(API_BASE + '/ai/ping', { method: 'POST', headers })
+      apiFetch('/ai/ping', { method: 'POST', headers })
         .then(async res => {
           const body = await res.json().catch(()=>({}));
           if(res.ok && body.ok !== false){
@@ -4951,7 +5048,7 @@
       // Yeni sekme kullanici tiklamasiyla AYNI ANDA acilir (popup engelleyiciyi
       // atlamak icin) -- icerik fetch tamamlaninca dolduruluyor.
       const reportWindow = window.open('', '_blank');
-      fetch(`${API_BASE}/projects/${currentProjectId}/reports/html`, {
+      apiFetch(`/projects/${currentProjectId}/reports/html`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -4976,7 +5073,7 @@
       const payload = currentReportOptions();
       btn.disabled = true;
       statusEl.textContent = t('reportPdfGenerating');
-      fetch(`${API_BASE}/projects/${currentProjectId}/reports/pdf`, {
+      apiFetch(`/projects/${currentProjectId}/reports/pdf`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -5102,7 +5199,7 @@
       statusEl.classList.remove('error');
       const formData = new FormData();
       formData.append('file', file);
-      fetch(`${API_BASE}/projects/${currentProjectId}/evidence`, { method: 'POST', body: formData })
+      apiFetch(`/projects/${currentProjectId}/evidence`, { method: 'POST', body: formData })
         .then(async res => {
           if(!res.ok){ const j = await res.json().catch(()=>({})); throw new Error(j.error || res.statusText); }
           return res.json();
@@ -5652,24 +5749,209 @@
     bindEvents();
     updateSessionUI();
 
-    checkDb().then(online => {
-      dbOnline = online;
-      updateSessionUI();
-      if(!online) return; // no backend -> behave exactly like the original local-only app
-
-      renderAiStatusBadge();
-
-      const savedId = loadSavedSessionId();
-      if(savedId){
-        openSessionById(savedId).then(()=>{
-          showToast(`${currentSession.name} ${t('sessionResumed')}`);
-        }).catch(()=>{
-          saveSessionId(null);
-          if(!getSkipFlag()) openSessionGate(false);
-        });
-      } else if(!getSkipFlag()){
-        openSessionGate(false);
-      }
+    bindAuthEvents();
+    checkDb().then(status => {
+      if(!status) return; // no backend -> behave exactly like the original local-only app
+      if(status.authenticated){ startOnline(); return; }
+      showAuthScreen(status.configured ? 'login' : (status.setup_allowed ? 'setup' : 'setup-remote'));
     });
   });
+
+  // Giriş yapıldıktan sonra (ya da çerez hâlâ geçerliyse) backend'li modu başlatır.
+  function startOnline(){
+    authBooted = true;
+    dbOnline = true;
+    setAuthNavVisible(true);
+    updateSessionUI();
+
+    renderAiStatusBadge();
+
+    const savedId = loadSavedSessionId();
+    if(savedId){
+      openSessionById(savedId).then(()=>{
+        showToast(`${currentSession.name} ${t('sessionResumed')}`);
+      }).catch(()=>{
+        saveSessionId(null);
+        if(!getSkipFlag()) openSessionGate(false);
+      });
+    } else if(!getSkipFlag()){
+      openSessionGate(false);
+    }
+  }
+
+  // ========================
+  // KİMLİK DOĞRULAMA EKRANLARI
+  // ========================
+  // authMode: null | 'setup' | 'login' | 'setup-remote'. Ekran opaktır; arkadaki
+  // veriler görünmez. Çıkışta sayfa yeniden yüklenir (bellekte veri kalmaz).
+
+  function authErrorText(err){
+    const body = err && err.body;
+    const key = body && window.WSTGAuth.errorKey(body.code);
+    if(key) return t(key).replace('{s}', body.retry_after || '');
+    if(!body) return t('authErrNetwork');
+    return err.message || t('authErrNetwork');
+  }
+
+  function setI18nText(el, key){
+    el.setAttribute('data-i18n', key);
+    el.textContent = t(key);
+  }
+
+  function setAuthNavVisible(visible){
+    const nav = document.getElementById('authNav');
+    if(nav) nav.hidden = !visible;
+  }
+
+  function showAuthScreen(mode, noticeKey){
+    authMode = mode;
+    const screen = document.getElementById('authScreen');
+    const form = document.getElementById('authForm');
+    const pw = document.getElementById('authPassword');
+    const confirm = document.getElementById('authPasswordConfirm');
+    const isSetup = mode === 'setup';
+    const titleKey = { setup: 'authSetupTitle', login: 'authLoginTitle', 'setup-remote': 'authSetupRemoteTitle' }[mode];
+    const descKey = { setup: 'authSetupDesc', login: 'authLoginDesc', 'setup-remote': 'authSetupRemoteDesc' }[mode];
+    setI18nText(document.getElementById('authTitle'), titleKey);
+    setI18nText(document.getElementById('authDesc'), descKey);
+    setI18nText(document.getElementById('authPasswordLabel'), isSetup ? 'authNewPasswordLabel' : 'authPasswordLabel');
+    setI18nText(document.getElementById('authSubmit'), isSetup ? 'authSetupBtn' : 'authLoginBtn');
+    pw.setAttribute('autocomplete', isSetup ? 'new-password' : 'current-password');
+    document.getElementById('authConfirmRow').hidden = !isSetup;
+    document.getElementById('authHint').hidden = !isSetup;
+    form.hidden = mode === 'setup-remote';
+    document.getElementById('authRemote').hidden = mode !== 'setup-remote';
+    // Yerel moda geçiş yalnızca ilk açılışta; oturum ortasında düşerse giriş zorunlu.
+    document.getElementById('authLocalBtn').hidden = authBooted;
+    const noticeEl = document.getElementById('authNotice');
+    if(noticeKey) setI18nText(noticeEl, noticeKey);
+    else { noticeEl.removeAttribute('data-i18n'); noticeEl.textContent = ''; }
+    noticeEl.hidden = !noticeKey;
+    document.getElementById('authError').textContent = '';
+    pw.value = '';
+    confirm.value = '';
+    document.getElementById('authLangSelect').value = currentLang;
+    screen.classList.add('open');
+    document.body.classList.add('auth-locked');
+    if(!form.hidden) setTimeout(()=> pw.focus(), 0);
+  }
+
+  function hideAuthScreen(){
+    authMode = null;
+    document.getElementById('authScreen').classList.remove('open');
+    document.body.classList.remove('auth-locked');
+    document.getElementById('authPassword').value = '';
+    document.getElementById('authPasswordConfirm').value = '';
+  }
+
+  function handleSessionLost(){
+    if(!authBooted || authMode) return; // açılışta zaten giriş ekranı yönetiliyor
+    dbOnline = false;
+    setAuthNavVisible(false);
+    showAuthScreen('login', 'authSessionExpiredNotice');
+  }
+
+  function submitAuthForm(e){
+    e.preventDefault();
+    const pw = document.getElementById('authPassword').value;
+    const errEl = document.getElementById('authError');
+    const btn = document.getElementById('authSubmit');
+    errEl.textContent = '';
+    if(authMode === 'setup' && pw !== document.getElementById('authPasswordConfirm').value){
+      errEl.textContent = t('authErrPasswordMismatch');
+      return;
+    }
+    const path = authMode === 'setup' ? '/auth/setup' : '/auth/login';
+    btn.disabled = true;
+    apiRequest(path, { method: 'POST', body: JSON.stringify({ password: pw }) }).then(()=>{
+      const wasBooted = authBooted;
+      hideAuthScreen();
+      if(wasBooted){
+        dbOnline = true;
+        setAuthNavVisible(true);
+        updateSessionUI();
+        showToast(t('authReloggedToast'));
+      } else {
+        startOnline();
+      }
+    }).catch(err => {
+      const code = err.body && err.body.code;
+      // Başka bir sekmede kurulum yapıldıysa giriş ekranına geç.
+      if(code === 'already_configured'){ showAuthScreen('login', 'authErrAlreadyConfigured'); return; }
+      errEl.textContent = authErrorText(err);
+      document.getElementById('authPassword').select();
+    }).finally(()=>{ btn.disabled = false; });
+  }
+
+  function recheckAuthStatus(){
+    checkDb().then(status => {
+      if(!status){ document.getElementById('authError').textContent = t('authErrNetwork'); return; }
+      if(status.authenticated){ hideAuthScreen(); startOnline(); return; }
+      showAuthScreen(status.configured ? 'login' : (status.setup_allowed ? 'setup' : 'setup-remote'));
+    });
+  }
+
+  function openChangePassword(){
+    ['cpCurrent', 'cpNew', 'cpConfirm'].forEach(id => { document.getElementById(id).value = ''; });
+    document.getElementById('cpError').textContent = '';
+    document.getElementById('changePasswordOverlay').classList.add('open');
+    closeSidebar();
+    setTimeout(()=> document.getElementById('cpCurrent').focus(), 0);
+  }
+
+  function closeChangePassword(){
+    const overlay = document.getElementById('changePasswordOverlay');
+    if(!overlay.classList.contains('open')) return;
+    overlay.classList.remove('open');
+    ['cpCurrent', 'cpNew', 'cpConfirm'].forEach(id => { document.getElementById(id).value = ''; });
+  }
+
+  function submitChangePassword(e){
+    e.preventDefault();
+    const current = document.getElementById('cpCurrent').value;
+    const next = document.getElementById('cpNew').value;
+    const errEl = document.getElementById('cpError');
+    const btn = document.getElementById('cpSubmit');
+    errEl.textContent = '';
+    if(next !== document.getElementById('cpConfirm').value){
+      errEl.textContent = t('authErrPasswordMismatch');
+      return;
+    }
+    btn.disabled = true;
+    apiRequest('/auth/change-password', { method: 'POST', body: JSON.stringify({ current_password: current, new_password: next }) })
+      .then(()=>{
+        closeChangePassword();
+        showToast(t('authChangedToast'));
+      })
+      .catch(err => {
+        if(window.WSTGAuth.isSessionLost(err.status, err.body)){ closeChangePassword(); return; }
+        errEl.textContent = authErrorText(err);
+      })
+      .finally(()=>{ btn.disabled = false; });
+  }
+
+  function logout(){
+    apiRequest('/auth/logout', { method: 'POST' }).catch(()=>{}).then(()=>{
+      window.location.reload();
+    });
+  }
+
+  function bindAuthEvents(){
+    document.getElementById('authForm').addEventListener('submit', submitAuthForm);
+    document.getElementById('authRetryBtn').addEventListener('click', recheckAuthStatus);
+    document.getElementById('authLocalBtn').addEventListener('click', ()=>{
+      hideAuthScreen();
+      dbOnline = false;
+      updateSessionUI();
+    });
+    document.getElementById('authLangSelect').addEventListener('change', e => switchLanguage(e.target.value));
+    document.getElementById('changePasswordBtn').addEventListener('click', openChangePassword);
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+    document.getElementById('changePasswordForm').addEventListener('submit', submitChangePassword);
+    document.getElementById('closeChangePassword').addEventListener('click', closeChangePassword);
+    document.getElementById('changePasswordOverlay').addEventListener('click', e => {
+      if(e.target.id === 'changePasswordOverlay') closeChangePassword();
+    });
+    document.addEventListener('keydown', e => { if(e.key === 'Escape') closeChangePassword(); });
+  }
 })();
