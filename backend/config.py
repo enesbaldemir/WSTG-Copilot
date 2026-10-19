@@ -1,8 +1,17 @@
 import os
+from datetime import timedelta
 from dotenv import load_dotenv
 from security import DEFAULT_CORS_ORIGINS, DEFAULT_ALLOWED_HOSTS, TRUE_VALUES
 
 load_dotenv()
+
+
+def _session_hours(raw, default=12):
+    try:
+        return max(1, int(str(raw).strip()))
+    except (TypeError, ValueError):
+        return default
+
 
 class Config:
     # ABSOLUTE PATH KULLAN - Bu çözüm!
@@ -17,6 +26,17 @@ class Config:
     # Kabul edilen Host başlıkları (DNS rebinding koruması). API'yi ağa
     # açarsanız (WSTG_HOST) bu makinenin adını/IP'sini buraya ekleyin.
     ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', DEFAULT_ALLOWED_HOSTS)
+    # Oturum: Flask'ın imzalı session çerezi (bkz. auth.py). Ad özel; çerezler
+    # porta göre ayrılmadığından aynı makinedeki başka bir uygulamanın
+    # 'session' çereziyle çakışmasın. Süre girişten itibaren sayılır, her
+    # istekte uzamaz (SESSION_REFRESH_EACH_REQUEST=False).
+    SESSION_COOKIE_NAME = 'wstg_session'
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Strict'
+    # Yalnızca API HTTPS arkasında sunuluyorsa açın; düz HTTP'de çerez gönderilmez.
+    SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', '').strip().lower() in TRUE_VALUES
+    PERMANENT_SESSION_LIFETIME = timedelta(hours=_session_hours(os.getenv('WSTG_SESSION_HOURS', '12')))
+    SESSION_REFRESH_EACH_REQUEST = False
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024
     UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
     LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')

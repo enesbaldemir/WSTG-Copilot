@@ -21,6 +21,7 @@
 - [Installation](#installation)
 - [Environment Variables](#environment-variables)
 - [Running](#running)
+- [Authentication](#authentication)
 - [Project Structure](#project-structure)
 - [Contributing](#contributing)
 - [License](#license)
@@ -136,7 +137,9 @@ All variables are optional and are read from `backend/.env`. AI keys are normall
 | `SECRET_KEY` | generated | Flask secret key. If empty, a random key is generated on first start and stored in `backend/instance/secret_key` (file mode `0600`, ignored by git) |
 | `CORS_ORIGINS` | `http://localhost:8000,http://127.0.0.1:8000,http://localhost:3000,http://127.0.0.1:3000` | Allowed frontend origins. `POST`/`PUT`/`PATCH`/`DELETE` requests sent from any other origin are rejected with `403` |
 | `ALLOWED_HOSTS` | `localhost,127.0.0.1,::1` | Accepted `Host` headers (DNS rebinding protection). Add this machine's name/IP if you expose the API with `WSTG_HOST` |
-| `WSTG_HOST` / `WSTG_PORT` | `127.0.0.1` / `5000` | Address `python app.py` listens on. Anything other than loopback exposes the API to the network; there is no authentication yet |
+| `WSTG_HOST` / `WSTG_PORT` | `127.0.0.1` / `5000` | Address `python app.py` listens on. Anything other than loopback exposes the API to the network over plain HTTP; see [Authentication](#authentication) |
+| `WSTG_SESSION_HOURS` | `12` | How long a sign-in lasts, counted from sign-in (not extended by activity) |
+| `SESSION_COOKIE_SECURE` | off | `1` marks the session cookie `Secure`. Only enable it when the API is served over HTTPS, otherwise the browser will not send the cookie |
 | `FLASK_DEBUG` | off | `1` enables the Werkzeug debugger. Refused unless the host is loopback, because a network-reachable debugger allows remote code execution |
 | `LOG_LEVEL` | `INFO` | Log level |
 | `ANTHROPIC_API_KEY` | empty | Enables AI vision analysis of evidence screenshots; also the Anthropic fallback key |
@@ -166,9 +169,23 @@ Do not commit `backend/.env`; it is already listed in `.gitignore`.
    python -m http.server 8000
    ```
 
-3. Open `http://localhost:8000`. The frontend detects the backend automatically.
+3. Open `http://localhost:8000` (or `http://127.0.0.1:8000`). The frontend detects the backend automatically. On first open you are asked to set a password; after that you sign in.
 
-For checklist-only use, step 1 can be skipped; progress is then kept in `localStorage`.
+For checklist-only use, step 1 can be skipped; progress is then kept in `localStorage` and no sign-in is needed.
+
+### Authentication
+
+The backend is single-user and protected by a password.
+
+- **First password.** The first time the interface is opened it asks for a password of at least 12 characters. This screen only works from the computer running the API (loopback address), so nobody on the network can claim the workspace first. On a headless or remote setup, set it in a terminal with `python app.py set-password`.
+- **Sign-in.** The session is Flask's signed session cookie `wstg_session` (`HttpOnly`, `SameSite=Strict`), valid for 12 hours from sign-in. Without it every `/api` endpoint returns `401`, except `/api/auth/status`, `/api/auth/setup`, `/api/auth/login` and `/api/auth/logout`. When a session ends, the interface returns to the sign-in screen.
+- **Storage.** Only a salted hash (`werkzeug.security`) is stored, in the `auth_settings` table. The table is created automatically on start. Existing data is not touched.
+- **Failed attempts.** After 5 failed attempts from the same address, sign-in is locked for 30 seconds, doubling up to 15 minutes. The counter is kept in memory and resets when the backend restarts.
+- **Change password / sign out.** Both are in the sidebar. Changing the password signs out every other browser; the current one stays signed in.
+- **Forgot the password.** Run `python app.py set-password` in `backend/` (the backend can keep running). The password is asked twice and never passed as an argument. All open sessions are signed out.
+- **localhost vs 127.0.0.1.** Browsers treat these as different sites, so the frontend calls the API on the same host the page was opened from (`127.0.0.1:8000` → `127.0.0.1:5000`, `localhost:8000` → `localhost:5000`). Each address needs its own sign-in.
+
+**Upgrading.** After updating, the backend requires a sign-in. Open the interface on the API machine and set a password, or run `python app.py set-password`. Projects, findings and evidence are kept as they are.
 
 ### Project Structure
 
@@ -178,6 +195,7 @@ WSTG-Copilot/
 ├── css/style.css               # Styles
 ├── js/
 │   ├── app.js                  # Application logic, i18n, API client, AI/BYOK panels
+│   ├── auth.js                 # API address selection and auth error codes
 │   ├── cvss.js                 # CVSS v3.1 calculator
 │   └── import-parsers.js       # Nmap / Nikto / WPScan parsers
 ├── data/
@@ -188,6 +206,8 @@ WSTG-Copilot/
 │   ├── app.py                  # Flask REST API
 │   ├── models.py               # SQLAlchemy models
 │   ├── config.py               # Configuration from environment variables
+│   ├── auth.py                 # Password hashing, policy, login throttling
+│   ├── security.py             # Local-only defaults (host, debug, CORS, Origin/Host checks)
 │   ├── ai/                     # Provider layer (factory + Anthropic/OpenAI/Gemini/Ollama)
 │   ├── ai_report_assistant.py  # Description / remediation / rewrite / summary prompts
 │   ├── finding_analysis.py     # AI CWE / severity / CVSS suggestion
@@ -251,6 +271,7 @@ Test content is based on the [OWASP Web Security Testing Guide v4.2](https://owa
 - [Kurulum](#kurulum)
 - [Ortam Değişkenleri](#ortam-değişkenleri)
 - [Çalıştırma](#çalıştırma)
+- [Kimlik Doğrulama](#kimlik-doğrulama)
 - [Proje Klasör Yapısı](#proje-klasör-yapısı)
 - [Katkıda Bulunma](#katkıda-bulunma)
 - [Lisans](#lisans)
@@ -366,7 +387,9 @@ Tüm değişkenler opsiyoneldir ve `backend/.env` dosyasından okunur. AI key'le
 | `SECRET_KEY` | otomatik üretilir | Flask gizli anahtarı. Boşsa ilk açılışta rastgele bir anahtar üretilip `backend/instance/secret_key` dosyasına (`0600` izinle, git'e girmez) kaydedilir |
 | `CORS_ORIGINS` | `http://localhost:8000,http://127.0.0.1:8000,http://localhost:3000,http://127.0.0.1:3000` | İzin verilen frontend origin'leri. Başka bir origin'den gelen `POST`/`PUT`/`PATCH`/`DELETE` istekleri `403` ile reddedilir |
 | `ALLOWED_HOSTS` | `localhost,127.0.0.1,::1` | Kabul edilen `Host` başlıkları (DNS rebinding koruması). API'yi `WSTG_HOST` ile ağa açarsanız bu makinenin adını/IP'sini ekleyin |
-| `WSTG_HOST` / `WSTG_PORT` | `127.0.0.1` / `5000` | `python app.py`'nin dinlediği adres. Loopback dışındaki her değer API'yi ağa açar; henüz kimlik doğrulaması yoktur |
+| `WSTG_HOST` / `WSTG_PORT` | `127.0.0.1` / `5000` | `python app.py`'nin dinlediği adres. Loopback dışındaki her değer API'yi şifresiz HTTP üzerinden ağa açar; bkz. [Kimlik Doğrulama](#kimlik-doğrulama) |
+| `WSTG_SESSION_HOURS` | `12` | Bir girişin geçerlilik süresi; girişten itibaren sayılır, kullanım süreyi uzatmaz |
+| `SESSION_COOKIE_SECURE` | kapalı | `1` oturum çerezini `Secure` yapar. Yalnızca API HTTPS üzerinden sunuluyorsa açın; aksi halde tarayıcı çerezi göndermez |
 | `FLASK_DEBUG` | kapalı | `1` Werkzeug debugger'ını açar. Ağdan erişilebilen debugger uzaktan kod çalıştırmaya izin verdiği için host loopback değilse uygulama başlamaz |
 | `LOG_LEVEL` | `INFO` | Log seviyesi |
 | `ANTHROPIC_API_KEY` | boş | Kanıt ekran görüntülerinin AI görsel analizini etkinleştirir; Anthropic için fallback key'dir |
@@ -396,9 +419,23 @@ Tüm değişkenler opsiyoneldir ve `backend/.env` dosyasından okunur. AI key'le
    python -m http.server 8000
    ```
 
-3. `http://localhost:8000` adresini açın. Frontend backend'i otomatik algılar.
+3. `http://localhost:8000` (veya `http://127.0.0.1:8000`) adresini açın. Frontend backend'i otomatik algılar. İlk açılışta bir parola belirlemeniz istenir; sonrasında giriş yaparsınız.
 
-Yalnızca checklist kullanılacaksa 1. adım atlanabilir; ilerleme bu durumda `localStorage`'da tutulur.
+Yalnızca checklist kullanılacaksa 1. adım atlanabilir; ilerleme bu durumda `localStorage`'da tutulur ve giriş gerekmez.
+
+### Kimlik Doğrulama
+
+Backend tek kullanıcılıdır ve parola ile korunur.
+
+- **İlk parola.** Arayüz ilk açıldığında en az 12 karakterlik bir parola ister. Bu ekran yalnızca API'nin çalıştığı bilgisayardan (loopback adresi) çalışır; böylece ağdaki biri çalışma alanını sizden önce sahiplenemez. Ekransız ya da uzak bir kurulumda terminalden `python app.py set-password` ile belirleyin.
+- **Giriş.** Oturum, Flask'ın imzalı session çerezi `wstg_session`'dır (`HttpOnly`, `SameSite=Strict`) ve girişten itibaren 12 saat geçerlidir. Çerez yoksa `/api` altındaki her uç `401` döner; açık kalanlar yalnızca `/api/auth/status`, `/api/auth/setup`, `/api/auth/login` ve `/api/auth/logout`'tur. Oturum düşünce arayüz giriş ekranına döner.
+- **Saklama.** Yalnızca tuzlanmış hash (`werkzeug.security`) `auth_settings` tablosunda saklanır. Tablo açılışta otomatik oluşturulur; mevcut verilere dokunulmaz.
+- **Hatalı denemeler.** Aynı adresten 5 hatalı denemeden sonra giriş 30 saniye kilitlenir; süre her seferinde ikiye katlanarak en fazla 15 dakikaya çıkar. Sayaç bellekte tutulur, backend yeniden başlayınca sıfırlanır.
+- **Parola değiştirme / çıkış.** İkisi de kenar çubuğundadır. Parola değişince diğer tüm tarayıcılardaki oturumlar kapanır; mevcut oturum devam eder.
+- **Parolayı unuttuysanız.** `backend/` içinde `python app.py set-password` çalıştırın (backend'i durdurmanız gerekmez). Parola iki kez sorulur, argüman olarak verilmez. Açık tüm oturumlar kapanır.
+- **localhost ve 127.0.0.1.** Tarayıcılar bunları farklı site sayar; bu yüzden frontend API'yi sayfanın açıldığı host üzerinden çağırır (`127.0.0.1:8000` → `127.0.0.1:5000`, `localhost:8000` → `localhost:5000`). Her adres için ayrı giriş gerekir.
+
+**Güncelleme.** Bu sürümden sonra backend giriş ister. Arayüzü API'nin çalıştığı bilgisayarda açıp parola belirleyin ya da `python app.py set-password` çalıştırın. Projeler, bulgular ve kanıtlar olduğu gibi kalır.
 
 ### Proje Klasör Yapısı
 
@@ -408,6 +445,7 @@ WSTG-Copilot/
 ├── css/style.css               # Stiller
 ├── js/
 │   ├── app.js                  # Uygulama mantığı, i18n, API istemcisi, AI/BYOK panelleri
+│   ├── auth.js                 # API adresi seçimi ve kimlik doğrulama hata kodları
 │   ├── cvss.js                 # CVSS v3.1 hesaplayıcı
 │   └── import-parsers.js       # Nmap / Nikto / WPScan ayrıştırıcıları
 ├── data/
@@ -418,6 +456,8 @@ WSTG-Copilot/
 │   ├── app.py                  # Flask REST API
 │   ├── models.py               # SQLAlchemy modelleri
 │   ├── config.py               # Ortam değişkenlerinden yapılandırma
+│   ├── auth.py                 # Parola hash'i, parola kuralı, deneme sınırı
+│   ├── security.py             # Yalnızca-yerel varsayılanlar (host, debug, CORS, Origin/Host kontrolleri)
 │   ├── ai/                     # Sağlayıcı katmanı (factory + Anthropic/OpenAI/Gemini/Ollama)
 │   ├── ai_report_assistant.py  # Açıklama / remediation / yeniden yazım / özet prompt'ları
 │   ├── finding_analysis.py     # AI CWE / önem / CVSS önerisi
