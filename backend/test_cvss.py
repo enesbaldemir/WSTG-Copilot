@@ -1,68 +1,81 @@
-import sys
-sys.path.insert(0, '.')
-from cvss import calculate, parse_vector, CVSSError
+"""
+CVSS v3.1 hesaplayıcı (cvss.compute) testleri.
 
-# Bilinen / yaygın yayınlanmış CVSS 3.1 taban skorlarıyla karşılaştırma.
+Not: Bu dosya eskiden cvss modülünde artık bulunmayan `calculate`/`parse_vector`
+fonksiyonlarını import ettiği için hiç çalışmıyordu (toplama hatası). Referans
+skorlar korunarak gerçek API'ye (compute + CvssError) ve /api/cvss/calculate
+rotasına göre yeniden yazıldı.
+"""
+import sys, os
+sys.path.insert(0, '.')
+os.environ['FLASK_ENV'] = 'development'
+
+import pytest
+import cvss
+from cvss import compute, CvssError, severity_label
+
+
+def metrics(vector):
+    """'CVSS:3.1/AV:N/...' -> {'AV': 'N', ...} (yalnızca test yardımcısı)."""
+    parts = [p for p in vector.split('/') if ':' in p and not p.upper().startswith('CVSS:')]
+    return {k.upper(): v.upper() for k, v in (p.split(':', 1) for p in parts)}
+
+
+# Yayınlanmış / NVD hesaplayıcısıyla doğrulanabilir taban skorlar.
 REFERENCE_VECTORS = [
-    # Tipik kritik RCE (kimlik doğrulama gerektirmeyen, tam etki) -> 9.8 Critical
-    ("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H", 9.8, "critical"),
-    # Scope Changed + tam etki -> 10.0 (üst sınıra yuvarlanır)
-    ("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H", 10.0, "critical"),
-    # Tipik reflected XSS (kullanıcı etkileşimi gerekli, kısmi etki, scope changed) -> 6.1 Medium
-    ("CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N", 6.1, "medium"),
-    # Etkisi olmayan bir zafiyet -> 0.0 None
-    ("CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:N/I:N/A:N", 0.0, "none"),
-    # Yerelden, yüksek karmaşıklıkla, sadece bilgi ifşası -> düşük/orta bant
+    ("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H", 9.8, "critical"),   # kimlik doğrulamasız RCE
+    ("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H", 10.0, "critical"),  # scope changed, tavana yuvarlanır
+    ("CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N", 6.1, "medium"),     # tipik reflected XSS
+    ("CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:N/I:N/A:N", 0.0, "info"),       # etkisiz -> uygulamada 'info'
     ("CVSS:3.1/AV:L/AC:H/PR:H/UI:R/S:U/C:L/I:N/A:N", 1.8, "low"),
+    ("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N", 7.5, "high"),       # bilgi ifşası
 ]
 
 
-def test_reference_vectors():
-    for vector, expected_score, expected_rating in REFERENCE_VECTORS:
-        result = calculate(vector)
-        assert result["score"] == expected_score, (
-            f"{vector} -> beklenen {expected_score}, gelen {result['score']}"
-        )
-        assert result["rating"] == expected_rating, (
-            f"{vector} -> beklenen rating {expected_rating}, gelen {result['rating']}"
-        )
-        print(f"OK: {vector} => {result['score']} ({result['rating']})")
+@pytest.mark.parametrize("vector,score,severity", REFERENCE_VECTORS)
+def test_reference_vectors(vector, score, severity):
+    r = compute(metrics(vector))
+    assert r['base_score'] == score
+    assert r['severity'] == severity
+    assert r['vector'] == vector
 
 
-def test_case_insensitivity_and_prefix():
-    r1 = calculate("cvss:3.1/av:n/ac:l/pr:n/ui:n/s:u/c:h/i:h/a:h")
-    r2 = calculate("AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H")  # CVSS: prefix'i olmadan
-    assert r1["score"] == r2["score"] == 9.8
-    print("OK: case-insensitive ve prefix'siz vektörler doğru parse ediliyor")
+def test_pr_weight_depends_on_scope():
+    unchanged = compute(metrics("AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H"))
+    changed = compute(metrics("AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H"))
+    assert unchanged['base_score'] == 8.8
+    assert changed['base_score'] == 9.9
 
 
-def test_invalid_vectors_raise():
-    bad_vectors = [
-        "",
-        "AV:X/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",   # gecersiz AV
-        "AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H",        # eksik metrik (A yok)
-        "not-a-vector-at-all",
-    ]
-    for v in bad_vectors:
-        try:
-            calculate(v)
-            raise AssertionError(f"'{v}' icin hata beklenirken hata firlatilmadi")
-        except CVSSError:
-            pass
-    print("OK: hatalı vektörler CVSSError fırlatıyor")
+@pytest.mark.parametrize("bad", [
+    {},                                                                    # hiç metrik yok
+    metrics("AV:X/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"),                         # geçersiz AV
+    metrics("AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H"),                             # A eksik
+])
+def test_invalid_metrics_raise(bad):
+    with pytest.raises(CvssError):
+        compute(bad)
 
 
-def test_pr_scope_dependency():
-    # Scope Changed olduğunda PR:L farklı ağırlığa sahip (0.68 vs 0.62) -> skor farklı olmalı
-    unchanged = calculate("AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H")
-    changed = calculate("AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H")
-    assert unchanged["score"] != changed["score"]
-    print(f"OK: PR ağırlığı Scope'a göre değişiyor (U={unchanged['score']}, C={changed['score']})")
+def test_roundup_follows_spec():
+    # CVSS v3.1 spesifikasyonu Ek A: Roundup(4.02) = 4.1, Roundup(4.00) = 4.0.
+    # Fonksiyon kayan nokta hatalarına karşı 5. ondalıkta yuvarlar; bu yüzden
+    # 4.000001 gibi değerler bilinçli olarak 4.0 kalır.
+    assert cvss._roundup(4.02) == 4.1
+    assert cvss._roundup(4.00) == 4.0
+    assert cvss._roundup(4.000001) == 4.0
 
 
-if __name__ == "__main__":
-    test_reference_vectors()
-    test_case_insensitivity_and_prefix()
-    test_invalid_vectors_raise()
-    test_pr_scope_dependency()
-    print("\nTüm CVSS testleri geçti.")
+def test_severity_boundaries():
+    assert [severity_label(s) for s in (0, 0.1, 3.9, 4.0, 6.9, 7.0, 8.9, 9.0, 10)] == \
+        ['info', 'low', 'low', 'medium', 'medium', 'high', 'high', 'critical', 'critical']
+
+
+def test_calculate_route():
+    import app as app_module
+    app_module.app.config['TESTING'] = True
+    c = app_module.app.test_client()
+    ok = c.post('/api/cvss/calculate', json=metrics("AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"))
+    assert ok.status_code == 200 and ok.get_json()['base_score'] == 9.8
+    bad = c.post('/api/cvss/calculate', json={'AV': 'X'})
+    assert bad.status_code == 400

@@ -236,12 +236,15 @@ WSTG-Copilot/
 
 1. Fork the repository and create a branch from `main`.
 2. Make your changes; keep the frontend free of build steps and frameworks.
-3. Run the relevant tests from the `backend/` directory, for example:
+3. Run the tests (the same commands run in CI on every pull request):
 
    ```bash
-   python test_finding_analysis.py
-   python test_ai_layer.py
+   pip install -r backend/requirements.txt -r backend/requirements-dev.txt
+   cd backend && python -m pytest -q        # backend
+   cd .. && node --test js/tests/*.test.js  # frontend
    ```
+
+   Always run backend tests through `pytest`: `backend/conftest.py` points them at a temporary database and secret key. Running a test file directly (`python test_x.py`) skips that and writes to your real `backend/database/wstg.db`.
 
 4. Open a pull request describing the change.
 
@@ -486,12 +489,15 @@ WSTG-Copilot/
 
 1. Depoyu fork'layın ve `main` dalından yeni bir dal açın.
 2. Değişikliklerinizi yapın; frontend'i framework ve build adımı gerektirmeyecek şekilde tutun.
-3. İlgili testleri `backend/` klasöründen çalıştırın, örneğin:
+3. Testleri çalıştırın (CI her pull request'te aynı komutları çalıştırır):
 
    ```bash
-   python test_finding_analysis.py
-   python test_ai_layer.py
+   pip install -r backend/requirements.txt -r backend/requirements-dev.txt
+   cd backend && python -m pytest -q        # backend
+   cd .. && node --test js/tests/*.test.js  # frontend
    ```
+
+   Backend testlerini her zaman `pytest` ile çalıştırın: `backend/conftest.py` onları geçici bir veritabanına ve gizli anahtara yönlendirir. Bir test dosyasını doğrudan çalıştırmak (`python test_x.py`) bunu atlar ve gerçek `backend/database/wstg.db` dosyanıza yazar.
 
 4. Değişikliği açıklayan bir pull request açın.
 
