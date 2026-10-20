@@ -72,6 +72,7 @@ The checklist works with only a static file server. Projects, findings, evidence
 - Self-contained HTML report (single file, no external dependencies) with a print / save-as-PDF button
 - Server-side PDF report generated with `xhtml2pdf` (cover page, executive summary, risk breakdown, per-finding details, appendices, page numbers) with an embedded font for Turkish characters
 - Finding selection for HTML/PDF reports: all, critical + high only, or hand-picked
+- "Authorization Testing" section in HTML/PDF reports built from the authorization matrix: summary, list of unauthorized access with linked finding codes and the colour-coded role × endpoint table (summary only in the Executive template; can be turned off in the report builder)
 - Session-level reports (Markdown / DOCX) and an optional AI-drafted executive summary
 - Retest workflow (project tab): findings the client reports as fixed are listed as pending; each is marked "Fixed" (status → Resolved) or "Still open" (reopened) with a note and screenshot evidence, and every retest is recorded in the timeline. A separate Retest Report (PDF/HTML) summarises verified, still-open and not-yet-retested findings
 
@@ -337,6 +338,7 @@ Checklist yalnızca statik bir dosya sunucusuyla çalışır. Projeler, bulgular
 - Yazdır / PDF olarak kaydet butonlu, harici bağımlılığı olmayan tek dosyalık HTML rapor
 - `xhtml2pdf` ile sunucu tarafında üretilen PDF rapor (kapak, yönetici özeti, risk dağılımı, bulgu detayları, ekler, sayfa numaraları); Türkçe karakterler için gömülü font
 - HTML/PDF raporlarında bulgu seçimi: tümü, yalnızca kritik + yüksek ya da tek tek seçim
+- HTML/PDF raporlarında yetkilendirme matrisinden üretilen "Yetkilendirme Testleri" bölümü: özet, bağlı bulgu kodlarıyla izinsiz erişim listesi ve renkli rol × endpoint tablosu (Yönetici şablonunda yalnızca özet; rapor oluşturucudan kapatılabilir)
 - Oturum bazlı raporlar (Markdown / DOCX) ve opsiyonel AI destekli yönetici özeti taslağı
 - Yeniden test akışı (proje sekmesi): müşterinin düzelttiğini bildirdiği bulgular "bekleyen" olarak listelenir; her biri not ve ekran görüntüsü kanıtıyla "Düzeldi" (durum → Kapatıldı) ya da "Hâlâ açık" (yeniden açılır) olarak işaretlenir ve her yeniden test zaman çizelgesine yazılır. Ayrı bir Yeniden Test Raporu (PDF/HTML) doğrulanan, açık kalan ve henüz yeniden test edilmeyen bulguları özetler
 

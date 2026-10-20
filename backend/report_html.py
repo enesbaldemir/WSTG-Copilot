@@ -19,6 +19,8 @@ tekrarlanir (report_builder.py'yi degistirmeden, dusuk riskli bir yaklasim).
 import html as html_lib
 from datetime import datetime
 
+import report_authz
+
 SEVERITY_ORDER = ['critical', 'high', 'medium', 'low', 'info']
 SEVERITY_HEX = {
     'critical': '#991818',
@@ -72,7 +74,7 @@ def _is_safe_data_uri(value):
     return isinstance(value, str) and value.strip().lower().startswith('data:image/')
 
 
-def build_html_report(project, findings, all_results, options=None, executive_summary=None, lang='tr'):
+def build_html_report(project, findings, all_results, options=None, executive_summary=None, lang='tr', authz=None):
     """
     project: Project.to_dict()
     findings: [Finding.to_dict(), ...] (proje genelindeki tum bulgular; filtreleme burada yapilir)
@@ -127,6 +129,8 @@ def build_html_report(project, findings, all_results, options=None, executive_su
     )
 
     findings_html = _render_findings_section(sorted_findings, lang, template)
+    # authz: doğrulanmış yetkilendirme matrisi belgesi (bkz. report_authz.py)
+    authz_html = report_authz.render_html(report_authz.prepare(authz), lang, template) if authz else ''
 
     coverage_html = ''
     if all_results:
@@ -188,6 +192,8 @@ def build_html_report(project, findings, all_results, options=None, executive_su
     {findings_html}
   </section>
 
+  {authz_html}
+
   <section class="report-section">
     <h2>{'Ekler' if lang == 'tr' else 'Appendices'}</h2>
     <ul>
@@ -244,7 +250,7 @@ def _render_findings_section(sorted_findings, lang, template):
     return ''.join(items)
 
 
-_REPORT_CSS = '''
+_REPORT_CSS_BASE = '''
   :root { color-scheme: light; }
   * { box-sizing: border-box; }
   body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; background: #f1f5f9; color: #1e293b; }
@@ -282,3 +288,5 @@ _REPORT_CSS = '''
     .finding-item { break-inside: avoid; }
   }
 '''
+
+_REPORT_CSS = _REPORT_CSS_BASE + report_authz.HTML_CSS

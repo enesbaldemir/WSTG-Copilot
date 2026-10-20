@@ -1299,6 +1299,20 @@ def _matrix_response(project_id, row):
     return jsonify(doc), 200
 
 
+def _report_authz_doc(project_id, body, args):
+    """Rapora eklenecek yetkilendirme matrisi (include_authz=false ise None)."""
+    flag = body.get('include_authz', args.get('include_authz', True))
+    if str(flag).lower() in ('0', 'false', 'no', 'off'):
+        return None
+    row = AuthzMatrix.query.filter_by(project_id=project_id).first()
+    if not row or not row.data:
+        return None
+    try:
+        return authz_matrix.validate(json.loads(row.data))
+    except (ValueError, TypeError):
+        return None
+
+
 @app.route('/api/projects/<project_id>/authz-matrix', methods=['GET'])
 def get_authz_matrix(project_id):
     try:
@@ -2375,7 +2389,8 @@ def generate_pdf_report(project_id):
 
         pdf_buf = report_pdf.build_pdf_report(
             project.to_dict(), findings, all_results, options=options,
-            executive_summary=executive_summary, lang=lang
+            executive_summary=executive_summary, lang=lang,
+            authz=_report_authz_doc(project_id, body, args)
         )
 
         safe_name = ''.join(c if c.isalnum() or c in ' -_' else '_' for c in project.name)[:60]
@@ -2461,7 +2476,8 @@ def generate_html_report(project_id):
 
         html_doc = report_html.build_html_report(
             project.to_dict(), findings, all_results, options=options,
-            executive_summary=executive_summary, lang=lang
+            executive_summary=executive_summary, lang=lang,
+            authz=_report_authz_doc(project_id, body, args)
         )
         return html_doc, 200, {'Content-Type': 'text/html; charset=utf-8'}
     except NotFoundError as e:

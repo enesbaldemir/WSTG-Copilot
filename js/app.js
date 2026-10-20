@@ -688,6 +688,7 @@
       reportTemplateExecutive: "Yönetici Özeti",
       reportTemplateDetailed: "Detaylı",
       reportConfidentialLabel: "Gizli (rapora 'GİZLİ' etiketi ekle)",
+      reportAuthzLabel: "Yetki matrisini dahil et (sonuç girilmişse \"Yetkilendirme Testleri\" bölümü eklenir)",
       reportExecSummaryLabel: "Yönetici Özeti (opsiyonel, AI ile oluşturulabilir)",
       reportExecSummaryPlaceholder: "Boş bırakılırsa rapor istatistik tabanlı sade bir özet kullanır.",
       reportGenSummaryBtn: "AI ile Özet Oluştur",
@@ -1410,6 +1411,7 @@
       reportTemplateExecutive: "Executive",
       reportTemplateDetailed: "Detailed",
       reportConfidentialLabel: "Confidential (adds a 'CONFIDENTIAL' label to the report)",
+      reportAuthzLabel: "Include the authorization matrix (adds an \"Authorization Testing\" section when results exist)",
       reportExecSummaryLabel: "Executive Summary (optional, can be AI-generated)",
       reportExecSummaryPlaceholder: "If left empty, the report uses a plain statistics-based summary.",
       reportGenSummaryBtn: "Generate Summary with AI",
@@ -6496,6 +6498,10 @@
             <input type="checkbox" id="reportConfidentialCheck">
             <span>${t('reportConfidentialLabel')}</span>
           </label>
+          <label class="recon-auth-check">
+            <input type="checkbox" id="reportAuthzCheck" checked>
+            <span>${t('reportAuthzLabel')}</span>
+          </label>
           <label data-i18n="reportExecSummaryLabel">${t('reportExecSummaryLabel')}</label>
           <textarea id="reportExecSummaryInput" rows="3" placeholder="${t('reportExecSummaryPlaceholder')}"></textarea>
           <div class="hero-actions" style="margin-top:8px">
@@ -6541,6 +6547,7 @@
       include,
       template: document.getElementById('reportTemplateSelect').value,
       confidential: document.getElementById('reportConfidentialCheck').checked,
+      include_authz: document.getElementById('reportAuthzCheck').checked,
       executive_summary: document.getElementById('reportExecSummaryInput').value.trim() || undefined,
       lang: currentLang,
     };
