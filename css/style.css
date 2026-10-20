@@ -1547,3 +1547,10 @@ body.study-control-mode #noteControlBanner{ display:block; }
   .note-form-row{ grid-template-columns:1fr; }
   .note-ai-row{ flex-direction:column; align-items:flex-start; }
 }
+
+/* ---------- Burp / ZAP içe aktarma ---------- */
+.import-options{ display:flex; flex-direction:column; gap:6px; padding:0 0 14px; }
+.import-options .hint{ margin:2px 0 0; }
+.import-options input:disabled + span{ color:var(--faint); }
+.import-preview-meta{ display:flex; flex-wrap:wrap; gap:6px; margin:2px 0 6px; min-width:0; }
+.import-endpoint{ max-width:100%; overflow:hidden; text-overflow:ellipsis; }

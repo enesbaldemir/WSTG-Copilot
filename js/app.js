@@ -249,7 +249,16 @@
       studyMetricsLoadError: "Metrikler yüklenemedi.",
       studyMetricsNeedBackend: "Çalışma metrikleri backend bağlantısı gerektirir.",
       importModalTitle: "Bulgu İçe Aktar",
-      importModalDesc: "Nmap, Nikto veya WPScan çıktısını (XML/JSON) yükleyin; eşleşen bulgular ilgili WSTG maddelerine not olarak eklenir.",
+      importModalDesc: "Nmap, Nikto, WPScan, Burp Suite veya OWASP ZAP çıktısını yükleyin; eşleşen bulgular ilgili WSTG maddelerine not olarak eklenir. Burp/ZAP bulguları ayrıca projede profesyonel bulgu olarak oluşturulabilir.",
+      importOptNotes: "Eşleşen checklist maddelerine not olarak ekle ve tamamlandı işaretle",
+      importOptPro: (name) => `“${name}” projesinde profesyonel bulgu olarak oluştur (endpoint, CWE, çözüm önerisi dolu)`,
+      importOptHttp: "HTTP istek/yanıtını bulguya kanıt olarak ekle (çerez, Authorization ve token'lar otomatik maskelenir)",
+      importProNeedProject: "Profesyonel bulgu oluşturmak için önce üst çubuktan bir proje seçin.",
+      importProDedupeHint: "Projede aynı başlık ve endpoint'e sahip bir bulgu varsa yeniden oluşturulmaz.",
+      importNothingSelected: "Uygulanacak bir işlem seçilmedi.",
+      importCreatingFindings: (i, n) => `Bulgular oluşturuluyor… ${i}/${n}`,
+      importProResult: (created, skipped, failed) => `${created} bulgu oluşturuldu` + (skipped ? `, ${skipped} zaten vardı` : '') + (failed ? `, ${failed} oluşturulamadı` : ''),
+      importHttpBadge: "HTTP",
       importToolLabel: "Araç",
       importToolAuto: "Otomatik algıla",
       importFileLabel: "Dosya",
@@ -877,7 +886,16 @@
       studyMetricsLoadError: "Couldn't load the metrics.",
       studyMetricsNeedBackend: "Study metrics require the backend.",
       importModalTitle: "Import Findings",
-      importModalDesc: "Upload Nmap, Nikto, or WPScan output (XML/JSON); matching findings are attached as notes to the relevant WSTG items.",
+      importModalDesc: "Upload Nmap, Nikto, WPScan, Burp Suite or OWASP ZAP output; matching findings are attached as notes to the relevant WSTG items. Burp/ZAP issues can also be created as professional findings in the project.",
+      importOptNotes: "Add as notes to the matching checklist items and mark them done",
+      importOptPro: (name) => `Create professional findings in “${name}” (with endpoint, CWE and remediation)`,
+      importOptHttp: "Attach the HTTP request/response to the finding as evidence (cookies, Authorization and tokens are masked automatically)",
+      importProNeedProject: "Select a project in the top bar first to create professional findings.",
+      importProDedupeHint: "Findings whose title and endpoint already exist in the project are not created again.",
+      importNothingSelected: "Nothing to apply is selected.",
+      importCreatingFindings: (i, n) => `Creating findings… ${i}/${n}`,
+      importProResult: (created, skipped, failed) => `${created} finding(s) created` + (skipped ? `, ${skipped} already existed` : '') + (failed ? `, ${failed} failed` : ''),
+      importHttpBadge: "HTTP",
       importToolLabel: "Tool",
       importToolAuto: "Auto-detect",
       importFileLabel: "File",
@@ -3264,6 +3282,9 @@
     status.textContent = '';
     status.classList.remove('error');
     lastImportFindings = [];
+    document.getElementById('importAddNotes').checked = true;
+    document.getElementById('importCreateFindings').checked = true;
+    document.getElementById('importAttachHttp').checked = true;
     document.getElementById('importOverlay').classList.add('open');
   }
   function closeImportModal(){
@@ -3307,6 +3328,29 @@
     reader.readAsText(file);
   }
 
+  function renderImportOptions(){
+    const hasPro = lastImportFindings.some(f => f.pro);
+    const hasHttp = lastImportFindings.some(f => f.http);
+    const canPro = hasPro && dbOnline && !!currentProjectId;
+    const proRow = document.getElementById('importProRow');
+    const proBox = document.getElementById('importCreateFindings');
+    proRow.style.display = hasPro ? '' : 'none';
+    proBox.disabled = !canPro;
+    if(!canPro) proBox.checked = false;
+    document.getElementById('importProLabel').textContent =
+      t('importOptPro')(currentProjectObj && currentProjectObj.name ? currentProjectObj.name : '—');
+    document.getElementById('importHttpRow').style.display = hasHttp ? '' : 'none';
+    syncImportHttpOption();
+    document.getElementById('importProHint').textContent =
+      !hasPro ? '' : (canPro ? t('importProDedupeHint') : t('importProNeedProject'));
+  }
+
+  function syncImportHttpOption(){
+    const proOn = document.getElementById('importCreateFindings').checked;
+    const http = document.getElementById('importAttachHttp');
+    http.disabled = !proOn;
+  }
+
   function renderImportPreview(){
     const wrap = document.getElementById('importPreviewWrap');
     const list = document.getElementById('importPreviewList');
@@ -3314,19 +3358,28 @@
     if(!lastImportFindings.length){ wrap.style.display = 'none'; return; }
     wrap.style.display = '';
     countEl.textContent = t('importPreviewCount')(lastImportFindings.length);
+    renderImportOptions();
     list.innerHTML = lastImportFindings.map(f => {
+      const sev = SEVERITIES.indexOf(f.severity) !== -1 ? f.severity : 'info';
       const idsHtml = (f.testIds || []).map(id => {
         const meta = testInfoById(id);
         return `<span class="import-preview-ids">${escapeHtml(id)}${meta ? ' · ' + escapeHtml(meta.title) : ''}</span>`;
       }).join(' ');
+      const pro = f.pro || {};
+      const meta = [
+        pro.endpoint ? `<span class="badge mono import-endpoint" title="${escapeHtml(pro.endpoint)}">${escapeHtml(pro.endpoint)}</span>` : '',
+        pro.cwe ? `<span class="badge mono">${escapeHtml(pro.cwe)}</span>` : '',
+        f.http ? `<span class="badge blue">${escapeHtml(t('importHttpBadge'))}</span>` : '',
+      ].filter(Boolean).join('');
       return `<div class="import-preview-item ${f.unmatched ? 'unmatched' : ''}">
-        <input type="checkbox" class="import-check" data-row="${f._rowId}" ${f._checked ? 'checked' : ''}>
+        <input type="checkbox" class="import-check" data-row="${escapeHtml(f._rowId)}" ${f._checked ? 'checked' : ''}>
         <div class="import-preview-body">
           <div class="import-preview-top">
             <span class="import-preview-title">${escapeHtml(f.title || '')}</span>
-            <span class="severity-badge sev-${f.severity || 'info'}">${t('severity_' + (f.severity || 'info'))}</span>
-            ${f.unmatched ? `<span class="severity-badge sev-info">${t('importUnmatchedTag')}</span>` : ''}
+            <span class="severity-badge sev-${sev}">${escapeHtml(t('severity_' + sev))}</span>
+            ${f.unmatched ? `<span class="severity-badge sev-info">${escapeHtml(t('importUnmatchedTag'))}</span>` : ''}
           </div>
+          ${meta ? `<div class="import-preview-meta">${meta}</div>` : ''}
           <div>${idsHtml}</div>
           ${f.detail ? `<div class="import-preview-detail">${escapeHtml(f.detail)}</div>` : ''}
           <div class="import-preview-source">${escapeHtml(f.source || '')}</div>
@@ -3335,10 +3388,8 @@
     }).join('');
   }
 
-  function applyImportSelected(){
-    const checked = lastImportFindings.filter(f => f._checked);
-    if(!checked.length) return;
-    checked.forEach(f => {
+  function applyImportNotes(items){
+    items.forEach(f => {
       (f.testIds || []).forEach(testId => {
         if(!testInfoById(testId)) return;
         const noteLine = `[${f.source || f.tool}] ${f.title}${f.detail ? '\n' + f.detail : ''}`;
@@ -3361,8 +3412,71 @@
     renderSidebar();
     renderDashboard();
     if(currentCategoryId) renderTestList();
-    showToast(t('importAppliedToast')(checked.length));
-    closeImportModal();
+  }
+
+  // Burp/ZAP bulgularını projede Finding (+ isteğe bağlı HTTP kanıtı) olarak
+  // oluşturur. Aynı başlık+endpoint projede zaten varsa atlanır, böylece aynı
+  // rapor ikinci kez içe aktarıldığında kopya oluşmaz.
+  async function createImportedFindings(items, attachHttp, onProgress){
+    const pid = currentProjectId;
+    const key = (title, endpoint) => `${String(title || '').trim().toLowerCase()}|${String(endpoint || '').trim().toLowerCase()}`;
+    const existing = await apiRequest(`/projects/${pid}/findings`);
+    const seen = new Set((existing || []).map(f => key(f.title, f.endpoint)));
+    const sessionId = currentSession && currentSession.project_id === pid ? currentSession.id : null;
+    const res = { created: 0, skipped: 0, failed: 0 };
+    for(let i = 0; i < items.length; i++){
+      const f = items[i];
+      onProgress(i + 1, items.length);
+      const k = key(f.pro.title, f.pro.endpoint);
+      if(seen.has(k)){ res.skipped++; continue; }
+      seen.add(k);
+      const testId = !f.unmatched && f.testIds && f.testIds[0] && testInfoById(f.testIds[0]) ? f.testIds[0] : null;
+      try{
+        const created = await apiRequest(`/projects/${pid}/findings`, { method: 'POST', body: JSON.stringify(
+          Object.assign({}, f.pro, { status: 'open', test_id: testId, session_id: sessionId })) });
+        res.created++;
+        if(attachHttp && f.http && (f.http.request || f.http.response)){
+          await apiRequest(`/projects/${pid}/evidence/http`, { method: 'POST', body: JSON.stringify({
+            http_request: f.http.request || '', http_response: f.http.response || '', label: f.http.label,
+            linked_finding_id: created.id, linked_test_id: testId, linked_session_id: sessionId,
+          }) }).catch(() => {});
+        }
+      }catch(e){ res.failed++; }
+    }
+    return res;
+  }
+
+  function applyImportSelected(){
+    const checked = lastImportFindings.filter(f => f._checked);
+    if(!checked.length) return;
+    const addNotes = document.getElementById('importAddNotes').checked;
+    const proBox = document.getElementById('importCreateFindings');
+    const proItems = checked.filter(f => f.pro);
+    const createPro = !proBox.disabled && proBox.checked && proItems.length > 0;
+    const statusEl = document.getElementById('importStatus');
+    statusEl.classList.remove('error');
+    if(!addNotes && !createPro){ statusEl.textContent = t('importNothingSelected'); statusEl.classList.add('error'); return; }
+
+    if(addNotes) applyImportNotes(checked);
+    if(!createPro){
+      showToast(t('importAppliedToast')(checked.length));
+      closeImportModal();
+      return;
+    }
+    const btn = document.getElementById('importApplyBtn');
+    btn.disabled = true;
+    createImportedFindings(proItems, document.getElementById('importAttachHttp').checked,
+      (i, n) => { statusEl.textContent = t('importCreatingFindings')(i, n); })
+      .then(r => {
+        statusEl.textContent = '';
+        showToast(t('importProResult')(r.created, r.skipped, r.failed));
+        const ws = document.getElementById('projectWorkspaceOverlay');
+        if(ws && ws.classList.contains('open') && (activePwTab === 'findings' || activePwTab === 'evidence')) renderPwTab();
+        if(r.failed){ statusEl.textContent = t('importProResult')(r.created, r.skipped, r.failed); statusEl.classList.add('error'); }
+        else closeImportModal();
+      })
+      .catch(err => { statusEl.textContent = err.message || t('resultSaveError'); statusEl.classList.add('error'); })
+      .finally(() => { btn.disabled = false; });
   }
 
   // ========================
@@ -6269,6 +6383,7 @@
     });
     document.getElementById('importAnalyzeBtn').addEventListener('click', analyzeImportFile);
     document.getElementById('importApplyBtn').addEventListener('click', applyImportSelected);
+    document.getElementById('importCreateFindings').addEventListener('change', syncImportHttpOption);
     document.getElementById('importPreviewList').addEventListener('change', e=>{
       const cb = e.target.closest('.import-check');
       if(!cb) return;
