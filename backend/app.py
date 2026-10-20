@@ -30,6 +30,7 @@ import tool_runner
 import cvss
 import redaction
 import duplicate_detector
+import finding_lifecycle
 import ai_report_assistant
 import finding_analysis
 import next_test_suggestion
@@ -1279,45 +1280,26 @@ def get_attack_chains(project_id):
 
 @app.route('/api/projects/<project_id>/lifecycle', methods=['GET'])
 def get_lifecycle(project_id):
-    """Vulnerability Lifecycle özeti: bulguların remediation durumuna göre
-    dağılımı (open/retesting/fixed/resolved/wont_fix/accepted_risk),
-    aktif risk kalan (open+retesting) bulguların severity dağılımı, ve
-    remediation oranı (resolved / toplam bulgu)."""
+    """Vulnerability Lifecycle özeti: checklist notları + profesyonel
+    bulgular (bkz. finding_lifecycle.py) için durum dağılımı
+    (open/retesting/fixed/resolved/wont_fix/accepted_risk), aktif risk kalan
+    (open+retesting) bulguların severity dağılımı ve giderilme oranı
+    (resolved / toplam bulgu)."""
     try:
         _project_or_404(project_id)
-        sessions = Session.query.filter_by(project_id=project_id).all()
-        findings = []
-        for s in sessions:
-            for r in s.results:
-                if r.finding and r.finding.strip():
-                    findings.append(r)
-
-        status_counts = {k: 0 for k in VALID_FINDING_STATUSES}
-        active_severity_counts = {'critical': 0, 'high': 0, 'medium': 0, 'low': 0, 'info': 0}
-
-        for r in findings:
-            st = r.finding_status if r.finding_status in VALID_FINDING_STATUSES else 'open'
-            status_counts[st] += 1
-            if st in ('open', 'retesting'):
-                sev = (r.severity or 'info').lower()
-                if sev in active_severity_counts:
-                    active_severity_counts[sev] += 1
-
-        total = len(findings)
-        resolved = status_counts['resolved']
-        remediation_rate = round((resolved / total) * 100, 1) if total else 0
+        quick = [{'session_id': r.session_id, 'test_id': r.test_id, 'finding': r.finding,
+                  'finding_status': r.finding_status, 'severity': r.severity}
+                 for sess in Session.query.filter_by(project_id=project_id).all() for r in sess.results]
+        pro = [{'session_id': f.session_id, 'test_id': f.test_id, 'status': f.status, 'severity': f.severity}
+               for f in Finding.query.filter_by(project_id=project_id).all()]
+        summary = finding_lifecycle.summarize(quick, pro)
 
         events = TimelineEvent.query.filter_by(
             project_id=project_id, event_type='finding_status_changed'
         ).order_by(TimelineEvent.created_at.desc()).limit(50).all()
 
-        return jsonify({
-            'total_findings': total,
-            'status_counts': status_counts,
-            'active_severity_counts': active_severity_counts,
-            'remediation_rate': remediation_rate,
-            'recent_transitions': [e.to_dict() for e in events]
-        }), 200
+        summary['recent_transitions'] = [e.to_dict() for e in events]
+        return jsonify(summary), 200
     except NotFoundError as e:
         return jsonify({'error': str(e)}), 404
     except Exception as e:
