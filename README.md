@@ -51,6 +51,8 @@ The checklist works with only a static file server. Projects, findings, evidence
 - Test Planner: rule-based priority queue that ranks WSTG items by recon evidence and methodology order, with the reason for each ranking
 - AI "What's Next?": AI-generated suggestion for the next test based on completed tests and findings, with alternate candidates
 - Import of Nmap (XML), Nikto (XML/JSON) and WPScan (JSON) output into findings linked to WSTG items
+- Notebook: per-session free-form notes, optionally linked to a WSTG item, with screenshots (PNG/JPEG/GIF/WebP, validated by content on the server; pasting works), CWE suggestions for the linked test, a server-computed CVSS v3.1 score, your own false-positive verdict and an optional AI analysis
+- Study metrics (A/B): sessions can be assigned to an "AI-assisted" or "control" group. While a control session is open the AI buttons are hidden. The Study Metrics panel compares the groups (completion time, completion rate, findings, false-positive rate, AI calls and latency) and copies per-session data as CSV. Completion time is measured for sessions closed with "Complete" in the session list
 
 **Findings**
 - Title, description, affected endpoint, remediation, CWE, severity and a CVSS v3.1 calculator with live scoring (client and server side)
@@ -220,6 +222,8 @@ WSTG-Copilot/
 │   ├── redaction.py            # Secret / PII redaction
 │   ├── crypto_utils.py         # Fernet encryption for stored keys
 │   ├── mapping.py              # WSTG ↔ OWASP Top 10 ↔ CWE index
+│   ├── notes.py                # Notebook input / image validation
+│   ├── study_metrics.py        # A/B study metrics
 │   ├── cvss.py                 # CVSS v3.1 scoring
 │   ├── report_builder.py       # DOCX project reports
 │   ├── report_html.py          # HTML report
@@ -304,6 +308,8 @@ Checklist yalnızca statik bir dosya sunucusuyla çalışır. Projeler, bulgular
 - Test Planı: WSTG maddelerini recon kanıtı ve metodoloji sırasına göre sıralayan, her sıralamanın gerekçesini gösteren kural tabanlı öncelik kuyruğu
 - AI: Sırada Ne Var?: tamamlanan testlere ve bulgulara göre bir sonraki test için AI önerisi ve alternatif adaylar
 - Nmap (XML), Nikto (XML/JSON) ve WPScan (JSON) çıktılarını WSTG maddelerine bağlı bulgulara dönüştüren içe aktarma
+- Not Defteri: oturuma bağlı serbest notlar; istenirse bir WSTG maddesine bağlanır. Ekran görüntüsü (PNG/JPEG/GIF/WebP; sunucuda içeriğe göre doğrulanır, yapıştırma da çalışır), bağlı teste göre CWE önerileri, sunucuda hesaplanan CVSS v3.1 skoru, kendi false-positive kararınız ve opsiyonel AI analizi
+- Çalışma metrikleri (A/B): oturumlar "AI destekli" veya "kontrol" grubuna atanabilir; kontrol oturumu açıkken AI düğmeleri gizlenir. Çalışma Metrikleri paneli grupları karşılaştırır (tamamlama süresi, tamamlanma oranı, bulgu sayısı, false-positive oranı, AI çağrısı ve gecikmesi) ve oturum verisini CSV olarak kopyalar. Süre, oturum listesinden "Tamamla" ile kapatılan oturumlar için ölçülür
 
 **Bulgular**
 - Başlık, açıklama, etkilenen endpoint, remediation, CWE, önem derecesi ve canlı skor hesaplayan CVSS v3.1 hesaplayıcı (istemci ve sunucu tarafı)
@@ -473,6 +479,8 @@ WSTG-Copilot/
 │   ├── redaction.py            # Gizli bilgi / kişisel veri maskeleme
 │   ├── crypto_utils.py         # Saklanan key'ler için Fernet şifreleme
 │   ├── mapping.py              # WSTG ↔ OWASP Top 10 ↔ CWE indeksi
+│   ├── notes.py                # Not defteri girdi / görsel doğrulaması
+│   ├── study_metrics.py        # A/B çalışma metrikleri
 │   ├── cvss.py                 # CVSS v3.1 skorlama
 │   ├── report_builder.py       # Proje DOCX raporları
 │   ├── report_html.py          # HTML rapor
