@@ -716,7 +716,7 @@
     <div class="panel-header">
       <div>
         <h3 data-i18n="importModalTitle">Bulgu İçe Aktar</h3>
-        <p data-i18n="importModalDesc">Nmap, Nikto veya WPScan çıktısını (XML/JSON) yükleyin; eşleşen bulgular ilgili WSTG maddelerine not olarak eklenir.</p>
+        <p data-i18n="importModalDesc">Nmap, Nikto, WPScan, Burp Suite veya OWASP ZAP çıktısını yükleyin; eşleşen bulgular ilgili WSTG maddelerine not olarak eklenir. Burp/ZAP bulguları ayrıca projede profesyonel bulgu olarak oluşturulabilir.</p>
       </div>
       <button class="close-btn" id="closeImportOverlay">&times;</button>
     </div>
@@ -729,6 +729,9 @@
           <option value="nikto-xml">Nikto (XML)</option>
           <option value="nikto-json">Nikto (JSON)</option>
           <option value="wpscan-json">WPScan (JSON)</option>
+          <option value="burp-xml">Burp Suite (Issues XML)</option>
+          <option value="zap-xml">OWASP ZAP (XML)</option>
+          <option value="zap-json">OWASP ZAP (JSON)</option>
         </select>
         <label data-i18n="importFileLabel">Dosya</label>
         <input type="file" id="importFileInput" accept=".xml,.json,.txt">
@@ -741,6 +744,21 @@
         <div class="filter-bar" style="padding:16px 0">
           <span style="color:var(--muted);font-size:.85rem" id="importPreviewCount"></span>
           <button type="button" class="btn btn-primary btn-sm" id="importApplyBtn" data-i18n="importApplyBtn">Seçilenleri Uygula</button>
+        </div>
+        <div class="import-options" id="importOptions">
+          <label class="recon-auth-check">
+            <input type="checkbox" id="importAddNotes" checked>
+            <span data-i18n="importOptNotes">Eşleşen checklist maddelerine not olarak ekle ve tamamlandı işaretle</span>
+          </label>
+          <label class="recon-auth-check" id="importProRow">
+            <input type="checkbox" id="importCreateFindings" checked>
+            <span id="importProLabel"></span>
+          </label>
+          <label class="recon-auth-check" id="importHttpRow">
+            <input type="checkbox" id="importAttachHttp" checked>
+            <span data-i18n="importOptHttp">HTTP istek/yanıtını bulguya kanıt olarak ekle (çerez, Authorization ve token'lar otomatik maskelenir)</span>
+          </label>
+          <p class="hint" id="importProHint"></p>
         </div>
         <div id="importPreviewList" class="import-preview-list"></div>
       </div>
