@@ -51,6 +51,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from xhtml2pdf import default as pisa_default
 from xhtml2pdf import pisa
 
+import report_authz
 from report_html import (
     SEVERITY_ORDER, SEVERITY_HEX, _esc, _severity_counts, _sorted_findings,
     _filter_findings, _overall_risk_label, _is_safe_data_uri,
@@ -142,7 +143,7 @@ def _render_findings_pdf(sorted_findings, lang, template):
     return ''.join(items)
 
 
-def build_pdf_report(project, findings, all_results, options=None, executive_summary=None, lang='tr'):
+def build_pdf_report(project, findings, all_results, options=None, executive_summary=None, lang='tr', authz=None):
     """report_html.build_html_report ile ayni imza/parametreler; donus
     degeri (bytes) hazir bir PDF dosyasidir. Hata durumunda PdfReportError
     firlatir."""
@@ -188,6 +189,7 @@ def build_pdf_report(project, findings, all_results, options=None, executive_sum
     )
 
     findings_html = _render_findings_pdf(sorted_findings, lang, template)
+    authz_html = report_authz.render_pdf(report_authz.prepare(authz), lang, template) if authz else ''
 
     coverage_html = ''
     if all_results:
@@ -247,6 +249,7 @@ body {{ font-family: "Vera"; font-size: 9.5pt; color: #1e293b; }}
 .finding-meta {{ font-size: 8pt; color: #64748b; margin: 3px 0 6px; }}
 .finding-item p {{ margin: 4px 0; font-size: 9.5pt; line-height: 1.4; }}
 .empty-state {{ color: #64748b; font-style: italic; }}
+{report_authz.PDF_CSS}
 </style>
 </head>
 <body>
@@ -287,6 +290,8 @@ body {{ font-family: "Vera"; font-size: 9.5pt; color: #1e293b; }}
   <h2>{'Bulgular' if lang == 'tr' else 'Findings'}</h2>
   {findings_html}
 </div>
+
+{authz_html}
 
 <div class="report-section">
   <h2>{'Ekler' if lang == 'tr' else 'Appendices'}</h2>
