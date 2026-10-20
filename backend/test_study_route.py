@@ -4,6 +4,10 @@ os.environ['FLASK_ENV'] = 'development'
 
 import app as app_module
 
+# Bu dosyadaki rotalar 260eeb6 ile kaldırılmış, sonra geri getirilmiştir
+# (not defteri, study_group, /api/study/metrics). Ayrıntılı rota testleri:
+# test_notes_route.py.
+
 
 def _client():
     app_module.app.config['TESTING'] = True
