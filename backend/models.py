@@ -27,6 +27,7 @@ class Project(db.Model):
     custom_tests = db.relationship('CustomTest', backref='project', lazy=True, cascade='all, delete-orphan')
     tool_runs = db.relationship('ToolRun', backref='project', lazy=True, cascade='all, delete-orphan')
     findings = db.relationship('Finding', backref='project', lazy=True, cascade='all, delete-orphan')
+    authz_matrix = db.relationship('AuthzMatrix', backref='project', lazy=True, uselist=False, cascade='all, delete-orphan')
     # Sessions are NOT cascade-deleted with a project — a session's test data
     # should survive even if the parent project is removed; see delete_project().
     sessions = db.relationship('Session', backref='project', lazy=True)
@@ -618,3 +619,16 @@ class AIProviderSetting(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }
+
+
+class AuthzMatrix(db.Model):
+    """Projenin yetkilendirme matrisi (roller x endpoint'ler). Tek kullanıcılı
+    yerel araç olduğu için matris tek bir JSON belge olarak saklanır ve PUT
+    ile bütün olarak değiştirilir; yapı ve sınırlar authz_matrix.py'de
+    doğrulanır. Uygulama hedefe istek atmaz: sonuçları pentester girer."""
+    __tablename__ = 'authz_matrices'
+
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.String(36), db.ForeignKey('projects.id'), nullable=False, unique=True)
+    data = db.Column(db.Text, nullable=False, default='{}')
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -348,6 +348,60 @@
 
       pwTabOverview: "Genel Bakış", pwTabScope: "Kapsam", pwTabAssets: "Assets", pwTabRecon: "Keşif",
       pwTabTestPlan: "Test Planı", pwTabWstg: "WSTG Testleri", pwTabFindings: "Bulgular",
+      pwTabAuthz: "Yetki Matrisi",
+      azDesc: "Her rolün her endpoint'e erişip erişmemesi gerektiğini (beklenen) ve kendi denemenizin sonucunu (gözlenen) işaretleyin. Beklenen \"Yasak\" iken \"Erişti\" olan hücreler yetkilendirme açığıdır (WSTG-ATHZ-02/03/04). Uygulama hedefe istek göndermez.",
+      azEmptyTitle: "Henüz rol tanımlanmadı",
+      azEmptyDesc: "Rolleri (ör. Anonim, Kullanıcı, Yönetici) sütun, endpoint'leri satır olarak ekleyin.",
+      azDefaultRolesBtn: "Anonim / Kullanıcı / Yönetici ile başla",
+      azEndpointCol: "Endpoint",
+      azNoEndpoints: "Henüz endpoint yok. Yukarıdan ekleyin ya da Saldırı Yüzeyi'nden alın.",
+      azNewRolePlaceholder: "Yeni rol adı",
+      azAddRole: "+ Rol",
+      azAddEndpoint: "+ Endpoint",
+      azFromSurface: "Saldırı Yüzeyi'nden endpoint al",
+      azCopyCsv: "CSV olarak kopyala",
+      azCreateFindingsBtn: (n) => n ? `Uyumsuzluklardan bulgu oluştur (${n})` : "Bulgu oluşturulacak uyumsuzluk yok",
+      azCreateOneFinding: "Bu uyumsuzluk için bulgu oluştur",
+      azFindingsResult: (c, l, f) => `${c} bulgu oluşturuldu` + (l ? `, ${l} mevcut bulguya bağlandı` : '') + (f ? `, ${f} oluşturulamadı` : ''),
+      azSumCells: (n) => `${n} hücre`,
+      azSumTested: (n) => `${n} denendi`,
+      azSumViolations: (n) => `${n} izinsiz erişim`,
+      azSumOver: (n) => `${n} fazla kısıtlı`,
+      azSumUntested: (n) => `${n} denenmedi`,
+      azExpected: "Beklenen",
+      azObserved: "Gözlenen",
+      azExpAllow: "İzinli",
+      azExpDeny: "Yasak",
+      azObsAllowed: "Erişti",
+      azObsDenied: "Engellendi",
+      azObsNone: "Denenmedi",
+      azObsNoneShort: "?",
+      azStViolation: "İzinsiz erişim: bu rol erişmemesi gereken kaynağa erişebildi.",
+      azStOver: "Fazla kısıtlı: bu rolün erişmesi gerekiyordu ama engellendi.",
+      azStOk: "Beklenen davranış.",
+      azStObserved: "Sonuç girildi; beklenen erişimi de işaretleyin.",
+      azStUntested: "Henüz denenmedi.",
+      azNote: "Not",
+      azNotePlaceholder: "Ör. 200 OK, başka kullanıcının siparişi döndü",
+      azNextCell: "Sonraki hücre →",
+      azEditorHint: "Bir hücreye tıklayıp beklenen ve gözlenen erişimi işaretleyin. Rol ya da endpoint adına tıklayarak düzenleyebilirsiniz.",
+      azRoleTitle: "Rol",
+      azRoleNameLabel: "Rol adı",
+      azEndpointTitle: "Endpoint",
+      azMethod: "Metot",
+      azPath: "Yol",
+      azDelete: "Sil",
+      azDeleteRoleConfirm: (n) => `"${n}" rolü ve bu sütundaki tüm sonuçlar silinsin mi?`,
+      azDeleteEndpointConfirm: (n) => `${n} ve bu satırdaki tüm sonuçlar silinsin mi?`,
+      azTooManyRoles: (n) => `En fazla ${n} rol eklenebilir.`,
+      azRoleExists: "Bu adla bir rol zaten var.",
+      azEndpointExists: "Bu metot ve yol zaten ekli (ya da yol boş).",
+      azNoSurfaceEndpoints: "Saldırı Yüzeyi'nde kayıtlı endpoint yok. Önce Saldırı Yüzeyi Keşfi çalıştırın.",
+      azSurfaceAdded: (a, s) => `${a} endpoint eklendi` + (s ? `, ${s} zaten vardı` : ''),
+      azSaving: "Kaydediliyor…",
+      azSaved: "Kaydedildi",
+      azLastSaved: (d) => `Son kayıt: ${d}`,
+      azLoadError: "Yetki matrisi yüklenemedi.",
       pwTabTimeline: "Zaman Çizelgesi", pwTabKanban: "Kanban", pwTabReports: "Raporlar",
 
       pwStatAssets: "Varlık", pwStatTests: "Test", pwStatCompleted: "Tamamlanan", pwStatFindings: "Bulgu",
@@ -985,6 +1039,60 @@
 
       pwTabOverview: "Overview", pwTabScope: "Scope", pwTabAssets: "Assets", pwTabRecon: "Recon",
       pwTabTestPlan: "Test Plan", pwTabWstg: "WSTG Tests", pwTabFindings: "Findings",
+      pwTabAuthz: "Authorization Matrix",
+      azDesc: "Mark whether each role should be able to access each endpoint (expected) and what your own test showed (observed). Cells that are expected \"Denied\" but were \"Accessible\" are authorization flaws (WSTG-ATHZ-02/03/04). The app never sends requests to the target.",
+      azEmptyTitle: "No roles defined yet",
+      azEmptyDesc: "Add roles (e.g. Anonymous, User, Admin) as columns and endpoints as rows.",
+      azDefaultRolesBtn: "Start with Anonymous / User / Admin",
+      azEndpointCol: "Endpoint",
+      azNoEndpoints: "No endpoints yet. Add one above or take them from the Attack Surface.",
+      azNewRolePlaceholder: "New role name",
+      azAddRole: "+ Role",
+      azAddEndpoint: "+ Endpoint",
+      azFromSurface: "Take endpoints from Attack Surface",
+      azCopyCsv: "Copy as CSV",
+      azCreateFindingsBtn: (n) => n ? `Create findings from mismatches (${n})` : "No mismatches to report",
+      azCreateOneFinding: "Create a finding for this mismatch",
+      azFindingsResult: (c, l, f) => `${c} finding(s) created` + (l ? `, ${l} linked to existing` : '') + (f ? `, ${f} failed` : ''),
+      azSumCells: (n) => `${n} cells`,
+      azSumTested: (n) => `${n} tested`,
+      azSumViolations: (n) => `${n} unauthorized`,
+      azSumOver: (n) => `${n} over-restricted`,
+      azSumUntested: (n) => `${n} untested`,
+      azExpected: "Expected",
+      azObserved: "Observed",
+      azExpAllow: "Allowed",
+      azExpDeny: "Denied",
+      azObsAllowed: "Accessible",
+      azObsDenied: "Blocked",
+      azObsNone: "Not tested",
+      azObsNoneShort: "?",
+      azStViolation: "Unauthorized access: this role reached a resource it should not.",
+      azStOver: "Over-restricted: this role should have access but was blocked.",
+      azStOk: "Behaves as expected.",
+      azStObserved: "Result entered; also mark the expected access.",
+      azStUntested: "Not tested yet.",
+      azNote: "Note",
+      azNotePlaceholder: "e.g. 200 OK, another user's order was returned",
+      azNextCell: "Next cell →",
+      azEditorHint: "Click a cell to mark expected and observed access. Click a role or endpoint name to edit it.",
+      azRoleTitle: "Role",
+      azRoleNameLabel: "Role name",
+      azEndpointTitle: "Endpoint",
+      azMethod: "Method",
+      azPath: "Path",
+      azDelete: "Delete",
+      azDeleteRoleConfirm: (n) => `Delete the "${n}" role and all results in its column?`,
+      azDeleteEndpointConfirm: (n) => `Delete ${n} and all results in its row?`,
+      azTooManyRoles: (n) => `You can add at most ${n} roles.`,
+      azRoleExists: "A role with this name already exists.",
+      azEndpointExists: "This method and path already exist (or the path is empty).",
+      azNoSurfaceEndpoints: "No endpoints recorded in the Attack Surface. Run Attack Surface Discovery first.",
+      azSurfaceAdded: (a, s) => `${a} endpoint(s) added` + (s ? `, ${s} already present` : ''),
+      azSaving: "Saving…",
+      azSaved: "Saved",
+      azLastSaved: (d) => `Last saved: ${d}`,
+      azLoadError: "Couldn't load the authorization matrix.",
       pwTabTimeline: "Timeline", pwTabKanban: "Kanban", pwTabReports: "Reports",
 
       pwStatAssets: "Assets", pwStatTests: "Tests", pwStatCompleted: "Completed", pwStatFindings: "Findings",
@@ -3974,7 +4082,7 @@
       overview: renderPwOverview, scope: renderPwScope, assets: renderPwAssets,
       recon: renderPwRecon, tools: renderPwTools, testplan: renderPwTestPlan, wstg: renderPwWstg,
       findings: renderPwFindings, evidence: renderPwEvidence, chains: renderPwChains,
-      timeline: renderPwTimeline, kanban: renderPwKanban, reports: renderPwReports
+      timeline: renderPwTimeline, kanban: renderPwKanban, reports: renderPwReports, authz: renderPwAuthz
     };
     const fn = map[activePwTab];
     if(fn) fn();
@@ -5546,6 +5654,382 @@
       });
     }).catch(err => {
       content.innerHTML = `<div class="search-empty">${escapeHtml(String(err.message||err))}</div>`;
+    });
+  }
+
+  // ========================
+  // YETKİLENDİRME MATRİSİ (roller x endpoint'ler)
+  // ========================
+  // Saf mantık js/authz-matrix.js'te. Uygulama hedefe istek atmaz; gözlenen
+  // sonuçları pentester kendi denemesine göre işaretler.
+  const AZ = window.WSTGAuthz;
+  let azDoc = null;
+  let azProjectId = null;
+  let azSelected = null;          // { kind: 'cell'|'role'|'endpoint', id }
+  let azSaveTimer = null;
+  let azSaveSeq = 0;
+
+  function azLabel(v){
+    return { allow: t('azExpAllow'), deny: t('azExpDeny'), allowed: t('azObsAllowed'), denied: t('azObsDenied') }[v] || '—';
+  }
+
+  function azSetStatus(text, isError){
+    const el = document.getElementById('azSaveStatus');
+    if(!el) return;
+    el.textContent = text || '';
+    el.classList.toggle('error', !!isError);
+  }
+
+  function azScheduleSave(){
+    clearTimeout(azSaveTimer);
+    azSetStatus(t('azSaving'));
+    const pid = azProjectId;
+    azSaveTimer = setTimeout(() => {
+      const seq = ++azSaveSeq;
+      const body = { roles: azDoc.roles, endpoints: azDoc.endpoints, cells: azDoc.cells };
+      apiRequest(`/projects/${pid}/authz-matrix`, { method: 'PUT', body: JSON.stringify(body) })
+        .then(() => { if(seq === azSaveSeq && pid === azProjectId) azSetStatus(t('azSaved')); })
+        .catch(err => { if(seq === azSaveSeq) azSetStatus(err.message || t('resultSaveError'), true); });
+    }, 500);
+  }
+
+  function azCellHtml(e, r){
+    const key = AZ.cellKey(e.id, r.id);
+    const cell = AZ.getCell(azDoc, e.id, r.id);
+    const st = AZ.cellStatus(cell);
+    const selected = azSelected && azSelected.kind === 'cell' && azSelected.id === key;
+    const aria = `${r.name} · ${e.method} ${e.path}: ${t('azExpected')} ${azLabel(cell.expected)}, ${t('azObserved')} ${cell.observed ? azLabel(cell.observed) : t('azObsNone')}`;
+    return `<button type="button" class="az-cell st-${st}${selected ? ' selected' : ''}" data-cell="${escapeHtml(key)}" aria-label="${escapeHtml(aria)}" title="${escapeHtml(aria)}">
+      <span class="az-exp">${escapeHtml(cell.expected ? azLabel(cell.expected) : '—')}</span>
+      <span class="az-obs">${escapeHtml(cell.observed ? azLabel(cell.observed) : t('azObsNoneShort'))}</span>
+      ${cell.finding_id ? '<span class="az-flag" aria-hidden="true">●</span>' : ''}
+    </button>`;
+  }
+
+  function azSummaryHtml(){
+    const s = AZ.summarize(azDoc);
+    return `<span class="badge">${escapeHtml(t('azSumCells')(s.cells))}</span>
+      <span class="badge">${escapeHtml(t('azSumTested')(s.tested))}</span>
+      <span class="badge ${s.violations ? 'red' : ''}">${escapeHtml(t('azSumViolations')(s.violations))}</span>
+      <span class="badge ${s.over_restricted ? 'amber' : ''}">${escapeHtml(t('azSumOver')(s.over_restricted))}</span>
+      <span class="badge">${escapeHtml(t('azSumUntested')(s.untested))}</span>`;
+  }
+
+  function azPendingViolations(){
+    return AZ.violations(azDoc).filter(v => !v.cell.finding_id);
+  }
+
+  function azRefreshCounters(){
+    const sum = document.getElementById('azSummary');
+    if(sum) sum.innerHTML = azSummaryHtml();
+    const btn = document.getElementById('azFindingsBtn');
+    if(btn){
+      const n = azPendingViolations().length;
+      btn.disabled = !n;
+      btn.textContent = t('azCreateFindingsBtn')(n);
+    }
+  }
+
+  function azSegHtml(field, options, current){
+    return `<div class="az-seg" role="group">${options.map(([val, label]) =>
+      `<button type="button" class="${(current || null) === val ? 'active' : ''}" data-set="${field}" data-val="${val === null ? '' : val}">${escapeHtml(label)}</button>`).join('')}</div>`;
+  }
+
+  function azEditorHtml(){
+    if(!azSelected) return `<p class="hint">${escapeHtml(t('azEditorHint'))}</p>`;
+    if(azSelected.kind === 'role'){
+      const r = azDoc.roles.find(x => x.id === azSelected.id);
+      if(!r) return '';
+      return `<h5>${escapeHtml(t('azRoleTitle'))}</h5>
+        <form id="azRoleForm" class="session-form">
+          <label for="azRoleRename">${escapeHtml(t('azRoleNameLabel'))}</label>
+          <input type="text" id="azRoleRename" maxlength="60" value="${escapeHtml(r.name)}">
+          <div class="hero-actions"><button type="submit" class="btn btn-primary btn-sm">${escapeHtml(t('saveBtn'))}</button>
+          <button type="button" class="btn danger btn-sm" id="azDeleteRole">${escapeHtml(t('azDelete'))}</button></div>
+        </form>`;
+    }
+    if(azSelected.kind === 'endpoint'){
+      const e = azDoc.endpoints.find(x => x.id === azSelected.id);
+      if(!e) return '';
+      return `<h5>${escapeHtml(t('azEndpointTitle'))}</h5>
+        <form id="azEndpointForm" class="session-form">
+          <label for="azEpEditMethod">${escapeHtml(t('azMethod'))}</label>
+          <select id="azEpEditMethod">${AZ.METHODS.map(m => `<option ${m === e.method ? 'selected' : ''}>${m}</option>`).join('')}</select>
+          <label for="azEpEditPath">${escapeHtml(t('azPath'))}</label>
+          <input type="text" id="azEpEditPath" class="mono" maxlength="500" value="${escapeHtml(e.path)}">
+          <label for="azEpEditNote">${escapeHtml(t('azNote'))}</label>
+          <input type="text" id="azEpEditNote" maxlength="500" value="${escapeHtml(e.note || '')}">
+          <div class="hero-actions"><button type="submit" class="btn btn-primary btn-sm">${escapeHtml(t('saveBtn'))}</button>
+          <button type="button" class="btn danger btn-sm" id="azDeleteEndpoint">${escapeHtml(t('azDelete'))}</button></div>
+        </form>`;
+    }
+    const [eid, rid] = azSelected.id.split(':');
+    const e = azDoc.endpoints.find(x => x.id === eid);
+    const r = azDoc.roles.find(x => x.id === rid);
+    if(!e || !r) return '';
+    const cell = AZ.getCell(azDoc, eid, rid);
+    const st = AZ.cellStatus(cell);
+    const stText = { violation: t('azStViolation'), over: t('azStOver'), ok: t('azStOk'), observed: t('azStObserved'), untested: t('azStUntested'), unset: '' }[st];
+    return `<h5>${escapeHtml(r.name)}</h5>
+      <div class="az-editor-target"><span class="badge mono">${escapeHtml(e.method)}</span> <code>${escapeHtml(e.path)}</code></div>
+      <label>${escapeHtml(t('azExpected'))}</label>
+      ${azSegHtml('expected', [[null, '—'], ['allow', t('azExpAllow')], ['deny', t('azExpDeny')]], cell.expected)}
+      <label>${escapeHtml(t('azObserved'))}</label>
+      ${azSegHtml('observed', [[null, t('azObsNone')], ['allowed', t('azObsAllowed')], ['denied', t('azObsDenied')]], cell.observed)}
+      ${stText ? `<p class="az-st-line st-${st}">${escapeHtml(stText)}</p>` : ''}
+      <label for="azCellNote">${escapeHtml(t('azNote'))}</label>
+      <textarea id="azCellNote" rows="3" maxlength="500" placeholder="${escapeHtml(t('azNotePlaceholder'))}">${escapeHtml(cell.note || '')}</textarea>
+      <div class="hero-actions">
+        <button type="button" class="btn btn-secondary btn-sm" id="azNextCell">${escapeHtml(t('azNextCell'))}</button>
+        ${st === 'violation' && !cell.finding_id ? `<button type="button" class="btn btn-primary btn-sm" id="azCellFinding">${escapeHtml(t('azCreateOneFinding'))}</button>` : ''}
+        ${cell.finding_id ? `<span class="badge mono">${escapeHtml('FND-' + String(cell.finding_id).padStart(4, '0'))}</span>` : ''}
+      </div>`;
+  }
+
+  function azRenderEditor(){
+    const el = document.getElementById('azEditor');
+    if(el) el.innerHTML = azEditorHtml();
+  }
+
+  function azRefreshCell(key){
+    const [eid, rid] = key.split(':');
+    const e = azDoc.endpoints.find(x => x.id === eid);
+    const r = azDoc.roles.find(x => x.id === rid);
+    const btn = document.querySelector(`#azRoot .az-cell[data-cell="${CSS.escape(key)}"]`);
+    if(!btn || !e || !r) return;
+    btn.outerHTML = azCellHtml(e, r);
+  }
+
+  function azSelect(sel){
+    const prev = azSelected;
+    azSelected = sel;
+    if(prev && prev.kind === 'cell') azRefreshCell(prev.id);
+    if(sel && sel.kind === 'cell') azRefreshCell(sel.id);
+    azRenderEditor();
+  }
+
+  function azSetCell(key, patch){
+    const [eid, rid] = key.split(':');
+    const cell = Object.assign(AZ.emptyCell(), AZ.getCell(azDoc, eid, rid), patch);
+    if(!cell.expected && !cell.observed && !cell.note && !cell.finding_id) delete azDoc.cells[key];
+    else azDoc.cells[key] = cell;
+    azRefreshCell(key);
+    azRefreshCounters();
+    azScheduleSave();
+  }
+
+  function azRenderView(){
+    const content = document.getElementById('pwContent');
+    const roles = azDoc.roles, eps = azDoc.endpoints;
+    const table = !roles.length ? `
+      <div class="empty-state">
+        <h3>${escapeHtml(t('azEmptyTitle'))}</h3>
+        <p>${escapeHtml(t('azEmptyDesc'))}</p>
+        <div class="hero-actions"><button type="button" class="btn btn-primary" id="azDefaultRolesBtn">${escapeHtml(t('azDefaultRolesBtn'))}</button></div>
+      </div>` : `
+      <div class="az-layout">
+        <div class="table-wrap az-table-wrap" id="azTableWrap">
+          <table class="table az-table">
+            <thead><tr><th>${escapeHtml(t('azEndpointCol'))}</th>${roles.map(r =>
+              `<th><button type="button" class="az-role${azSelected && azSelected.kind === 'role' && azSelected.id === r.id ? ' selected' : ''}" data-role="${escapeHtml(r.id)}">${escapeHtml(r.name)}</button></th>`).join('')}</tr></thead>
+            <tbody>${eps.length ? eps.map(e => `<tr>
+              <th scope="row"><button type="button" class="az-ep" data-ep="${escapeHtml(e.id)}" title="${escapeHtml(e.note || '')}">
+                <span class="badge mono">${escapeHtml(e.method)}</span><span class="az-path">${escapeHtml(e.path)}</span></button></th>
+              ${roles.map(r => `<td>${azCellHtml(e, r)}</td>`).join('')}</tr>`).join('')
+              : `<tr><td colspan="${roles.length + 1}" class="search-empty">${escapeHtml(t('azNoEndpoints'))}</td></tr>`}</tbody>
+          </table>
+        </div>
+        <aside class="az-editor" id="azEditor">${azEditorHtml()}</aside>
+      </div>`;
+    content.innerHTML = `<div id="azRoot" class="az-root">
+      <p class="import-preview-source" style="margin-bottom:12px">${escapeHtml(t('azDesc'))}</p>
+      <div class="az-summary" id="azSummary">${azSummaryHtml()}</div>
+      <div class="az-toolbar">
+        <form id="azAddRoleForm" class="az-inline">
+          <input type="text" id="azNewRole" maxlength="60" placeholder="${escapeHtml(t('azNewRolePlaceholder'))}" aria-label="${escapeHtml(t('azNewRolePlaceholder'))}">
+          <button type="submit" class="btn btn-secondary btn-sm">${escapeHtml(t('azAddRole'))}</button>
+        </form>
+        <form id="azAddEpForm" class="az-inline">
+          <select id="azNewEpMethod" aria-label="${escapeHtml(t('azMethod'))}">${AZ.METHODS.map(m => `<option>${m}</option>`).join('')}</select>
+          <input type="text" id="azNewEpPath" class="mono" maxlength="500" placeholder="/api/users/{id}" aria-label="${escapeHtml(t('azPath'))}">
+          <button type="submit" class="btn btn-secondary btn-sm">${escapeHtml(t('azAddEndpoint'))}</button>
+        </form>
+      </div>
+      <div class="az-toolbar">
+        <button type="button" class="btn btn-secondary btn-sm" id="azFromSurfaceBtn">${escapeHtml(t('azFromSurface'))}</button>
+        <button type="button" class="btn btn-secondary btn-sm" id="azCsvBtn" ${eps.length && roles.length ? '' : 'disabled'}>${escapeHtml(t('azCopyCsv'))}</button>
+        <button type="button" class="btn btn-primary btn-sm" id="azFindingsBtn"></button>
+        <span class="hint az-save-status" id="azSaveStatus" role="status"></span>
+      </div>
+      ${table}
+    </div>`;
+    azRefreshCounters();
+    azBindView();
+  }
+
+  function renderPwAuthz(){
+    const content = document.getElementById('pwContent');
+    const pid = currentProjectId;
+    if(!AZ){ content.innerHTML = `<div class="search-empty">${escapeHtml(t('azLoadError'))}</div>`; return; }
+    content.innerHTML = `<div class="search-empty">${escapeHtml(t('loadingGeneric'))}</div>`;
+    apiRequest(`/projects/${pid}/authz-matrix`).then(doc => {
+      if(activePwTab !== 'authz' || pid !== currentProjectId) return;
+      if(azProjectId !== pid) azSelected = null;
+      azProjectId = pid;
+      azDoc = { roles: doc.roles || [], endpoints: doc.endpoints || [], cells: doc.cells || {} };
+      azRenderView();
+      if(doc.updated_at){ const d = parseApiDate(doc.updated_at); if(d) azSetStatus(t('azLastSaved')(d.toLocaleString(t('dateLocale'), { dateStyle: 'medium', timeStyle: 'short' }))); }
+    }).catch(err => {
+      content.innerHTML = `<div class="search-empty">${escapeHtml(t('azLoadError'))}<br><small>${escapeHtml(err.message || '')}</small></div>`;
+    });
+  }
+
+  function azNextCellKey(key){
+    const keys = [];
+    azDoc.endpoints.forEach(e => azDoc.roles.forEach(r => keys.push(AZ.cellKey(e.id, r.id))));
+    const i = keys.indexOf(key);
+    return keys.length ? keys[(i + 1) % keys.length] : null;
+  }
+
+  async function azCreateFindings(list){
+    if(!list.length) return;
+    const pid = azProjectId;
+    const keyOf = (title, endpoint) => `${String(title || '').trim().toLowerCase()}|${String(endpoint || '').trim().toLowerCase()}`;
+    const existing = await apiRequest(`/projects/${pid}/findings`);
+    const byKey = new Map((existing || []).map(f => [keyOf(f.title, f.endpoint), f.id]));
+    const sessionId = currentSession && currentSession.project_id === pid ? currentSession.id : null;
+    let created = 0, linked = 0, failed = 0;
+    for(const v of list){
+      const draft = AZ.findingDraft(azDoc, v, currentLang);
+      const k = keyOf(draft.title, draft.endpoint);
+      let id = byKey.get(k);
+      if(id){ linked++; }
+      else{
+        try{
+          const f = await apiRequest(`/projects/${pid}/findings`, { method: 'POST', body: JSON.stringify(Object.assign({ session_id: sessionId }, draft)) });
+          id = f.id; byKey.set(k, id); created++;
+        }catch(e){ failed++; continue; }
+      }
+      const [eid, rid] = v.key.split(':');
+      azDoc.cells[v.key] = Object.assign(AZ.emptyCell(), AZ.getCell(azDoc, eid, rid), { finding_id: id });
+      azRefreshCell(v.key);
+    }
+    azRefreshCounters();
+    azRenderEditor();
+    azScheduleSave();
+    showToast(t('azFindingsResult')(created, linked, failed));
+  }
+
+  function azRemoveCells(pred){
+    Object.keys(azDoc.cells).forEach(k => { if(pred(k)) delete azDoc.cells[k]; });
+  }
+
+  function azBindView(){
+    const root = document.getElementById('azRoot');
+    root.addEventListener('click', e => {
+      const cellBtn = e.target.closest('.az-cell');
+      if(cellBtn){ azSelect({ kind: 'cell', id: cellBtn.dataset.cell }); return; }
+      const roleBtn = e.target.closest('.az-role');
+      if(roleBtn){ azSelected = { kind: 'role', id: roleBtn.dataset.role }; azRenderView(); return; }
+      const epBtn = e.target.closest('.az-ep');
+      if(epBtn){ azSelect({ kind: 'endpoint', id: epBtn.dataset.ep }); return; }
+      const seg = e.target.closest('[data-set]');
+      if(seg && azSelected && azSelected.kind === 'cell'){
+        azSetCell(azSelected.id, { [seg.dataset.set]: seg.dataset.val || null });
+        azRenderEditor();
+        return;
+      }
+      if(e.target.closest('#azNextCell') && azSelected){ azSelect({ kind: 'cell', id: azNextCellKey(azSelected.id) }); return; }
+      if(e.target.closest('#azCellFinding') && azSelected){
+        const v = AZ.violations(azDoc).find(x => x.key === azSelected.id);
+        if(v) azCreateFindings([v]).catch(err => showToast(err.message || t('resultSaveError')));
+        return;
+      }
+      if(e.target.closest('#azDefaultRolesBtn')){
+        azDoc.roles = AZ.defaultRoles(currentLang);
+        azScheduleSave(); azRenderView(); return;
+      }
+      if(e.target.closest('#azDeleteRole') && azSelected){
+        const r = azDoc.roles.find(x => x.id === azSelected.id);
+        if(!r || !confirm(t('azDeleteRoleConfirm')(r.name))) return;
+        azDoc.roles = azDoc.roles.filter(x => x.id !== r.id);
+        azRemoveCells(k => k.split(':')[1] === r.id);
+        azSelected = null; azScheduleSave(); azRenderView(); return;
+      }
+      if(e.target.closest('#azDeleteEndpoint') && azSelected){
+        const ep = azDoc.endpoints.find(x => x.id === azSelected.id);
+        if(!ep || !confirm(t('azDeleteEndpointConfirm')(`${ep.method} ${ep.path}`))) return;
+        azDoc.endpoints = azDoc.endpoints.filter(x => x.id !== ep.id);
+        azRemoveCells(k => k.split(':')[0] === ep.id);
+        azSelected = null; azScheduleSave(); azRenderView(); return;
+      }
+      if(e.target.closest('#azCsvBtn')){
+        copyToClipboard(AZ.toCsv(azDoc, { method: t('azMethod'), path: t('azPath'), allow: t('azExpAllow'), deny: t('azExpDeny'),
+          allowed: t('azObsAllowed'), denied: t('azObsDenied'), none: '—' }));
+        return;
+      }
+      if(e.target.closest('#azFindingsBtn')){
+        azCreateFindings(azPendingViolations()).catch(err => showToast(err.message || t('resultSaveError')));
+        return;
+      }
+      if(e.target.closest('#azFromSurfaceBtn')){
+        apiRequest(`/projects/${azProjectId}/assets`).then(assets => {
+          const items = window.WSTGAttackSurface
+            ? window.WSTGAttackSurface.buildSurface(assets, [], new Set()).inventory.filter(r => r.type === 'endpoint').map(r => ({ method: 'GET', path: r.value }))
+            : [];
+          if(!items.length){ showToast(t('azNoSurfaceEndpoints')); return; }
+          const res = AZ.addEndpoints(azDoc, items);
+          azDoc = res.doc;
+          if(res.added) azScheduleSave();
+          azRenderView();
+          showToast(t('azSurfaceAdded')(res.added, res.skipped));
+        }).catch(err => showToast(err.message || t('resultSaveError')));
+      }
+    });
+    root.addEventListener('input', e => {
+      if(e.target.id === 'azCellNote' && azSelected && azSelected.kind === 'cell'){
+        const key = azSelected.id;
+        const [eid, rid] = key.split(':');
+        const cell = Object.assign(AZ.emptyCell(), AZ.getCell(azDoc, eid, rid), { note: e.target.value.slice(0, 500) });
+        if(!cell.expected && !cell.observed && !cell.note && !cell.finding_id) delete azDoc.cells[key];
+        else azDoc.cells[key] = cell;
+        azScheduleSave();
+      }
+    });
+    root.addEventListener('submit', e => {
+      e.preventDefault();
+      if(e.target.id === 'azAddRoleForm'){
+        const name = document.getElementById('azNewRole').value.trim().replace(/\s+/g, ' ');
+        if(!name) return;
+        if(azDoc.roles.length >= AZ.MAX_ROLES){ showToast(t('azTooManyRoles')(AZ.MAX_ROLES)); return; }
+        if(azDoc.roles.some(r => r.name.toLocaleLowerCase(t('dateLocale')) === name.toLocaleLowerCase(t('dateLocale')))){ showToast(t('azRoleExists')); return; }
+        azDoc.roles.push({ id: AZ.newId('r'), name: name.slice(0, 60) });
+        azScheduleSave(); azRenderView();
+        document.getElementById('azNewRole').focus();
+      }
+      if(e.target.id === 'azAddEpForm'){
+        const res = AZ.addEndpoints(azDoc, [{ method: document.getElementById('azNewEpMethod').value, path: document.getElementById('azNewEpPath').value }]);
+        if(!res.added){ showToast(t('azEndpointExists')); return; }
+        azDoc = res.doc; azScheduleSave(); azRenderView();
+        document.getElementById('azNewEpPath').focus();
+      }
+      if(e.target.id === 'azRoleForm' && azSelected){
+        const name = document.getElementById('azRoleRename').value.trim().replace(/\s+/g, ' ');
+        const r = azDoc.roles.find(x => x.id === azSelected.id);
+        if(!r || !name) return;
+        if(azDoc.roles.some(x => x.id !== r.id && x.name.toLocaleLowerCase(t('dateLocale')) === name.toLocaleLowerCase(t('dateLocale')))){ showToast(t('azRoleExists')); return; }
+        r.name = name.slice(0, 60); azScheduleSave(); azRenderView();
+      }
+      if(e.target.id === 'azEndpointForm' && azSelected){
+        const ep = azDoc.endpoints.find(x => x.id === azSelected.id);
+        if(!ep) return;
+        const method = document.getElementById('azEpEditMethod').value;
+        const path = AZ.normalizePath(document.getElementById('azEpEditPath').value);
+        if(!path) return;
+        if(azDoc.endpoints.some(x => x.id !== ep.id && x.method === method && x.path === path)){ showToast(t('azEndpointExists')); return; }
+        ep.method = method; ep.path = path; ep.note = document.getElementById('azEpEditNote').value.trim().slice(0, 500);
+        azScheduleSave(); azRenderView();
+      }
     });
   }
 

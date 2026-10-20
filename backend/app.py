@@ -13,8 +13,9 @@ from werkzeug.utils import secure_filename
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from config import DevelopmentConfig, ProductionConfig
-from models import db, Session, TestResult, Note, Project, ScopeItem, TimelineEvent, ReconRun, Evidence, CustomTest, ToolRun, Finding, AIInteractionLog, AIProviderSetting, AuthSettings
+from models import db, Session, TestResult, Note, AuthzMatrix, Project, ScopeItem, TimelineEvent, ReconRun, Evidence, CustomTest, ToolRun, Finding, AIInteractionLog, AIProviderSetting, AuthSettings
 import auth
+import authz_matrix
 import image_types
 import mapping as mapping_lib
 import notes as notes_lib
@@ -1271,6 +1272,58 @@ def get_attack_chains(project_id):
                     findings.append({'test_id': r.test_id, 'severity': r.severity})
         chains = attack_chains.detect_chains(findings)
         return jsonify({'chains': chains, 'finding_count': len(findings)}), 200
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        return _error_response(e)
+
+
+# ========================
+# YETKİLENDİRME MATRİSİ (roller x endpoint'ler; bkz. authz_matrix.py)
+# ========================
+# Uygulama hedefe istek atmaz: matristeki her "gözlenen" sonucu pentester
+# kendi testine göre girer.
+
+def _matrix_response(project_id, row):
+    doc = authz_matrix.empty()
+    if row and row.data:
+        try:
+            doc = authz_matrix.validate(json.loads(row.data))
+        except (ValueError, TypeError):
+            doc = authz_matrix.empty()
+    doc['summary'] = authz_matrix.summarize(doc)
+    doc['updated_at'] = row.updated_at.isoformat() if row and row.updated_at else None
+    return jsonify(doc), 200
+
+
+@app.route('/api/projects/<project_id>/authz-matrix', methods=['GET'])
+def get_authz_matrix(project_id):
+    try:
+        _project_or_404(project_id)
+        return _matrix_response(project_id, AuthzMatrix.query.filter_by(project_id=project_id).first())
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        return _error_response(e)
+
+
+@app.route('/api/projects/<project_id>/authz-matrix', methods=['PUT'])
+def put_authz_matrix(project_id):
+    try:
+        _project_or_404(project_id)
+        data = request.get_json(silent=True)
+        try:
+            doc = authz_matrix.validate(data)
+        except authz_matrix.MatrixValidationError as e:
+            return jsonify({'error': str(e)}), 400
+        row = AuthzMatrix.query.filter_by(project_id=project_id).first()
+        if not row:
+            row = AuthzMatrix(project_id=project_id)
+            db.session.add(row)
+        row.data = json.dumps(doc, ensure_ascii=False)
+        row.updated_at = datetime.utcnow()
+        db.session.commit()
+        return _matrix_response(project_id, row)
     except NotFoundError as e:
         return jsonify({'error': str(e)}), 404
     except Exception as e:
