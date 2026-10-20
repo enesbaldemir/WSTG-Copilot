@@ -348,6 +348,37 @@
 
       pwTabOverview: "Genel Bakış", pwTabScope: "Kapsam", pwTabAssets: "Assets", pwTabRecon: "Keşif",
       pwTabTestPlan: "Test Planı", pwTabWstg: "WSTG Testleri", pwTabFindings: "Bulgular",
+      pwTabRetest: "Yeniden Test",
+      rtDesc: "Müşterinin düzelttiğini bildirdiği bulguları yeniden test edin: her biri için \"Düzeldi\" ya da \"Hâlâ açık\" işaretleyin, not ve kanıt ekleyin. Düzeldi → durum Kapatıldı; Hâlâ açık → bulgu yeniden Açık. Bir bulguyu yeniden teste almak için durumunu Düzeltildi / Yeniden Test Bekliyor yapın ya da \"Diğer açık\" listesinden ekleyin.",
+      rtState_pending: "Yeniden test bekliyor",
+      rtState_still_open: "Hâlâ açık",
+      rtState_verified: "Düzeldi (doğrulandı)",
+      rtFilter_pending: "Bekleyen",
+      rtFilter_still_open: "Hâlâ açık",
+      rtFilter_verified: "Doğrulandı",
+      rtFilter_other: "Diğer açık",
+      rtFilter_all: "Tümü",
+      rtEmpty_pending: "Yeniden test bekleyen bulgu yok.",
+      rtEmpty_still_open: "Yeniden testte açık kalan bulgu yok.",
+      rtEmpty_verified: "Henüz doğrulanmış düzeltme yok.",
+      rtEmpty_other: "Yeniden test kapsamı dışında açık bulgu yok.",
+      rtEmpty_all: "Bu projede bulgu yok.",
+      rtLastRetest: "Son yeniden test",
+      rtResult_fixed: "düzeldi",
+      rtResult_not_fixed: "hâlâ açık",
+      rtNotePlaceholder: "Yeniden test notu (ör. payload artık 400 dönüyor)",
+      rtMarkFixed: "✓ Düzeldi",
+      rtMarkOpen: "✗ Hâlâ açık",
+      rtAddEvidence: "Kanıt ekle",
+      rtRequest: "Yeniden teste ekle",
+      rtReportPdf: "Yeniden test raporu (PDF)",
+      rtReportHtml: "Raporu aç (HTML)",
+      rtIncludePending: "Bekleyenleri de rapora ekle",
+      rtFileSuffix: "yeniden-test",
+      rtToastFixed: "Düzeldi olarak işaretlendi; bulgu kapatıldı",
+      rtToastOpen: "Hâlâ açık olarak işaretlendi; bulgu yeniden açıldı",
+      rtToastRequested: "Bulgu yeniden teste eklendi",
+      rtToastEvidence: "Kanıt bulguya eklendi",
       pwTabAuthz: "Yetki Matrisi",
       azDesc: "Her rolün her endpoint'e erişip erişmemesi gerektiğini (beklenen) ve kendi denemenizin sonucunu (gözlenen) işaretleyin. Beklenen \"Yasak\" iken \"Erişti\" olan hücreler yetkilendirme açığıdır (WSTG-ATHZ-02/03/04). Uygulama hedefe istek göndermez.",
       azEmptyTitle: "Henüz rol tanımlanmadı",
@@ -1039,6 +1070,37 @@
 
       pwTabOverview: "Overview", pwTabScope: "Scope", pwTabAssets: "Assets", pwTabRecon: "Recon",
       pwTabTestPlan: "Test Plan", pwTabWstg: "WSTG Tests", pwTabFindings: "Findings",
+      pwTabRetest: "Retest",
+      rtDesc: "Retest findings the client reports as fixed: mark each as \"Fixed\" or \"Still open\" and add a note and evidence. Fixed → status Resolved; Still open → the finding is reopened. To put a finding in scope, set its status to Fixed / Retest Pending or add it from the \"Other open\" list.",
+      rtState_pending: "Awaiting retest",
+      rtState_still_open: "Still open",
+      rtState_verified: "Fixed (verified)",
+      rtFilter_pending: "Pending",
+      rtFilter_still_open: "Still open",
+      rtFilter_verified: "Verified",
+      rtFilter_other: "Other open",
+      rtFilter_all: "All",
+      rtEmpty_pending: "No findings are awaiting retest.",
+      rtEmpty_still_open: "No findings remained open after retest.",
+      rtEmpty_verified: "No verified fixes yet.",
+      rtEmpty_other: "No open findings outside the retest scope.",
+      rtEmpty_all: "This project has no findings.",
+      rtLastRetest: "Last retest",
+      rtResult_fixed: "fixed",
+      rtResult_not_fixed: "still open",
+      rtNotePlaceholder: "Retest note (e.g. the payload now returns 400)",
+      rtMarkFixed: "✓ Fixed",
+      rtMarkOpen: "✗ Still open",
+      rtAddEvidence: "Add evidence",
+      rtRequest: "Add to retest",
+      rtReportPdf: "Retest report (PDF)",
+      rtReportHtml: "Open report (HTML)",
+      rtIncludePending: "Include pending findings in the report",
+      rtFileSuffix: "retest",
+      rtToastFixed: "Marked as fixed; finding resolved",
+      rtToastOpen: "Marked as still open; finding reopened",
+      rtToastRequested: "Finding added to retest",
+      rtToastEvidence: "Evidence attached to the finding",
       pwTabAuthz: "Authorization Matrix",
       azDesc: "Mark whether each role should be able to access each endpoint (expected) and what your own test showed (observed). Cells that are expected \"Denied\" but were \"Accessible\" are authorization flaws (WSTG-ATHZ-02/03/04). The app never sends requests to the target.",
       azEmptyTitle: "No roles defined yet",
@@ -4082,7 +4144,7 @@
       overview: renderPwOverview, scope: renderPwScope, assets: renderPwAssets,
       recon: renderPwRecon, tools: renderPwTools, testplan: renderPwTestPlan, wstg: renderPwWstg,
       findings: renderPwFindings, evidence: renderPwEvidence, chains: renderPwChains,
-      timeline: renderPwTimeline, kanban: renderPwKanban, reports: renderPwReports, authz: renderPwAuthz
+      timeline: renderPwTimeline, kanban: renderPwKanban, reports: renderPwReports, authz: renderPwAuthz, retest: renderPwRetest
     };
     const fn = map[activePwTab];
     if(fn) fn();
@@ -6030,6 +6092,184 @@
         ep.method = method; ep.path = path; ep.note = document.getElementById('azEpEditNote').value.trim().slice(0, 500);
         azScheduleSave(); azRenderView();
       }
+    });
+  }
+
+  // ========================
+  // YENİDEN TEST (retest)
+  // ========================
+  // Durum sınıflandırması backend/retest.py'de; burada liste, işaretleme ve rapor.
+  let rtFilter = 'pending';
+  let rtData = null;
+  const RT_FILTERS = ['pending', 'still_open', 'verified', 'other', 'all'];
+
+  function rtMatches(f, filter){
+    if(filter === 'all') return true;
+    if(filter === 'other') return !f.retest_state && (f.status === 'open' || f.status === 'confirmed');
+    return f.retest_state === filter;
+  }
+
+  function rtStateBadge(f){
+    if(!f.retest_state) return `<span class="finding-status-badge status-${escapeHtml(f.status)}">${escapeHtml(t('findingStatus_' + f.status))}</span>`;
+    const cls = { pending: 'amber', still_open: 'red', verified: 'green' }[f.retest_state];
+    return `<span class="badge ${cls}">${escapeHtml(t('rtState_' + f.retest_state))}</span>`;
+  }
+
+  function rtCardHtml(f){
+    const sev = SEVERITIES.indexOf(f.severity) !== -1 ? f.severity : 'info';
+    const when = f.retested_at ? parseApiDate(f.retested_at) : null;
+    const last = f.retest_result === 'fixed' || f.retest_result === 'not_fixed'
+      ? `<span>${escapeHtml(t('rtLastRetest'))}: ${escapeHtml(t('rtResult_' + f.retest_result))}${when ? ' · ' + escapeHtml(when.toLocaleString(t('dateLocale'), { dateStyle: 'medium', timeStyle: 'short' })) : ''}</span>` : '';
+    const evidence = (f.evidence || []).map(ev =>
+      `<a class="badge mono" href="${escapeHtml(API_BASE + '/evidence/' + Number(ev.id) + '/file')}" target="_blank" rel="noopener noreferrer">${escapeHtml(ev.filename || ('#' + ev.id))}</a>`).join('');
+    const canMark = f.retest_state || f.status === 'fixed' || f.status === 'retest_pending';
+    const actions = canMark ? `
+        <textarea class="rt-note" data-id="${Number(f.id)}" rows="2" maxlength="5000" placeholder="${escapeHtml(t('rtNotePlaceholder'))}">${escapeHtml(f.retest_notes || '')}</textarea>
+        <div class="rt-actions">
+          <button type="button" class="btn btn-sm rt-fixed" data-act="fixed" data-id="${Number(f.id)}">${escapeHtml(t('rtMarkFixed'))}</button>
+          <button type="button" class="btn btn-sm rt-open" data-act="not_fixed" data-id="${Number(f.id)}">${escapeHtml(t('rtMarkOpen'))}</button>
+          <label class="btn btn-secondary btn-sm rt-upload">${escapeHtml(t('rtAddEvidence'))}
+            <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" data-evidence="${Number(f.id)}" hidden></label>
+        </div>`
+      : `<div class="rt-actions"><button type="button" class="btn btn-secondary btn-sm" data-act="request" data-id="${Number(f.id)}">${escapeHtml(t('rtRequest'))}</button></div>`;
+    return `<div class="finding-card rt-card" data-id="${Number(f.id)}">
+      <div class="finding-card-top">
+        <span class="finding-code">${escapeHtml(f.finding_code || '')}</span>
+        <span class="severity-badge sev-${sev}">${escapeHtml(t('severity_' + sev))}</span>
+        ${rtStateBadge(f)}
+      </div>
+      <div class="finding-card-title">${escapeHtml(f.title || '')}</div>
+      <div class="finding-card-meta">
+        ${f.endpoint ? `<span>${escapeHtml(f.endpoint)}</span>` : ''}
+        ${last}
+      </div>
+      ${evidence ? `<div class="rt-evidence">${evidence}</div>` : ''}
+      ${actions}
+    </div>`;
+  }
+
+  function rtRenderList(){
+    const box = document.getElementById('rtList');
+    if(!box || !rtData) return;
+    const items = rtData.findings.filter(f => rtMatches(f, rtFilter));
+    document.querySelectorAll('#rtFilters button').forEach(b => b.classList.toggle('active', b.dataset.filter === rtFilter));
+    box.innerHTML = items.length ? items.map(rtCardHtml).join('') : `<div class="search-empty">${escapeHtml(t('rtEmpty_' + rtFilter))}</div>`;
+  }
+
+  function rtCounts(){
+    const c = { pending: 0, still_open: 0, verified: 0, other: 0, all: rtData.findings.length };
+    rtData.findings.forEach(f => RT_FILTERS.forEach(k => { if(k !== 'all' && rtMatches(f, k)) c[k]++; }));
+    return c;
+  }
+
+  function rtRenderView(){
+    const content = document.getElementById('pwContent');
+    const c = rtCounts();
+    content.innerHTML = `<div id="rtRoot">
+      <p class="import-preview-source" style="margin-bottom:12px">${escapeHtml(t('rtDesc'))}</p>
+      <div class="rt-summary">
+        <div class="rt-stat pending"><b>${c.pending}</b><span>${escapeHtml(t('rtState_pending'))}</span></div>
+        <div class="rt-stat still_open"><b>${c.still_open}</b><span>${escapeHtml(t('rtState_still_open'))}</span></div>
+        <div class="rt-stat verified"><b>${c.verified}</b><span>${escapeHtml(t('rtState_verified'))}</span></div>
+      </div>
+      <div class="az-toolbar">
+        <button type="button" class="btn btn-primary btn-sm" id="rtPdfBtn">${escapeHtml(t('rtReportPdf'))}</button>
+        <button type="button" class="btn btn-secondary btn-sm" id="rtHtmlBtn">${escapeHtml(t('rtReportHtml'))}</button>
+        <label class="recon-auth-check rt-inline-check"><input type="checkbox" id="rtIncludePending" checked><span>${escapeHtml(t('rtIncludePending'))}</span></label>
+        <span class="hint" id="rtStatus" role="status"></span>
+      </div>
+      <div class="az-seg rt-filters" id="rtFilters" role="group">${RT_FILTERS.map(k =>
+        `<button type="button" data-filter="${k}">${escapeHtml(t('rtFilter_' + k))} (${c[k]})</button>`).join('')}</div>
+      <div id="rtList" class="rt-list"></div>
+    </div>`;
+    rtRenderList();
+    rtBind();
+  }
+
+  function renderPwRetest(){
+    const content = document.getElementById('pwContent');
+    const pid = currentProjectId;
+    content.innerHTML = `<div class="search-empty">${escapeHtml(t('loadingGeneric'))}</div>`;
+    apiRequest(`/projects/${pid}/retest`).then(data => {
+      if(activePwTab !== 'retest' || pid !== currentProjectId) return;
+      rtData = data;
+      const c = rtCounts();
+      if(!c[rtFilter]) rtFilter = c.pending ? 'pending' : c.still_open ? 'still_open' : c.verified ? 'verified' : c.other ? 'other' : 'all';
+      rtRenderView();
+    }).catch(err => {
+      content.innerHTML = `<div class="search-empty">${escapeHtml(err.message || t('resultSaveError'))}</div>`;
+    });
+  }
+
+  function rtReportPayload(){
+    return { lang: currentLang, include_pending: document.getElementById('rtIncludePending').checked };
+  }
+
+  function rtBind(){
+    const root = document.getElementById('rtRoot');
+    const pid = currentProjectId;
+    root.addEventListener('click', e => {
+      const fb = e.target.closest('#rtFilters button');
+      if(fb){ rtFilter = fb.dataset.filter; rtRenderList(); return; }
+      const act = e.target.closest('[data-act]');
+      if(act){
+        const id = Number(act.dataset.id);
+        act.disabled = true;
+        let req;
+        if(act.dataset.act === 'request'){
+          req = apiRequest(`/projects/${pid}/findings/${id}`, { method: 'PUT', body: JSON.stringify({ status: 'retest_pending' }) });
+        } else {
+          const note = root.querySelector(`.rt-note[data-id="${id}"]`);
+          req = apiRequest(`/projects/${pid}/findings/${id}/retest`, { method: 'POST',
+            body: JSON.stringify({ result: act.dataset.act, notes: note ? note.value : '' }) });
+        }
+        req.then(() => {
+          showToast(t(act.dataset.act === 'fixed' ? 'rtToastFixed' : act.dataset.act === 'not_fixed' ? 'rtToastOpen' : 'rtToastRequested'));
+          renderPwRetest();
+        }).catch(err => { act.disabled = false; showToast(err.message || t('resultSaveError')); });
+        return;
+      }
+      if(e.target.closest('#rtHtmlBtn')){
+        const w = window.open('', '_blank');
+        apiFetch(`/projects/${pid}/reports/retest/html`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rtReportPayload()) })
+          .then(res => { if(!res.ok) throw new Error('report'); return res.text(); })
+          .then(html => { if(w){ w.document.open(); w.document.write(html); w.document.close(); } })
+          .catch(() => { if(w) w.close(); showToast(t('resultSaveError')); });
+        return;
+      }
+      if(e.target.closest('#rtPdfBtn')){
+        const btn = document.getElementById('rtPdfBtn');
+        const status = document.getElementById('rtStatus');
+        btn.disabled = true; status.textContent = t('reportPdfGenerating');
+        apiFetch(`/projects/${pid}/reports/retest/pdf`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rtReportPayload()) })
+          .then(async res => {
+            if(!res.ok){ const b = await res.json().catch(() => ({})); throw new Error(b.error || 'PDF'); }
+            return res.blob();
+          }).then(blob => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `${(currentProjectObj && currentProjectObj.name) || 'proje'}-${t('rtFileSuffix')}.pdf`;
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 4000);
+            status.textContent = '';
+          }).catch(err => { status.textContent = err.message || t('resultSaveError'); })
+          .finally(() => { btn.disabled = false; });
+      }
+    });
+    root.addEventListener('change', e => {
+      const input = e.target.closest('input[data-evidence]');
+      if(!input || !input.files || !input.files[0]) return;
+      const fd = new FormData();
+      fd.append('file', input.files[0]);
+      fd.append('linked_finding_id', input.dataset.evidence);
+      apiFetch(`/projects/${pid}/evidence`, { method: 'POST', body: fd })
+        .then(async res => {
+          const body = await res.json().catch(() => ({}));
+          if(!res.ok) throw new Error(body.error || t('pwEvidenceUploadError'));
+          showToast(t('rtToastEvidence'));
+          renderPwRetest();
+        }).catch(err => showToast(err.message || t('pwEvidenceUploadError')))
+        .finally(() => { input.value = ''; });
     });
   }
 

@@ -1609,3 +1609,26 @@ body.study-control-mode #noteControlBanner{ display:block; }
   .az-inline input, .az-inline #azNewEpPath{ width:100%; }
   .az-inline{ width:100%; }
 }
+
+/* ---------- Yeniden test ---------- */
+.rt-summary{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:10px; margin-bottom:14px; }
+.rt-stat{ border:1px solid var(--border); border-radius:var(--radius-lg); padding:12px 14px; display:flex; flex-direction:column; gap:2px; background:var(--surface); }
+.rt-stat b{ font-size:22px; font-weight:700; }
+.rt-stat span{ font-size:12.5px; color:var(--muted); }
+.rt-stat.pending b{ color:var(--amber); }
+.rt-stat.still_open b{ color:var(--red); }
+.rt-stat.verified b{ color:var(--green); }
+.rt-inline-check{ margin:0; }
+.rt-filters{ margin:6px 0 14px; max-width:640px; }
+.rt-list{ display:flex; flex-direction:column; }
+.rt-card .rt-note{ width:100%; margin:8px 0 6px; font-size:13px; }
+.rt-actions{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.rt-actions .rt-fixed{ color:var(--green); border-color:var(--green-border); background:var(--green-soft); }
+.rt-actions .rt-open{ color:var(--red); border-color:var(--red-border); background:var(--red-soft); }
+.rt-upload{ cursor:pointer; }
+.rt-evidence{ display:flex; flex-wrap:wrap; gap:6px; margin:6px 0 2px; }
+.rt-evidence a{ text-decoration:none; }
+@media (max-width:640px){
+  .rt-summary{ grid-template-columns:1fr; }
+  .rt-filters{ flex-wrap:wrap; }
+}
