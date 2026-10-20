@@ -55,8 +55,34 @@ def severity_label(score):
     return 'critical'
 
 
+def parse_vector(vector):
+    """'CVSS:3.1/AV:N/AC:L/...' veya 'AV:N/AC:L/...' -> {'AV': 'N', ...}.
+
+    Yalnizca taban (base) metrikleri kabul edilir; bilinmeyen/yinelenen
+    anahtar veya bozuk parca CvssError firlatir. Degerlerin gecerliligi
+    compute() tarafindan ayrica dogrulanir."""
+    if not isinstance(vector, str) or not vector.strip():
+        raise CvssError('CVSS vektörü boş')
+    parts = [p for p in vector.strip().split('/') if p]
+    if parts and parts[0].upper().startswith('CVSS:'):
+        if parts[0].upper() not in ('CVSS:3.0', 'CVSS:3.1'):
+            raise CvssError(f'Desteklenmeyen CVSS sürümü: {parts[0]}')
+        parts = parts[1:]
+    metrics = {}
+    for part in parts:
+        if part.count(':') != 1:
+            raise CvssError(f'Geçersiz vektör parçası: {part}')
+        key, value = (s.strip().upper() for s in part.split(':'))
+        if key not in VALID_VALUES:
+            raise CvssError(f'Bilinmeyen metrik: {key}')
+        if key in metrics:
+            raise CvssError(f'Yinelenen metrik: {key}')
+        metrics[key] = value
+    return metrics
+
+
 def compute(metrics):
-    """metrics: {'AV':'N','AC':'L','PR':'N','UI':'N','S':'U','C':'H','I':'H','A':'H'}
+    """metrics:{'AV':'N','AC':'L','PR':'N','UI':'N','S':'U','C':'H','I':'H','A':'H'}
     Doner: {'base_score', 'severity', 'vector', 'impact_subscore', 'exploitability_subscore'}"""
     for key in ('AV', 'AC', 'PR', 'UI', 'S', 'C', 'I', 'A'):
         if key not in metrics:

@@ -1492,3 +1492,58 @@ body.auth-locked{ overflow:hidden; }
 @media (max-width:480px){
   .auth-card{ padding:22px 18px 18px; }
 }
+
+/* ---------- Not Defteri ---------- */
+body.study-control-mode .ai-feature{ display:none !important; }
+.control-group-banner{
+  display:none; font-size:13px; color:var(--accent-text); background:var(--accent-soft);
+  border:1px solid var(--accent-border); border-radius:var(--radius); padding:8px 12px;
+}
+body.study-control-mode #noteControlBanner{ display:block; }
+.note-form-row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.note-form-row > div{ display:flex; flex-direction:column; gap:6px; }
+.note-form-row label{ margin-top:8px; }
+.note-images-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:10px; }
+.note-file-btn{ cursor:pointer; }
+.note-thumbs{ display:flex; flex-wrap:wrap; gap:8px; }
+.note-thumbs:empty{ display:none; }
+.note-thumb{ position:relative; width:76px; height:76px; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; background:var(--surface-3); padding:0; cursor:zoom-in; }
+.note-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+.note-thumb-remove{
+  position:absolute; top:3px; right:3px; width:22px; height:22px; border-radius:50%; font-size:15px; line-height:1;
+  background:var(--surface); color:var(--text-2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer;
+}
+.note-thumb-remove:hover{ color:var(--red); border-color:var(--red-border); }
+.note-chips, #noteCweSuggestions{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:6px; }
+#noteCweSuggestions:empty{ display:none; }
+.note-chip{ cursor:pointer; border:1px solid var(--border); }
+.note-chip:hover{ border-color:var(--accent-border); color:var(--accent-text); }
+.note-cvss-row{ display:flex; align-items:center; gap:10px; }
+.note-cvss-row input{ flex:1; min-width:0; font-family:var(--mono); font-size:13px; }
+.cvss-mini-badge.invalid{ color:var(--red); background:var(--red-soft); font-family:inherit; }
+.note-ai{ display:flex; align-items:center; gap:10px; margin-top:12px; }
+.note-ai-result{ border:1px solid var(--border); background:var(--surface-2); border-radius:var(--radius); padding:10px 12px; font-size:13.5px; display:flex; flex-direction:column; gap:6px; }
+.note-ai-result[hidden]{ display:none; }
+.note-ai-result p{ margin:0; line-height:1.5; }
+.note-ai-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.note-ai-row code{ font-family:var(--mono); font-size:12px; }
+#noteEditorStatus.is-info{ color:var(--muted); }
+.note-card .finding-card-top .note-card-test{ margin-left:auto; }
+.note-card-content{ font-size:13.5px; color:var(--text-2); white-space:pre-wrap; word-break:break-word; margin:4px 0 8px;
+  display:-webkit-box; -webkit-line-clamp:6; -webkit-box-orient:vertical; overflow:hidden; }
+.note-card .note-thumbs{ margin:6px 0 8px; }
+.note-lightbox{ align-items:center; padding:24px; }
+.note-lightbox img{ max-width:min(1100px, 94vw); max-height:88vh; border-radius:var(--radius); box-shadow:var(--shadow-lg); background:var(--surface); }
+.note-lightbox .close-btn{ position:fixed; top:14px; right:14px; background:var(--surface); border:1px solid var(--border); }
+
+/* ---------- Çalışma Metrikleri ---------- */
+.study-table th[scope="row"]{ background:transparent; font-weight:500; color:var(--text); border-top:none; white-space:normal; }
+.study-table td{ font-variant-numeric:tabular-nums; }
+.study-table thead .hint{ font-weight:500; margin-left:4px; }
+.study-diff{ font-size:12.5px; font-weight:600; padding:2px 7px; border-radius:5px; background:var(--surface-3); color:var(--text-2); }
+.study-diff.good{ color:var(--green); background:var(--green-soft); }
+.study-diff.bad{ color:var(--red); background:var(--red-soft); }
+@media (max-width:640px){
+  .note-form-row{ grid-template-columns:1fr; }
+  .note-ai-row{ flex-direction:column; align-items:flex-start; }
+}

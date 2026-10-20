@@ -153,6 +153,101 @@
       top10SourceNote: "Kaynak: OWASP Top 10:2025 (owasp.org/Top10/2025), pentest çalışma alanı için Türkçe/İngilizce olarak özetlenmiştir.",
 
       navImport: "Bulgu İçe Aktar",
+
+      navNotebook: "Not Defteri",
+      navStudyMetrics: "Çalışma Metrikleri",
+      notebookTitle: "Not Defteri",
+      notebookDesc: (name) => `“${name}” oturumunun notları. Bir test maddesine bağlayabilir ya da genel not olarak bırakabilirsin.`,
+      notebookNeedSession: "Not defteri için önce bir test oturumu aç.",
+      notebookNeedBackend: "Not defteri backend bağlantısı gerektirir.",
+      notebookSearchPlaceholder: "Notlarda ara…",
+      notebookFilterAll: "Tüm notlar",
+      notebookFilterGeneral: "Genel notlar",
+      newNote: "+ Yeni Not",
+      editNote: "Notu düzenle",
+      noteEditorDesc: "Gözlemini kısa ve net yaz; istersen ekran görüntüsü ekle (yapıştırma da çalışır).",
+      noteTitleLabel: "Başlık",
+      noteTitlePlaceholder: "Örn: Login formunda SQL injection",
+      noteUntitled: "Başlıksız not",
+      noteLinkedTestLabel: "İlgili test maddesi (opsiyonel)",
+      noteGeneralOption: "— Genel not (teste bağlı değil) —",
+      noteGeneralBadge: "Genel",
+      noteFpLabel: "Doğrulama",
+      noteFpUnknown: "Değerlendirilmedi",
+      noteFpValid: "Geçerli bulgu",
+      noteFpFalse: "False positive",
+      noteContentLabel: "Not / bulgu",
+      noteAddImage: "Görsel ekle",
+      noteImageHint: (n, max) => `${n}/${max} görsel · PNG, JPEG, GIF, WebP · en fazla 3 MB`,
+      noteImageTypeError: "Yalnızca PNG, JPEG, GIF veya WebP eklenebilir.",
+      noteImageSizeError: "Görsel 3 MB'tan büyük olamaz.",
+      noteImageCountError: (max) => `En fazla ${max} görsel eklenebilir.`,
+      noteImagePayloadError: "Görsellerin toplam boyutu çok büyük; birkaçını kaldır.",
+      noteImageReadError: "Görsel okunamadı.",
+      noteImageRemove: "Görseli kaldır",
+      noteUnsafeImagesDropped: (n) => `${n} eski görsel güvenli biçimde olmadığı için gösterilmiyor; kaydedersen kaldırılır.`,
+      noteCweNameLabel: "CWE adı",
+      noteCweSuggested: (id) => `${id} için önerilen CWE'ler:`,
+      noteCvssLabel: "CVSS 3.1 vektörü (opsiyonel)",
+      noteCvssInvalid: "Geçersiz vektör",
+      noteAiAnalyze: "AI ile analiz et",
+      noteAiRationale: "Değerlendirme",
+      noteAiFp: "False positive olasılığı",
+      noteAiSuggestCwe: "Önerilen CWE",
+      noteAiSuggestSeverity: "Önerilen önem",
+      noteAiSuggestCvss: "Önerilen CVSS",
+      noteAiApply: "Uygula",
+      noteAiApplied: "Öneri forma uygulandı",
+      noteAiNoSuggestion: "AI bir öneri döndürmedi.",
+      fpLikelihood_low: "Düşük",
+      fpLikelihood_medium: "Orta",
+      fpLikelihood_high: "Yüksek",
+      noteContentRequired: "Not içeriği veya en az bir görsel gerekli.",
+      saveNote: "Kaydet",
+      deleteNote: "Sil",
+      noteSaved: "Not kaydedildi",
+      noteDeleted: "Not silindi",
+      noteDeleteConfirm: "Bu not silinsin mi?",
+      noteEmptyList: "Henüz not yok. “+ Yeni Not” ile ekleyebilirsin.",
+      noteEmptyFiltered: "Bu filtreye uyan not yok.",
+      noteAddForTest: "Not ekle",
+      noteCountForTest: (n) => `${n} not`,
+      controlGroupBanner: "Bu oturum kontrol grubunda: AI özellikleri kapalı.",
+      studyGroupLabel: "Çalışma Grubu (opsiyonel)",
+      studyGroupNone: "— Seçilmedi —",
+      studyGroupAi: "AI Destekli",
+      studyGroupControl: "Kontrol (yalnızca checklist)",
+      studyGroupHintAi: "AI özellikleri açık; bu oturumdaki AI çağrıları metriklere yazılır.",
+      studyGroupHintControl: "Bu oturum açıkken AI düğmeleri gizlenir (yalnızca checklist).",
+      studyGroupBadge_ai_assisted: "AI destekli",
+      studyGroupBadge_control: "Kontrol",
+      sessionCompleteBtn: "Tamamla",
+      sessionReopenBtn: "Yeniden aç",
+      sessionCompletedToast: "Oturum tamamlandı olarak işaretlendi",
+      sessionReopenedToast: "Oturum yeniden açıldı",
+      studyMetricsTitle: "Çalışma Metrikleri",
+      studyMetricsDesc: "“AI destekli” ve “kontrol” grubuna atanmış oturumların ortalamaları. Değerler açıklayıcıdır; grup başına oturum sayısı (n) küçükse dikkatli yorumla.",
+      studyMetricsColAi: "AI destekli",
+      studyMetricsColControl: "Kontrol",
+      studyMetricsColDiff: "Fark",
+      studyMetricMinutes: "Tamamlama süresi (dk)",
+      studyMetricCompletedTests: "Tamamlanan test",
+      studyMetricCompletionPct: "Tamamlanma (%)",
+      studyMetricFindings: "Bulgu sayısı",
+      studyMetricFpRate: "False positive oranı (%)",
+      studyMetricAiCalls: "AI çağrısı",
+      studyMetricAiLatency: "Ort. AI yanıt süresi (ms)",
+      studyMetricReportGenerated: "AI rapor taslağı üretilen oturum (%)",
+      studyMetricsEmpty: "Henüz bir çalışma grubuna atanmış oturum yok. Yeni oturum oluştururken “Çalışma Grubu” seçebilirsin.",
+      studyMetricsUnassigned: (n) => `${n} oturum bir gruba atanmadığı için hesaba katılmadı.`,
+      studyMetricsDiffNote: "Fark = (AI − Kontrol) / Kontrol. Yeşil, o metrikte AI grubunun daha iyi olduğunu gösterir. Süre yalnızca “Tamamla” ile kapatılmış oturumlarda hesaplanır.",
+      studyMetricsSessions: "Oturumlar",
+      studyMetricsColSession: "Oturum",
+      studyMetricsColGroup: "Grup",
+      studyMetricsCopyCsv: "CSV olarak kopyala",
+      loadingGeneric: "Yükleniyor…",
+      studyMetricsLoadError: "Metrikler yüklenemedi.",
+      studyMetricsNeedBackend: "Çalışma metrikleri backend bağlantısı gerektirir.",
       importModalTitle: "Bulgu İçe Aktar",
       importModalDesc: "Nmap, Nikto veya WPScan çıktısını (XML/JSON) yükleyin; eşleşen bulgular ilgili WSTG maddelerine not olarak eklenir.",
       importToolLabel: "Araç",
@@ -686,6 +781,101 @@
       top10SourceNote: "Source: OWASP Top 10:2025 (owasp.org/Top10/2025), summarized in Turkish/English for this pentest workspace.",
 
       navImport: "Import Findings",
+
+      navNotebook: "Notebook",
+      navStudyMetrics: "Study Metrics",
+      notebookTitle: "Notebook",
+      notebookDesc: (name) => `Notes for the “${name}” session. Link them to a test item or keep them as general notes.`,
+      notebookNeedSession: "Open a test session first to use the notebook.",
+      notebookNeedBackend: "The notebook requires the backend.",
+      notebookSearchPlaceholder: "Search notes…",
+      notebookFilterAll: "All notes",
+      notebookFilterGeneral: "General notes",
+      newNote: "+ New Note",
+      editNote: "Edit note",
+      noteEditorDesc: "Write your observation clearly; attach screenshots if you like (pasting works too).",
+      noteTitleLabel: "Title",
+      noteTitlePlaceholder: "e.g. SQL injection in the login form",
+      noteUntitled: "Untitled note",
+      noteLinkedTestLabel: "Related test item (optional)",
+      noteGeneralOption: "— General note (not linked to a test) —",
+      noteGeneralBadge: "General",
+      noteFpLabel: "Verification",
+      noteFpUnknown: "Not assessed",
+      noteFpValid: "Valid finding",
+      noteFpFalse: "False positive",
+      noteContentLabel: "Note / finding",
+      noteAddImage: "Add image",
+      noteImageHint: (n, max) => `${n}/${max} images · PNG, JPEG, GIF, WebP · up to 3 MB`,
+      noteImageTypeError: "Only PNG, JPEG, GIF or WebP images can be added.",
+      noteImageSizeError: "Images can't be larger than 3 MB.",
+      noteImageCountError: (max) => `You can add at most ${max} images.`,
+      noteImagePayloadError: "The images are too large in total; remove a few.",
+      noteImageReadError: "Couldn't read the image.",
+      noteImageRemove: "Remove image",
+      noteUnsafeImagesDropped: (n) => `${n} old image(s) aren't in a safe format and are hidden; saving will remove them.`,
+      noteCweNameLabel: "CWE name",
+      noteCweSuggested: (id) => `Suggested CWEs for ${id}:`,
+      noteCvssLabel: "CVSS 3.1 vector (optional)",
+      noteCvssInvalid: "Invalid vector",
+      noteAiAnalyze: "Analyze with AI",
+      noteAiRationale: "Assessment",
+      noteAiFp: "False-positive likelihood",
+      noteAiSuggestCwe: "Suggested CWE",
+      noteAiSuggestSeverity: "Suggested severity",
+      noteAiSuggestCvss: "Suggested CVSS",
+      noteAiApply: "Apply",
+      noteAiApplied: "Suggestion applied to the form",
+      noteAiNoSuggestion: "The AI returned no suggestions.",
+      fpLikelihood_low: "Low",
+      fpLikelihood_medium: "Medium",
+      fpLikelihood_high: "High",
+      noteContentRequired: "A note needs text or at least one image.",
+      saveNote: "Save",
+      deleteNote: "Delete",
+      noteSaved: "Note saved",
+      noteDeleted: "Note deleted",
+      noteDeleteConfirm: "Delete this note?",
+      noteEmptyList: "No notes yet. Add one with “+ New Note”.",
+      noteEmptyFiltered: "No notes match this filter.",
+      noteAddForTest: "Add note",
+      noteCountForTest: (n) => `${n} note${n === 1 ? '' : 's'}`,
+      controlGroupBanner: "This session is in the control group: AI features are off.",
+      studyGroupLabel: "Study group (optional)",
+      studyGroupNone: "— Not set —",
+      studyGroupAi: "AI-assisted",
+      studyGroupControl: "Control (checklist only)",
+      studyGroupHintAi: "AI features stay on; AI calls in this session are recorded in the metrics.",
+      studyGroupHintControl: "While this session is open, AI buttons are hidden (checklist only).",
+      studyGroupBadge_ai_assisted: "AI-assisted",
+      studyGroupBadge_control: "Control",
+      sessionCompleteBtn: "Complete",
+      sessionReopenBtn: "Reopen",
+      sessionCompletedToast: "Session marked as completed",
+      sessionReopenedToast: "Session reopened",
+      studyMetricsTitle: "Study Metrics",
+      studyMetricsDesc: "Averages of sessions assigned to the “AI-assisted” and “control” groups. These are descriptive; interpret carefully when the number of sessions per group (n) is small.",
+      studyMetricsColAi: "AI-assisted",
+      studyMetricsColControl: "Control",
+      studyMetricsColDiff: "Difference",
+      studyMetricMinutes: "Completion time (min)",
+      studyMetricCompletedTests: "Completed tests",
+      studyMetricCompletionPct: "Completion (%)",
+      studyMetricFindings: "Findings",
+      studyMetricFpRate: "False-positive rate (%)",
+      studyMetricAiCalls: "AI calls",
+      studyMetricAiLatency: "Avg. AI latency (ms)",
+      studyMetricReportGenerated: "Sessions with an AI report draft (%)",
+      studyMetricsEmpty: "No sessions are assigned to a study group yet. Pick a “Study group” when creating a session.",
+      studyMetricsUnassigned: (n) => `${n} session(s) weren't counted because they have no group.`,
+      studyMetricsDiffNote: "Difference = (AI − Control) / Control. Green means the AI group did better on that metric. Duration is only computed for sessions closed with “Complete”.",
+      studyMetricsSessions: "Sessions",
+      studyMetricsColSession: "Session",
+      studyMetricsColGroup: "Group",
+      studyMetricsCopyCsv: "Copy as CSV",
+      loadingGeneric: "Loading…",
+      studyMetricsLoadError: "Couldn't load the metrics.",
+      studyMetricsNeedBackend: "Study metrics require the backend.",
       importModalTitle: "Import Findings",
       importModalDesc: "Upload Nmap, Nikto, or WPScan output (XML/JSON); matching findings are attached as notes to the relevant WSTG items.",
       importToolLabel: "Tool",
@@ -1747,6 +1937,7 @@
         <div class="ds-body">
           <div class="ds-head-row">
             <h5>${t('findingsLabel')}</h5>
+            ${dbOnline && currentSession ? `<button type="button" class="btn btn-secondary btn-xs" data-action="add-note" data-id="${escapeHtml(test.id)}"><svg class="i"><use href="#ic-note"/></svg><span>${escapeHtml(t('noteAddForTest'))}</span></button>` : ''}
             <label class="severity-field">
               <span>${t('severityLabel')}</span>
               <select class="severity-select" data-id="${escapeHtml(test.id)}">
@@ -1760,6 +1951,7 @@
       </div>`;
     box.scrollTop = 0;
     updateDetailStatus();
+    refreshNoteButtons();
   }
 
   function renderDetailFoot(test){
@@ -2282,6 +2474,8 @@
   }
 
   function updateSessionUI(){
+    if(!currentSession || sessionNotesFor !== currentSession.id){ sessionNotes = []; sessionNotesFor = null; }
+    updateStudyGroupBodyClass();
     const chip = document.getElementById('sessionChip');
     const topName = document.getElementById('topbarSessionName');
     const topBtn = document.getElementById('topbarSessionBtn');
@@ -2291,7 +2485,9 @@
       if(chip){
         chip.style.display = 'flex';
         document.getElementById('sessionChipName').textContent = currentSession.name;
-        document.getElementById('sessionChipSub').textContent = `${done}/${total}`;
+        const group = currentSession.study_group;
+        document.getElementById('sessionChipSub').textContent = `${done}/${total}` +
+          (group === 'ai_assisted' || group === 'control' ? ' · ' + t('studyGroupBadge_' + group) : '');
       }
       if(topName) topName.textContent = currentSession.name;
       if(topBtn) topBtn.classList.remove('placeholder');
@@ -2346,6 +2542,7 @@
         if(currentCategoryId) renderTestList();
         updateSessionUI();
         closeSessionGate();
+        loadSessionNotes().catch(()=>{});
       });
   }
 
@@ -2382,7 +2579,7 @@
         return `<div class="session-card" data-id="${s.id}">
           <div class="session-card-top">
             <div>
-              <div class="session-card-name">${escapeHtml(s.name)}${active ? ' ' : ''}</div>
+              <div class="session-card-name">${escapeHtml(s.name)} ${studyGroupBadge(s.study_group)}</div>
               <div class="session-card-meta">
                 <span>${escapeHtml(s.tester_name || '—')}</span>
                 <span>${escapeHtml(s.target_url || '—')}</span>
@@ -2397,6 +2594,9 @@
           </div>
           <div class="session-card-actions">
             <button data-action="open" data-id="${s.id}">${t('startTest')}</button>
+            ${s.status === 'completed'
+              ? `<button data-action="reopen" data-id="${s.id}">${t('sessionReopenBtn')}</button>`
+              : `<button data-action="complete" data-id="${s.id}">${t('sessionCompleteBtn')}</button>`}
             <button data-action="delete" data-id="${s.id}" class="danger">${t('pwEvidenceDelete')}</button>
           </div>
         </div>`;
@@ -2426,6 +2626,8 @@
     document.getElementById('sessionNameInput').value = '';
     document.getElementById('testerNameInput').value = '';
     document.getElementById('targetUrlInput').value = '';
+    document.getElementById('studyGroupSelect').value = '';
+    document.getElementById('studyGroupHint').textContent = '';
     document.getElementById('newSessionOverlay').classList.add('open');
     setTimeout(()=> document.getElementById('sessionNameInput').focus(), 50);
   }
@@ -2439,7 +2641,8 @@
     const payload = {
       name,
       tester_name: document.getElementById('testerNameInput').value.trim(),
-      target_url: document.getElementById('targetUrlInput').value.trim()
+      target_url: document.getElementById('targetUrlInput').value.trim(),
+      study_group: document.getElementById('studyGroupSelect').value || null
     };
     apiRequest('/sessions', { method: 'POST', body: JSON.stringify(payload) })
       .then(session => {
@@ -2465,6 +2668,492 @@
       renderSessionList();
       showToast(t('sessionDeleted'));
     }).catch(err => showToast(err.message || t('resultSaveError')));
+  }
+
+  function setSessionStatusUI(id, status){
+    apiRequest(`/sessions/${id}`, { method: 'PUT', body: JSON.stringify({ status }) }).then(session => {
+      if(currentSession && currentSession.id === id){ currentSession = session; updateSessionUI(); }
+      renderSessionList();
+      showToast(t(status === 'completed' ? 'sessionCompletedToast' : 'sessionReopenedToast'));
+    }).catch(err => showToast(err.message || t('resultSaveError')));
+  }
+
+  // ========================
+  // ÇALIŞMA GRUBU (A/B) + NOT DEFTERİ
+  // ========================
+  const NB = window.WSTGNotebook;
+  let sessionNotes = [];
+  let sessionNotesFor = null;      // sessionNotes hangi oturuma ait
+  let noteEditorImages = [];
+  let noteAiResult = null;
+  let noteCvssTimer = null;
+  let noteCweToken = 0;
+
+  function isControlSession(){
+    return !!(currentSession && currentSession.study_group === 'control');
+  }
+  // Kontrol grubundaki oturum açıkken .ai-feature işaretli öğeler gizlenir (CSS).
+  function updateStudyGroupBodyClass(){
+    document.body.classList.toggle('study-control-mode', isControlSession());
+  }
+  function studyGroupBadge(group){
+    if(group !== 'ai_assisted' && group !== 'control') return '';
+    return `<span class="badge ${group === 'control' ? '' : 'blue'}">${escapeHtml(t('studyGroupBadge_' + group))}</span>`;
+  }
+  function safeSeverity(s){ return SEVERITIES.indexOf(s) !== -1 ? s : 'info'; }
+
+  function testOptionsHtml(selectedId, firstOption){
+    let html = firstOption || '';
+    getEffectiveCategories().forEach(c => {
+      html += `<optgroup label="${escapeHtml(c.code + ' · ' + c.name)}">` +
+        c.tests.map(tt => `<option value="${escapeHtml(tt.id)}" ${tt.id === selectedId ? 'selected' : ''}>${escapeHtml(tt.id)} — ${escapeHtml(tt.title)}</option>`).join('') +
+        `</optgroup>`;
+    });
+    return html;
+  }
+
+  function loadSessionNotes(){
+    if(!currentSession || !dbOnline){ sessionNotes = []; sessionNotesFor = null; return Promise.resolve([]); }
+    const sid = currentSession.id;
+    return apiRequest(`/sessions/${sid}/notes`).then(notes => {
+      if(!currentSession || currentSession.id !== sid) return sessionNotes;
+      sessionNotes = Array.isArray(notes) ? notes : [];
+      sessionNotesFor = sid;
+      refreshNoteButtons();
+      return sessionNotes;
+    });
+  }
+
+  function notesForTest(testId){
+    return currentSession && sessionNotesFor === currentSession.id ? sessionNotes.filter(n => n.test_id === testId) : [];
+  }
+
+  // Checklist detayındaki "Not ekle" düğmesinin sayacını günceller.
+  function refreshNoteButtons(){
+    document.querySelectorAll('#testDetail [data-action="add-note"]').forEach(btn => {
+      const n = notesForTest(btn.dataset.id).length;
+      btn.querySelector('span').textContent = n ? `${t('noteAddForTest')} · ${t('noteCountForTest')(n)}` : t('noteAddForTest');
+    });
+  }
+
+  function noteCardHtml(n){
+    const sev = safeSeverity(n.severity);
+    const info = n.test_id ? testInfoById(n.test_id) : null;
+    const images = NB.safeImages(n.images);
+    const fp = n.is_false_positive === true ? `<span class="badge red">${escapeHtml(t('noteFpFalse'))}</span>`
+      : n.is_false_positive === false ? `<span class="badge green">${escapeHtml(t('noteFpValid'))}</span>` : '';
+    const when = parseApiDate(n.updated_at || n.created_at);
+    return `<div class="finding-card note-card" data-id="${Number(n.id)}">
+      <div class="finding-card-top">
+        <span class="severity-badge sev-${sev}">${escapeHtml(t('severity_' + sev))}</span>
+        ${typeof n.cvss_score === 'number' ? `<span class="cvss-mini-badge">CVSS ${n.cvss_score.toFixed(1)}</span>` : ''}
+        ${n.cwe_id ? `<span class="badge mono">${escapeHtml(n.cwe_id)}</span>` : ''}
+        ${fp}
+        <span class="note-card-test">${n.test_id
+          ? `<span class="badge mono" title="${escapeHtml(info ? info.title : '')}">${escapeHtml(n.test_id)}</span>`
+          : `<span class="badge">${escapeHtml(t('noteGeneralBadge'))}</span>`}</span>
+      </div>
+      <div class="finding-card-title">${escapeHtml(n.title && n.title.trim() ? n.title : t('noteUntitled'))}</div>
+      ${n.content ? `<div class="note-card-content">${escapeHtml(n.content)}</div>` : ''}
+      ${images.length ? `<div class="note-thumbs">${images.map((img, i) => `
+        <button type="button" class="note-thumb" data-action="zoom" data-id="${Number(n.id)}" data-idx="${i}" title="${escapeHtml(img.name || '')}">
+          <img src="${escapeHtml(img.data)}" alt="${escapeHtml(img.name || '')}" loading="lazy">
+        </button>`).join('')}</div>` : ''}
+      <div class="finding-card-meta">
+        ${when ? `<span>${escapeHtml(when.toLocaleString(t('dateLocale'), { dateStyle: 'medium', timeStyle: 'short' }))}</span>` : ''}
+        ${n.cwe_name ? `<span>${escapeHtml(n.cwe_name)}</span>` : ''}
+      </div>
+      <div class="project-card-actions">
+        <button data-action="edit" data-id="${Number(n.id)}">${escapeHtml(t('editBtn'))}</button>
+      </div>
+    </div>`;
+  }
+
+  function renderNotebookList(){
+    const list = document.getElementById('notebookList');
+    const filter = document.getElementById('notebookTestFilter').value;
+    const q = document.getElementById('notebookSearch').value;
+    const notes = NB.filterNotes(sessionNotes, filter, q);
+    if(!notes.length){
+      list.innerHTML = `<div class="search-empty">${escapeHtml(t(sessionNotes.length ? 'noteEmptyFiltered' : 'noteEmptyList'))}</div>`;
+      return;
+    }
+    list.innerHTML = notes.map(noteCardHtml).join('');
+  }
+
+  function openNotebook(){
+    if(!dbOnline){ showToast(t('notebookNeedBackend')); return; }
+    if(!currentSession){ showToast(t('notebookNeedSession')); openSessionGate(true); return; }
+    document.getElementById('notebookDesc').textContent = t('notebookDesc')(currentSession.name);
+    document.getElementById('notebookSearch').value = '';
+    document.getElementById('notebookTestFilter').innerHTML =
+      `<option value="">${escapeHtml(t('notebookFilterAll'))}</option><option value="__general__">${escapeHtml(t('notebookFilterGeneral'))}</option>` +
+      testOptionsHtml(null);
+    document.getElementById('notebookList').innerHTML = `<div class="search-empty">${escapeHtml(t('loadingGeneric'))}</div>`;
+    document.getElementById('notebookOverlay').classList.add('open');
+    loadSessionNotes().then(renderNotebookList).catch(err => {
+      document.getElementById('notebookList').innerHTML = `<div class="search-empty">${escapeHtml(err.message || t('resultSaveError'))}</div>`;
+    });
+  }
+  function closeNotebook(){ document.getElementById('notebookOverlay').classList.remove('open'); }
+
+  function setNoteStatus(msg, isError){
+    const el = document.getElementById('noteEditorStatus');
+    el.textContent = msg || '';
+    el.classList.toggle('is-info', !!msg && !isError);
+  }
+
+  function renderNoteThumbs(){
+    document.getElementById('noteImageThumbs').innerHTML = noteEditorImages.map((img, i) => `
+      <div class="note-thumb">
+        <img src="${escapeHtml(img.data)}" alt="${escapeHtml(img.name || '')}">
+        <button type="button" class="note-thumb-remove" data-idx="${i}" aria-label="${escapeHtml(t('noteImageRemove'))}" title="${escapeHtml(t('noteImageRemove'))}">&times;</button>
+      </div>`).join('');
+    document.getElementById('noteImageHint').textContent = t('noteImageHint')(noteEditorImages.length, NB.MAX_IMAGES);
+  }
+
+  function readImageFile(file){
+    return new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = () => resolve({ name: file.name || 'kanit', data: String(reader.result || '') });
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function addNoteImages(files){
+    const arr = Array.from(files || []).filter(Boolean);
+    if(!arr.length) return;
+    let errKey = null;
+    const accepted = [];
+    arr.forEach(f => {
+      const e = NB.imageFileError(f);
+      if(e) errKey = e === 'size' ? 'noteImageSizeError' : 'noteImageTypeError';
+      else accepted.push(f);
+    });
+    const room = NB.MAX_IMAGES - noteEditorImages.length;
+    if(accepted.length > room){ accepted.length = Math.max(room, 0); errKey = 'count'; }
+    Promise.all(accepted.map(readImageFile)).then(results => {
+      results.forEach(r => {
+        if(!r || !NB.isSafeImageDataUrl(r.data)){ errKey = errKey || 'noteImageReadError'; return; }
+        if(NB.payloadChars(noteEditorImages) + r.data.length > NB.MAX_PAYLOAD_CHARS){ errKey = 'noteImagePayloadError'; return; }
+        noteEditorImages.push(r);
+      });
+      renderNoteThumbs();
+      if(errKey === 'count') setNoteStatus(t('noteImageCountError')(NB.MAX_IMAGES), true);
+      else setNoteStatus(errKey ? t(errKey) : '', !!errKey);
+    });
+  }
+
+  function renderNoteCweSuggestions(testId){
+    const wrap = document.getElementById('noteCweSuggestions');
+    const token = ++noteCweToken;
+    wrap.innerHTML = '';
+    if(!testId || !dbOnline) return;
+    apiRequest(`/mapping/wstg/${encodeURIComponent(testId)}?lang=${currentLang}`).then(res => {
+      if(token !== noteCweToken) return;
+      const cwes = (res && Array.isArray(res.suggested_cwes) ? res.suggested_cwes : []).filter(c => c && c.id).slice(0, 8);
+      if(!cwes.length) return;
+      wrap.innerHTML = `<span class="hint">${escapeHtml(t('noteCweSuggested')(testId))}</span>` + cwes.map(c =>
+        `<button type="button" class="badge mono note-chip" data-cwe-id="${escapeHtml(c.id)}" data-cwe-name="${escapeHtml(c.name || '')}">${escapeHtml(c.id)}${c.name ? ' · ' + escapeHtml(c.name) : ''}</button>`).join('');
+    }).catch(()=>{});
+  }
+
+  function updateNoteCvssPreview(){
+    const el = document.getElementById('noteCvssPreview');
+    const vector = document.getElementById('noteCvssInput').value.trim();
+    clearTimeout(noteCvssTimer);
+    el.classList.remove('invalid');
+    if(!vector){ el.textContent = '–'; return; }
+    const metrics = NB.parseCvssVector(vector);
+    if(!metrics){ el.textContent = t('noteCvssInvalid'); el.classList.add('invalid'); return; }
+    noteCvssTimer = setTimeout(() => {
+      apiRequest('/cvss/calculate', { method: 'POST', body: JSON.stringify(metrics) }).then(r => {
+        if(document.getElementById('noteCvssInput').value.trim() !== vector) return;
+        el.textContent = `${Number(r.base_score).toFixed(1)} · ${t('severity_' + safeSeverity(r.severity))}`;
+      }).catch(() => {
+        if(document.getElementById('noteCvssInput').value.trim() !== vector) return;
+        el.textContent = t('noteCvssInvalid'); el.classList.add('invalid');
+      });
+    }, 250);
+  }
+
+  function openNoteEditor(note, prefillTestId){
+    if(!dbOnline){ showToast(t('notebookNeedBackend')); return; }
+    if(!currentSession){ showToast(t('notebookNeedSession')); openSessionGate(true); return; }
+    document.getElementById('noteEditorForm').reset();
+    setNoteStatus('');
+    const linked = note ? (note.test_id || '') : (prefillTestId || '');
+    document.getElementById('noteEditId').value = note ? note.id : '';
+    document.getElementById('noteEditorTitle').textContent = t(note ? 'editNote' : 'newNote');
+    document.getElementById('noteTitleInput').value = note ? (note.title || '') : '';
+    document.getElementById('noteContentInput').value = note ? (note.content || '') : '';
+    document.getElementById('noteSeveritySelect').innerHTML = SEVERITIES.map(s =>
+      `<option value="${s}">${escapeHtml(t('severity_' + s))}</option>`).join('');
+    document.getElementById('noteSeveritySelect').value = safeSeverity(note ? note.severity : 'info');
+    document.getElementById('noteFpSelect').value = NB.fpToSelect(note ? note.is_false_positive : null);
+    document.getElementById('noteTestSelect').innerHTML = testOptionsHtml(linked, `<option value="">${escapeHtml(t('noteGeneralOption'))}</option>`);
+    document.getElementById('noteTestSelect').value = linked;
+    const original = note && Array.isArray(note.images) ? note.images : [];
+    noteEditorImages = NB.safeImages(original).map(img => ({ name: img.name || 'kanit', data: img.data }));
+    renderNoteThumbs();
+    if(original.length > noteEditorImages.length) setNoteStatus(t('noteUnsafeImagesDropped')(original.length - noteEditorImages.length));
+    document.getElementById('noteCweIdInput').value = note ? (note.cwe_id || '') : '';
+    document.getElementById('noteCweNameInput').value = note ? (note.cwe_name || '') : '';
+    renderNoteCweSuggestions(linked);
+    document.getElementById('noteCvssInput').value = note ? (note.cvss_vector || '') : '';
+    updateNoteCvssPreview();
+    noteAiResult = null;
+    document.getElementById('noteAiResult').hidden = true;
+    document.getElementById('noteAiStatus').textContent = '';
+    document.getElementById('deleteNoteBtn').style.display = note ? '' : 'none';
+    document.getElementById('noteEditorOverlay').classList.add('open');
+    setTimeout(() => document.getElementById(note ? 'noteContentInput' : 'noteTitleInput').focus(), 50);
+  }
+  function closeNoteEditor(){ document.getElementById('noteEditorOverlay').classList.remove('open'); }
+
+  function afterNotesChanged(toastKey){
+    return loadSessionNotes().then(() => {
+      if(document.getElementById('notebookOverlay').classList.contains('open')) renderNotebookList();
+      closeNoteEditor();
+      showToast(t(toastKey));
+    });
+  }
+
+  function saveNoteFromEditor(e){
+    if(e) e.preventDefault();
+    if(!currentSession) return;
+    const id = document.getElementById('noteEditId').value;
+    const testId = document.getElementById('noteTestSelect').value || null;
+    const info = testId ? testInfoById(testId) : null;
+    const payload = {
+      title: document.getElementById('noteTitleInput').value.trim(),
+      content: document.getElementById('noteContentInput').value.trim(),
+      severity: document.getElementById('noteSeveritySelect').value,
+      test_id: testId,
+      category_id: info ? info.catId : null,
+      images: noteEditorImages,
+      cwe_id: document.getElementById('noteCweIdInput').value.trim() || null,
+      cwe_name: document.getElementById('noteCweNameInput').value.trim() || null,
+      cvss_vector: document.getElementById('noteCvssInput').value.trim() || null,
+      is_false_positive: NB.selectToFp(document.getElementById('noteFpSelect').value),
+    };
+    if(!payload.content && !payload.images.length){ setNoteStatus(t('noteContentRequired'), true); return; }
+    const btn = document.getElementById('saveNoteBtn');
+    btn.disabled = true;
+    const base = `/sessions/${currentSession.id}/notes`;
+    apiRequest(id ? `${base}/${encodeURIComponent(id)}` : base, { method: id ? 'PUT' : 'POST', body: JSON.stringify(payload) })
+      .then(() => afterNotesChanged('noteSaved'))
+      .catch(err => setNoteStatus(err.message || t('resultSaveError'), true))
+      .finally(() => { btn.disabled = false; });
+  }
+
+  function deleteNoteFromEditor(){
+    const id = document.getElementById('noteEditId').value;
+    if(!id || !currentSession || !confirm(t('noteDeleteConfirm'))) return;
+    apiRequest(`/sessions/${currentSession.id}/notes/${encodeURIComponent(id)}`, { method: 'DELETE' })
+      .then(() => afterNotesChanged('noteDeleted'))
+      .catch(err => setNoteStatus(err.message || t('resultSaveError'), true));
+  }
+
+  function renderNoteAiResult(r){
+    const box = document.getElementById('noteAiResult');
+    noteAiResult = r;
+    const rows = [];
+    if(r.rationale) rows.push(`<p><b>${escapeHtml(t('noteAiRationale'))}:</b> ${escapeHtml(r.rationale)}</p>`);
+    if(['low', 'medium', 'high'].indexOf(r.false_positive_likelihood) !== -1){
+      rows.push(`<p><b>${escapeHtml(t('noteAiFp'))}:</b> ${escapeHtml(t('fpLikelihood_' + r.false_positive_likelihood))}` +
+        `${r.false_positive_reasoning ? ' — ' + escapeHtml(r.false_positive_reasoning) : ''}</p>`);
+    }
+    const suggestion = (label, value, kind) => `<div class="note-ai-row"><span><b>${escapeHtml(label)}:</b> ${value}</span>` +
+      `<button type="button" class="btn btn-secondary btn-xs" data-apply="${kind}">${escapeHtml(t('noteAiApply'))}</button></div>`;
+    if(r.suggested_cwe_id) rows.push(suggestion(t('noteAiSuggestCwe'), escapeHtml(r.suggested_cwe_id + (r.suggested_cwe_name ? ' · ' + r.suggested_cwe_name : '')), 'cwe'));
+    if(SEVERITIES.indexOf(r.suggested_severity) !== -1) rows.push(suggestion(t('noteAiSuggestSeverity'), escapeHtml(t('severity_' + r.suggested_severity)), 'severity'));
+    if(r.suggested_cvss_vector) rows.push(suggestion(t('noteAiSuggestCvss'),
+      `<code>${escapeHtml(r.suggested_cvss_vector)}</code>${typeof r.suggested_cvss_score === 'number' ? ' · ' + r.suggested_cvss_score.toFixed(1) : ''}`, 'cvss'));
+    box.innerHTML = rows.length ? rows.join('') : `<p>${escapeHtml(t('noteAiNoSuggestion'))}</p>`;
+    box.hidden = false;
+  }
+
+  function applyNoteAiSuggestion(kind){
+    const r = noteAiResult;
+    if(!r) return;
+    if(kind === 'cwe'){
+      document.getElementById('noteCweIdInput').value = r.suggested_cwe_id || '';
+      document.getElementById('noteCweNameInput').value = r.suggested_cwe_name || '';
+    } else if(kind === 'severity'){
+      document.getElementById('noteSeveritySelect').value = safeSeverity(r.suggested_severity);
+    } else if(kind === 'cvss'){
+      document.getElementById('noteCvssInput').value = r.suggested_cvss_vector || '';
+      updateNoteCvssPreview();
+    }
+    showToast(t('noteAiApplied'));
+  }
+
+  function analyzeNoteWithAI(){
+    if(isControlSession() || !currentSession) return;
+    const content = document.getElementById('noteContentInput').value.trim();
+    if(!content){ setNoteStatus(t('noteContentRequired'), true); return; }
+    const btn = document.getElementById('noteAiAnalyzeBtn');
+    const status = document.getElementById('noteAiStatus');
+    btn.disabled = true;
+    status.textContent = t('aiWorking');
+    apiRequest('/ai/analyze-finding', { method: 'POST', body: JSON.stringify({
+      title: document.getElementById('noteTitleInput').value.trim(), content,
+      test_id: document.getElementById('noteTestSelect').value || null,
+      lang: currentLang, session_id: currentSession.id,
+    }) }).then(r => {
+      if(r && r.error){ status.textContent = r.error; return; }
+      status.textContent = '';
+      renderNoteAiResult(r || {});
+    }).catch(err => { status.textContent = err.message || t('aiRequestTimeout'); })
+      .finally(() => { btn.disabled = false; });
+  }
+
+  function openNoteLightbox(src, name){
+    if(!NB.isSafeImageDataUrl(src)) return;
+    const img = document.getElementById('noteLightboxImg');
+    img.src = src;
+    img.alt = name || '';
+    document.getElementById('noteLightbox').classList.add('open');
+  }
+  function closeNoteLightbox(){
+    document.getElementById('noteLightbox').classList.remove('open');
+    document.getElementById('noteLightboxImg').removeAttribute('src');
+  }
+
+  // --- Çalışma Metrikleri ---
+  function csvCell(v){
+    let s = v === null || v === undefined ? '' : String(v);
+    if(/^[=+\-@\t\r]/.test(s)) s = "'" + s;   // Excel formül enjeksiyonuna karşı
+    return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  }
+  let lastStudyData = null;
+
+  function studySessionsCsv(sessions){
+    const cols = ['session_name', 'study_group', 'completion_minutes', 'total_tests', 'completed_tests', 'completion_pct',
+      'total_findings', 'confirmed_false_positives', 'confirmed_valid_findings', 'undetermined_findings',
+      'false_positive_rate_pct', 'ai_calls_total', 'ai_success_rate_pct', 'avg_ai_latency_ms', 'report_generated'];
+    return [cols.join(',')].concat((sessions || []).map(s => cols.map(c => csvCell(s[c])).join(','))).join('\n');
+  }
+
+  function renderStudyMetrics(data){
+    lastStudyData = data;
+    const box = document.getElementById('studyMetricsContent');
+    const cmp = (data && data.comparison) || {};
+    const ai = cmp.ai_assisted || { n: 0 };
+    const ctrl = cmp.control || { n: 0 };
+    const unassigned = data && data.unassigned_sessions_count
+      ? `<p class="hint">${escapeHtml(t('studyMetricsUnassigned')(data.unassigned_sessions_count))}</p>` : '';
+    if(!ai.n && !ctrl.n){
+      box.innerHTML = `<div class="search-empty">${escapeHtml(t('studyMetricsEmpty'))}</div>${unassigned}`;
+      return;
+    }
+    const rows = NB.studyRows(cmp).map(r => `<tr>
+        <th scope="row">${escapeHtml(t(r.labelKey))}</th><td>${r.ai}</td><td>${r.control}</td>
+        <td>${r.diff ? `<span class="study-diff ${r.tone || ''}">${escapeHtml(r.diff)}</span>` : '–'}</td></tr>`).join('');
+    const sessions = (data.sessions || []).map(s => `<tr>
+        <th scope="row">${escapeHtml(s.session_name || '—')}</th><td>${studyGroupBadge(s.study_group)}</td>
+        <td>${NB.formatStudyValue(s.completion_minutes)}</td><td>${NB.formatStudyValue(s.completion_pct)}</td>
+        <td>${NB.formatStudyValue(s.total_findings)}</td><td>${NB.formatStudyValue(s.false_positive_rate_pct)}</td>
+        <td>${NB.formatStudyValue(s.ai_calls_total)}</td></tr>`).join('');
+    box.innerHTML = `
+      <div class="table-wrap"><table class="table study-table">
+        <thead><tr><th></th><th>${escapeHtml(t('studyMetricsColAi'))} <span class="hint">n=${Number(ai.n) || 0}</span></th>
+          <th>${escapeHtml(t('studyMetricsColControl'))} <span class="hint">n=${Number(ctrl.n) || 0}</span></th><th>${escapeHtml(t('studyMetricsColDiff'))}</th></tr></thead>
+        <tbody>${rows}
+          <tr><th scope="row">${escapeHtml(t('studyMetricReportGenerated'))}</th><td>${NB.formatStudyValue(ai.pct_report_generated)}</td>
+            <td>${NB.formatStudyValue(ctrl.pct_report_generated)}</td><td>–</td></tr>
+        </tbody></table></div>
+      <p class="hint">${escapeHtml(t('studyMetricsDiffNote'))}</p>
+      ${unassigned}
+      <div class="filter-bar" style="margin:22px 0 8px">
+        <h5 style="margin:0;flex:1">${escapeHtml(t('studyMetricsSessions'))}</h5>
+        <button type="button" class="btn btn-secondary btn-sm" id="studyCopyCsvBtn">${escapeHtml(t('studyMetricsCopyCsv'))}</button>
+      </div>
+      <div class="table-wrap"><table class="table study-table">
+        <thead><tr><th>${escapeHtml(t('studyMetricsColSession'))}</th><th>${escapeHtml(t('studyMetricsColGroup'))}</th>
+          <th>${escapeHtml(t('studyMetricMinutes'))}</th><th>${escapeHtml(t('studyMetricCompletionPct'))}</th>
+          <th>${escapeHtml(t('studyMetricFindings'))}</th><th>${escapeHtml(t('studyMetricFpRate'))}</th><th>${escapeHtml(t('studyMetricAiCalls'))}</th></tr></thead>
+        <tbody>${sessions}</tbody></table></div>`;
+  }
+
+  function openStudyMetrics(){
+    if(!dbOnline){ showToast(t('studyMetricsNeedBackend')); return; }
+    const box = document.getElementById('studyMetricsContent');
+    box.innerHTML = `<div class="search-empty">${escapeHtml(t('loadingGeneric'))}</div>`;
+    document.getElementById('studyMetricsOverlay').classList.add('open');
+    apiRequest('/study/metrics').then(renderStudyMetrics).catch(err => {
+      box.innerHTML = `<div class="search-empty">${escapeHtml(t('studyMetricsLoadError'))}<br><small>${escapeHtml(err.message || '')}</small></div>`;
+    });
+  }
+  function closeStudyMetrics(){ document.getElementById('studyMetricsOverlay').classList.remove('open'); }
+
+  function bindNotebookAndStudyEvents(){
+    document.getElementById('notebookNavBtn').addEventListener('click', openNotebook);
+    document.getElementById('closeNotebookOverlay').addEventListener('click', closeNotebook);
+    document.getElementById('notebookOverlay').addEventListener('click', e => {
+      if(e.target.id === 'notebookOverlay'){ closeNotebook(); return; }
+      const btn = e.target.closest('[data-action]');
+      if(!btn) return;
+      const note = sessionNotes.find(n => String(n.id) === btn.dataset.id);
+      if(btn.dataset.action === 'edit' && note) openNoteEditor(note);
+      if(btn.dataset.action === 'zoom' && note){
+        const img = NB.safeImages(note.images)[Number(btn.dataset.idx)];
+        if(img) openNoteLightbox(img.data, img.name);
+      }
+    });
+    document.getElementById('notebookTestFilter').addEventListener('change', renderNotebookList);
+    document.getElementById('notebookSearch').addEventListener('input', renderNotebookList);
+    document.getElementById('newNoteBtn').addEventListener('click', () => {
+      const f = document.getElementById('notebookTestFilter').value;
+      openNoteEditor(null, f && f !== '__general__' ? f : '');
+    });
+
+    document.getElementById('closeNoteEditorOverlay').addEventListener('click', closeNoteEditor);
+    document.getElementById('noteEditorOverlay').addEventListener('click', e => { if(e.target.id === 'noteEditorOverlay') closeNoteEditor(); });
+    document.getElementById('noteEditorForm').addEventListener('submit', saveNoteFromEditor);
+    document.getElementById('deleteNoteBtn').addEventListener('click', deleteNoteFromEditor);
+    document.getElementById('noteTestSelect').addEventListener('change', e => renderNoteCweSuggestions(e.target.value));
+    document.getElementById('noteCvssInput').addEventListener('input', updateNoteCvssPreview);
+    document.getElementById('noteImageInput').addEventListener('change', e => { addNoteImages(e.target.files); e.target.value = ''; });
+    document.getElementById('noteContentInput').addEventListener('paste', e => {
+      const files = Array.from((e.clipboardData && e.clipboardData.files) || []).filter(f => f.type && f.type.indexOf('image/') === 0);
+      if(files.length){ e.preventDefault(); addNoteImages(files); }
+    });
+    document.getElementById('noteImageThumbs').addEventListener('click', e => {
+      const rm = e.target.closest('.note-thumb-remove');
+      if(rm){ noteEditorImages.splice(Number(rm.dataset.idx), 1); renderNoteThumbs(); return; }
+      const img = e.target.closest('.note-thumb img');
+      if(img) openNoteLightbox(img.getAttribute('src'), img.alt);
+    });
+    document.getElementById('noteCweSuggestions').addEventListener('click', e => {
+      const chip = e.target.closest('[data-cwe-id]');
+      if(!chip) return;
+      document.getElementById('noteCweIdInput').value = chip.dataset.cweId;
+      document.getElementById('noteCweNameInput').value = chip.dataset.cweName || '';
+    });
+    document.getElementById('noteAiAnalyzeBtn').addEventListener('click', analyzeNoteWithAI);
+    document.getElementById('noteAiResult').addEventListener('click', e => {
+      const b = e.target.closest('[data-apply]');
+      if(b) applyNoteAiSuggestion(b.dataset.apply);
+    });
+    document.getElementById('noteLightbox').addEventListener('click', e => {
+      if(e.target.id === 'noteLightbox' || e.target.closest('#closeNoteLightbox')) closeNoteLightbox();
+    });
+
+    document.getElementById('studyMetricsNavBtn').addEventListener('click', openStudyMetrics);
+    document.getElementById('closeStudyMetricsOverlay').addEventListener('click', closeStudyMetrics);
+    document.getElementById('studyMetricsOverlay').addEventListener('click', e => {
+      if(e.target.id === 'studyMetricsOverlay'){ closeStudyMetrics(); return; }
+      if(e.target.closest('#studyCopyCsvBtn') && lastStudyData){
+        copyToClipboard(studySessionsCsv(lastStudyData.sessions));
+      }
+    });
+    document.getElementById('studyGroupSelect').addEventListener('change', e => {
+      const v = e.target.value;
+      document.getElementById('studyGroupHint').textContent = v === 'ai_assisted' ? t('studyGroupHintAi') : v === 'control' ? t('studyGroupHintControl') : '';
+    });
   }
 
   function persistResult(testId, done){
@@ -4972,7 +5661,7 @@
           <label data-i18n="reportExecSummaryLabel">${t('reportExecSummaryLabel')}</label>
           <textarea id="reportExecSummaryInput" rows="3" placeholder="${t('reportExecSummaryPlaceholder')}"></textarea>
           <div class="hero-actions" style="margin-top:8px">
-            <button type="button" class="btn btn-sm" id="reportGenSummaryBtn">${t('reportGenSummaryBtn')}</button>
+            <button type="button" class="btn btn-sm ai-feature" id="reportGenSummaryBtn">${t('reportGenSummaryBtn')}</button>
             <button type="button" class="btn btn-primary btn-sm" id="openHtmlReportBtn">${t('reportOpenHtmlBtn')}</button>
             <button type="button" class="btn btn-primary btn-sm" id="downloadPdfReportBtn">${t('reportDownloadPdfBtn')}</button>
           </div>
@@ -5463,6 +6152,8 @@
       const id = btn.dataset.id;
       if(btn.dataset.action === 'open') openSessionById(id).catch(err => showToast(err.message || t('resultSaveError')));
       if(btn.dataset.action === 'delete') deleteSessionUI(id);
+      if(btn.dataset.action === 'complete') setSessionStatusUI(id, 'completed');
+      if(btn.dataset.action === 'reopen') setSessionStatusUI(id, 'active');
     });
 
     document.getElementById('reconNavBtn').addEventListener('click', openReconModal);
@@ -5477,6 +6168,8 @@
     document.getElementById('reconRunBtn').addEventListener('click', runRecon);
     document.getElementById('reconApplyBtn').addEventListener('click', applyReconPriorities);
     document.getElementById('reconResetBtn').addEventListener('click', resetReconState);
+
+    bindNotebookAndStudyEvents();
 
     document.getElementById('plannerNavBtn').addEventListener('click', openPlannerModal);
     document.getElementById('closePlannerOverlay').addEventListener('click', closePlannerModal);
@@ -5587,6 +6280,7 @@
       if(e.key === 'Escape'){
         closeCategory(); closeSidebar(); closeNewSessionOverlay(); closeTop10Detail(); closeImportModal(); closeReconModal(); closePlannerModal(); closeAiNextTestModal();
         closeProjectsModal(); closeNewProjectModal(); closeProjectWorkspace(); closeFindingModal(); closeDuplicateAlert(); closeAiSettingsModal(); closeByokModal();
+        closeNoteLightbox(); closeNoteEditor(); closeNotebook(); closeStudyMetrics();
         if(document.getElementById('closeSessionGate').style.display !== 'none') closeSessionGate();
       }
     });
@@ -5620,6 +6314,8 @@
       const copyBtn = e.target.closest('.copy-btn');
       if(copyBtn){ copyToClipboard(decodeURIComponent(copyBtn.dataset.copy)); return; }
       if(e.target.closest('[data-action="back"]')) document.getElementById('checklistBody').classList.remove('show-detail');
+      const noteBtn = e.target.closest('[data-action="add-note"]');
+      if(noteBtn) openNoteEditor(null, noteBtn.dataset.id);
     });
     detailEl.addEventListener('input', e=>{
       const ta = e.target.closest('.finding-textarea');
