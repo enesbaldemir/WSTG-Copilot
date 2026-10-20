@@ -8,12 +8,14 @@ import json
 import re
 import time
 import uuid
+from werkzeug.exceptions import HTTPException
 from werkzeug.utils import secure_filename
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from config import DevelopmentConfig, ProductionConfig
 from models import db, Session, TestResult, Note, Project, ScopeItem, TimelineEvent, ReconRun, Evidence, CustomTest, ToolRun, Finding, AIInteractionLog, AIProviderSetting, AuthSettings
 import auth
+import image_types
 import mapping as mapping_lib
 import notes as notes_lib
 import study_metrics
@@ -76,6 +78,23 @@ def _enforce_local_origin_policy():
     if request.method in ('POST', 'PUT', 'PATCH', 'DELETE') and \
             not security.origin_allowed(request.headers.get('Origin'), _cors_origins):
         return jsonify({'error': 'Bu kaynaktan (Origin) gelen isteğe izin verilmiyor (CORS_ORIGINS).'}), 403
+    # Boyut sınırı rotalara girmeden uygulanır: rotalardaki genel
+    # `except Exception` blokları Flask'ın 413 hatasını 500'e çeviriyordu.
+    limit = app.config.get('MAX_CONTENT_LENGTH')
+    if limit and request.content_length and request.content_length > limit:
+        return _payload_too_large(None)
+
+
+@app.after_request
+def _add_security_headers(response):
+    security.apply_security_headers(response.headers)
+    return response
+
+
+@app.errorhandler(413)
+def _payload_too_large(_e):
+    limit_mb = (app.config.get('MAX_CONTENT_LENGTH') or 0) // (1024 * 1024)
+    return jsonify({'error': f'İstek çok büyük (en fazla {limit_mb} MB).'}), 413
 
 
 # ========================
@@ -1316,17 +1335,16 @@ def generate_project_report(project_id, report_type):
 # - Diskteki dosya adi HICBIR ZAMAN kullanicinin yukledigi dosya adindan
 #   turetilmez -- her zaman sunucu tarafinda uretilen bir UUID kullanilir.
 #   Bu, path traversal / dosya adi enjeksiyonunu yapisal olarak engeller.
-# - Sadece bilinen imaj MIME turlerine izin verilir (evidence_intel.
-#   SUPPORTED_MIME_TYPES).
+# - Dosya turu istemcinin gonderdigi Content-Type'tan DEGIL, icerigin ilk
+#   baytlarindan belirlenir (image_types.py); yalnizca PNG/JPEG/WEBP/GIF.
+#   Sunulurken diskteki icerik yeniden kontrol edilir: bu kontrolden once
+#   yuklenmis, gorsel olmayan bir dosya tarayicida acilmaz, indirilir.
 # - AI analizi TAMAMEN OPSIYONELDIR (bkz. evidence_intel.py docstring).
 
 def _evidence_dir(project_id):
     path = os.path.join(app.config['UPLOAD_FOLDER'], 'evidence', project_id)
     os.makedirs(path, exist_ok=True)
     return path
-
-
-EXT_BY_MIME = {'image/png': '.png', 'image/jpeg': '.jpg', 'image/webp': '.webp', 'image/gif': '.gif'}
 
 
 @app.route('/api/projects/<project_id>/evidence', methods=['GET'])
@@ -1352,15 +1370,17 @@ def upload_evidence(project_id):
         if not file or not file.filename:
             return jsonify({'error': 'Geçersiz dosya'}), 400
 
-        mime_type = file.mimetype
-        if mime_type not in evidence_intel.SUPPORTED_MIME_TYPES:
-            return jsonify({'error': f'Desteklenmeyen dosya türü: {mime_type}. Sadece PNG/JPEG/WEBP/GIF kabul edilir.'}), 400
-
         file_bytes = file.read()
         if len(file_bytes) == 0:
             return jsonify({'error': 'Dosya boş'}), 400
 
-        stored_filename = f"{uuid.uuid4().hex}{EXT_BY_MIME.get(mime_type, '')}"
+        # Tür, istemcinin söylediğinden değil içerikten belirlenir.
+        image_type = image_types.detect_image_type(file_bytes)
+        if not image_type:
+            return jsonify({'error': 'Dosya içeriği PNG, JPEG, WEBP veya GIF görseli değil.'}), 400
+        mime_type = image_types.MIME_BY_TYPE[image_type]
+
+        stored_filename = f"{uuid.uuid4().hex}{image_types.EXT_BY_TYPE[image_type]}"
         dest_path = os.path.join(_evidence_dir(project_id), stored_filename)
         with open(dest_path, 'wb') as f:
             f.write(file_bytes)
@@ -1398,6 +1418,8 @@ def upload_evidence(project_id):
         return jsonify(evidence.to_dict()), 201
     except NotFoundError as e:
         return jsonify({'error': str(e)}), 404
+    except HTTPException:
+        raise   # ör. 413 (Content-Length olmadan gönderilen büyük gövde)
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
@@ -1411,10 +1433,21 @@ def get_evidence_file(evidence_id):
             return jsonify({'error': 'Kanıt bulunamadı'}), 404
         if evidence.evidence_type != 'image':
             return jsonify({'error': 'Bu kanıt bir dosya değil (http_transaction)'}), 400
-        path = os.path.join(_evidence_dir(evidence.project_id), evidence.stored_filename)
-        if not os.path.isfile(path):
+        stored = os.path.basename(evidence.stored_filename or '')
+        path = os.path.join(_evidence_dir(evidence.project_id), stored)
+        if not stored or not os.path.isfile(path):
             return jsonify({'error': 'Dosya diskte bulunamadı'}), 404
-        return send_file(path, mimetype=evidence.mime_type)
+        actual_mime = image_types.sniff_file(path)
+        if actual_mime:
+            response = send_file(path, mimetype=actual_mime, conditional=True)
+        else:
+            # İçerik doğrulaması gelmeden önce yüklenmiş, görsel olmayan dosya:
+            # tarayıcıda yorumlanmasın, yalnızca indirilsin.
+            response = send_file(path, mimetype='application/octet-stream', as_attachment=True,
+                                 download_name=secure_filename(evidence.filename or '') or 'evidence.bin')
+        response.headers['Content-Security-Policy'] = security.UPLOADED_FILE_CSP
+        response.headers['Cache-Control'] = 'private, no-cache'
+        return response
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

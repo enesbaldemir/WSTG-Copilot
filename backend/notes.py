@@ -20,6 +20,7 @@ import json
 import re
 
 import cvss
+from image_types import detect_image_type
 
 MAX_NOTE_IMAGES = 8
 MAX_NOTE_IMAGE_BYTES = 3 * 1024 * 1024        # çözülmüş tek görsel
@@ -35,19 +36,6 @@ _CONTROL_CHARS_RE = re.compile(r'[\x00-\x1f\x7f]')
 
 class NoteValidationError(ValueError):
     pass
-
-
-def detect_image_type(raw):
-    """İlk baytlara göre 'png' | 'jpeg' | 'gif' | 'webp' | None."""
-    if raw.startswith(b'\x89PNG\r\n\x1a\n'):
-        return 'png'
-    if raw.startswith(b'\xff\xd8\xff'):
-        return 'jpeg'
-    if raw.startswith((b'GIF87a', b'GIF89a')):
-        return 'gif'
-    if len(raw) >= 12 and raw[:4] == b'RIFF' and raw[8:12] == b'WEBP':
-        return 'webp'
-    return None
 
 
 def validate_image_data_url(value):
