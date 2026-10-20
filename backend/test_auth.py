@@ -198,6 +198,12 @@ PROTECTED = [
     ('GET', '/api/ai/settings'),
     ('POST', '/api/ai/settings'),
     ('POST', '/api/recon'),
+    ('GET', '/api/sessions/x/notes'),
+    ('POST', '/api/sessions/x/notes'),
+    ('PUT', '/api/sessions/x/notes/1'),
+    ('DELETE', '/api/sessions/x/notes/1'),
+    ('GET', '/api/mapping/wstg/WSTG-INPV-05'),
+    ('GET', '/api/study/metrics'),
     ('POST', '/api/auth/change-password'),
     ('GET', '/api/does-not-exist'),
 ]

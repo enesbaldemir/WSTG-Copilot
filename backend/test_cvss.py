@@ -57,6 +57,21 @@ def test_invalid_metrics_raise(bad):
         compute(bad)
 
 
+def test_parse_vector():
+    v = "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+    assert cvss.parse_vector(v) == metrics(v)
+    assert cvss.parse_vector("av:n/ac:l/pr:n/ui:n/s:u/c:h/i:h/a:h") == metrics(v)
+    assert compute(cvss.parse_vector(v))['base_score'] == 9.8
+
+
+@pytest.mark.parametrize("bad", [
+    "", "   ", None, "CVSS:4.0/AV:N", "AV:N/AV:L", "AV:N/XX:Y", "AV=N", "AV:N:L",
+])
+def test_parse_vector_rejects(bad):
+    with pytest.raises(CvssError):
+        cvss.parse_vector(bad)
+
+
 def test_roundup_follows_spec():
     # CVSS v3.1 spesifikasyonu Ek A: Roundup(4.02) = 4.1, Roundup(4.00) = 4.0.
     # Fonksiyon kayan nokta hatalarına karşı 5. ondalıkta yuvarlar; bu yüzden

@@ -12,8 +12,11 @@ from werkzeug.utils import secure_filename
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from config import DevelopmentConfig, ProductionConfig
-from models import db, Session, TestResult, Project, ScopeItem, TimelineEvent, ReconRun, Evidence, CustomTest, ToolRun, Finding, AIInteractionLog, AIProviderSetting, AuthSettings
+from models import db, Session, TestResult, Note, Project, ScopeItem, TimelineEvent, ReconRun, Evidence, CustomTest, ToolRun, Finding, AIInteractionLog, AIProviderSetting, AuthSettings
 import auth
+import mapping as mapping_lib
+import notes as notes_lib
+import study_metrics
 import recon
 import attack_chains
 import report_builder
@@ -253,6 +256,17 @@ def ensure_schema():
         db.session.rollback()  # muhtemelen SQLite dışında bir DB — sessizce geç
 
     try:
+        # 260eeb6 öncesi veritabanlarında bu sütun zaten vardır; arada
+        # oluşturulmuş veritabanlarına eklenir. 'notes' tablosu create_all ile
+        # (yoksa) oluşur; varsa içindeki eski notlar olduğu gibi kalır.
+        cols = [row[1] for row in db.session.execute(text("PRAGMA table_info(sessions)")).fetchall()]
+        if 'study_group' not in cols:
+            db.session.execute(text("ALTER TABLE sessions ADD COLUMN study_group VARCHAR(20)"))
+            db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+    try:
         cols = [row[1] for row in db.session.execute(text("PRAGMA table_info(test_results)")).fetchall()]
         if 'finding_status' not in cols:
             db.session.execute(text("ALTER TABLE test_results ADD COLUMN finding_status VARCHAR(20) DEFAULT 'open'"))
@@ -374,6 +388,10 @@ def log_event(project_id, event_type, message, meta=None):
 # SESSION ENDPOINT'LERİ
 # ========================
 
+STUDY_GROUPS = (None, 'ai_assisted', 'control')
+STUDY_GROUP_ERROR = "study_group 'ai_assisted', 'control' ya da null olmalıdır"
+
+
 @app.route('/api/sessions', methods=['GET'])
 def get_sessions():
     try:
@@ -406,7 +424,12 @@ def create_session():
         if project_id and not Project.query.get(project_id):
             return jsonify({'error': 'Belirtilen proje bulunamadı'}), 404
 
+        study_group = data.get('study_group') or None
+        if study_group not in STUDY_GROUPS:
+            return jsonify({'error': STUDY_GROUP_ERROR}), 400
+
         session = Session(
+            study_group=study_group,
             project_id=project_id,
             name=data['name'],
             description=data.get('description', ''),
@@ -450,7 +473,15 @@ def update_session(session_id):
                 session.completed_at = datetime.utcnow()
                 if session.project_id:
                     log_event(session.project_id, 'session_completed', f"Test oturumu tamamlandı: {session.name}")
-        
+            elif data['status'] == 'active':
+                session.completed_at = None
+        if 'study_group' in data:
+            group = data['study_group'] or None
+            if group not in STUDY_GROUPS:
+                db.session.rollback()
+                return jsonify({'error': STUDY_GROUP_ERROR}), 400
+            session.study_group = group
+
         session.updated_at = datetime.utcnow()
         db.session.commit()
         
@@ -608,6 +639,124 @@ def delete_test_result(session_id, test_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
+# ========================
+# NOT DEFTERİ
+# ========================
+# Oturuma bağlı serbest not defteri (görsel kanıt, CVSS/CWE, false-positive
+# kararı). Doğrulama notes.py'de. 260eeb6 ile kaldırılan uçların geri
+# getirilmiş hâli; istek/yanıt biçimi eskisiyle aynıdır.
+
+def _session_or_none(session_id):
+    return db.session.get(Session, session_id)
+
+
+@app.route('/api/sessions/<session_id>/notes', methods=['GET'])
+def get_notes(session_id):
+    if not _session_or_none(session_id):
+        return jsonify({'error': 'Oturum bulunamadı'}), 404
+    query = Note.query.filter_by(session_id=session_id)
+    test_id = request.args.get('test_id')
+    if test_id:
+        query = query.filter_by(test_id=test_id)
+    notes = query.order_by(Note.created_at.desc(), Note.id.desc()).all()
+    return jsonify([n.to_dict() for n in notes]), 200
+
+
+@app.route('/api/sessions/<session_id>/notes', methods=['POST'])
+def create_note(session_id):
+    if not _session_or_none(session_id):
+        return jsonify({'error': 'Oturum bulunamadı'}), 404
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({'error': 'JSON gövde bekleniyordu'}), 400
+    note = Note(session_id=session_id)
+    try:
+        notes_lib.apply_fields(note, data, creating=True)
+    except notes_lib.NoteValidationError as e:
+        return jsonify({'error': str(e)}), 400
+    db.session.add(note)
+    db.session.commit()
+    return jsonify(note.to_dict()), 201
+
+
+@app.route('/api/sessions/<session_id>/notes/<int:note_id>', methods=['PUT'])
+def update_note(session_id, note_id):
+    note = Note.query.filter_by(session_id=session_id, id=note_id).first()
+    if not note:
+        return jsonify({'error': 'Not bulunamadı'}), 404
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({'error': 'JSON gövde bekleniyordu'}), 400
+    try:
+        notes_lib.apply_fields(note, data)
+    except notes_lib.NoteValidationError as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+    note.updated_at = datetime.utcnow()
+    db.session.commit()
+    return jsonify(note.to_dict()), 200
+
+
+@app.route('/api/sessions/<session_id>/notes/<int:note_id>', methods=['DELETE'])
+def delete_note(session_id, note_id):
+    note = Note.query.filter_by(session_id=session_id, id=note_id).first()
+    if not note:
+        return jsonify({'error': 'Not bulunamadı'}), 404
+    db.session.delete(note)
+    db.session.commit()
+    return jsonify({'message': 'Not silindi'}), 200
+
+
+@app.route('/api/mapping/wstg/<test_id>', methods=['GET'])
+def wstg_mapping(test_id):
+    """Bir WSTG testi için ilişkili OWASP Top 10 kategorileri ve önerilen
+    CWE'ler (not editöründeki CWE önerileri buradan beslenir)."""
+    lang = 'en' if request.args.get('lang') == 'en' else 'tr'
+    return jsonify({
+        'test_id': test_id,
+        'owasp_matches': mapping_lib.get_mapping_for_test(test_id, lang),
+        'suggested_cwes': mapping_lib.suggest_cwes_for_test(test_id, lang),
+    }), 200
+
+
+# ========================
+# DENEYSEL A/B KARŞILAŞTIRMA (çalışma metrikleri)
+# ========================
+
+@app.route('/api/study/metrics', methods=['GET'])
+def study_metrics_endpoint():
+    """'ai_assisted' / 'control' grubuna atanmış oturumların metrikleri ve
+    iki grubun karşılaştırması. Grubu olmayan oturumlar hesaplamaya girmez,
+    yalnızca 'unassigned_sessions_count' ile sayılır.
+
+    Bulgular: oturumun notları + o oturuma bağlı Finding kayıtları (bugün
+    bulguların çoğu Finding olarak tutuluyor). AI çağrıları: session_id'si bu
+    oturum olan kayıtlar + bu oturumun Finding'leri üzerinden yapılanlar."""
+    per_session = []
+    unassigned = 0
+    for s in Session.query.order_by(Session.created_at.asc()).all():
+        if not s.study_group:
+            unassigned += 1
+            continue
+        session_findings = Finding.query.filter_by(session_id=s.id).all()
+        finding_ids = [f.id for f in session_findings]
+        log_filter = AIInteractionLog.session_id == s.id
+        if finding_ids:
+            log_filter = db.or_(log_filter, AIInteractionLog.finding_id.in_(finding_ids))
+        logs = AIInteractionLog.query.filter(log_filter).all()
+        findings = [n.to_dict() for n in s.notes] + [
+            {'severity': f.severity, 'is_false_positive': None, 'source': 'finding'}
+            for f in session_findings
+        ]
+        per_session.append(study_metrics.compute_session_metrics(
+            s.to_dict(), [r.to_dict() for r in s.results], findings, [l.to_dict() for l in logs],
+        ))
+    return jsonify({
+        'sessions': per_session,
+        'comparison': study_metrics.compare_groups(per_session),
+        'unassigned_sessions_count': unassigned,
+    }), 200
 
 # ========================
 # RAPOR ENDPOINT'İ

@@ -2,14 +2,7 @@ import sys, os
 sys.path.insert(0, '.')
 os.environ['FLASK_ENV'] = 'development'
 
-import pytest
 import app as app_module
-
-# Bu testlerin kapsadığı rotalar (oturumlarda `study_group`, not `false_positive`
-# işareti, /study-metrics) 260eeb6 ("WSTG-Copilot geliştirmeleri") ile app.py'den
-# kaldırıldı ve geri eklenmedi. Özellik geri getirilirse bu satırı silin.
-# study_metrics.py modülü ve kendi birim testleri (test_study_metrics.py) duruyor.
-pytestmark = pytest.mark.skip(reason="study/notes rotaları 260eeb6 ile app.py'den kaldırıldı")
 
 
 def _client():
