@@ -51,6 +51,18 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "real_auth: gerçek oturum kontrolüyle çalışır (giriş gerekir)")
 
 
+TEST_UPLOAD_DIR = os.path.join(_TMP_DIR, "uploads")
+
+
+@pytest.fixture(autouse=True)
+def _temp_upload_folder(monkeypatch):
+    """Yükleme testleri gerçek backend/uploads klasörüne dosya yazmasın."""
+    import app as app_module
+    os.makedirs(TEST_UPLOAD_DIR, exist_ok=True)
+    monkeypatch.setitem(app_module.app.config, "UPLOAD_FOLDER", TEST_UPLOAD_DIR)
+    yield
+
+
 @pytest.fixture(autouse=True)
 def _bypass_login_for_route_tests(request, monkeypatch):
     if request.node.get_closest_marker("real_auth"):

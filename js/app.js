@@ -5983,7 +5983,7 @@
             ${ev.ai_suggested_test_ids.length ? `
               <div class="evidence-suggested-label">${t('pwEvidenceSuggested')}:</div>
               <div class="evidence-suggested-chips">
-                ${ev.ai_suggested_test_ids.map(tid => `<button class="evidence-suggest-chip" data-evidence="${ev.id}" data-test="${tid}">${escapeHtml(tid)} ✓</button>`).join('')}
+                ${ev.ai_suggested_test_ids.map(tid => `<button class="evidence-suggest-chip" data-evidence="${Number(ev.id)}" data-test="${escapeHtml(tid)}">${escapeHtml(tid)} ✓</button>`).join('')}
               </div>` : ''}`;
         } else if(ev.ai_error){
           aiBlock = `<div class="evidence-ai-off">${t('pwEvidenceAiError')}: ${escapeHtml(ev.ai_error)}</div>`;

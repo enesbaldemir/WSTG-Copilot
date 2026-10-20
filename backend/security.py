@@ -86,6 +86,30 @@ def origin_allowed(origin, allowed_origins):
     return origin.rstrip('/') in {o.rstrip('/') for o in allowed_origins}
 
 
+# Her API yanıtına eklenen başlıklar.
+#  - nosniff: tarayıcı Content-Type'ı tahminle değiştirmesin (ör. görsel
+#    diye sunulan dosyayı HTML/script olarak yorumlamasın).
+#  - X-Frame-Options / frame-ancestors: API yanıtları başka bir sayfada
+#    iframe içine alınamasın (clickjacking). Arayüz API'yi iframe'de açmaz.
+#  - no-referrer: rapor/kanıt bağlantılarından dışarı adres sızmasın.
+SECURITY_HEADERS = {
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'no-referrer',
+}
+
+# Kullanıcının yüklediği dosyalar için ek olarak: hiçbir şey yüklenemez,
+# script çalışamaz (sandbox), çerçevelenemez.
+UPLOADED_FILE_CSP = "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; sandbox; frame-ancestors 'none'"
+
+
+def apply_security_headers(headers):
+    """Var olan başlıkları ezmeden SECURITY_HEADERS'ı ekler."""
+    for k, v in SECURITY_HEADERS.items():
+        headers.setdefault(k, v)
+    return headers
+
+
 def load_or_create_secret_key(path):
     """Dosyadaki anahtarı döndürür; yoksa üretip 0600 izinle kaydeder.
 
