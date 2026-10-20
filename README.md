@@ -175,6 +175,8 @@ Do not commit `backend/.env`; it is already listed in `.gitignore`.
 
 For checklist-only use, step 1 can be skipped; progress is then kept in `localStorage` and no sign-in is needed.
 
+If an unexpected error occurs, the interface shows a short error ID (e.g. `hata kimliği: 3f9a1c2e`) instead of internal details; the full traceback is printed in the backend terminal under the same ID.
+
 ### Authentication
 
 The backend is single-user and protected by a password.
@@ -431,6 +433,8 @@ Tüm değişkenler opsiyoneldir ve `backend/.env` dosyasından okunur. AI key'le
 3. `http://localhost:8000` (veya `http://127.0.0.1:8000`) adresini açın. Frontend backend'i otomatik algılar. İlk açılışta bir parola belirlemeniz istenir; sonrasında giriş yaparsınız.
 
 Yalnızca checklist kullanılacaksa 1. adım atlanabilir; ilerleme bu durumda `localStorage`'da tutulur ve giriş gerekmez.
+
+Beklenmeyen bir hata olursa arayüz iç ayrıntılar yerine kısa bir hata kimliği gösterir (ör. `hata kimliği: 3f9a1c2e`); tam traceback aynı kimlikle backend terminaline yazılır.
 
 ### Kimlik Doğrulama
 
