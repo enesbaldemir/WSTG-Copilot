@@ -15,6 +15,7 @@ from sqlalchemy.exc import IntegrityError
 from config import DevelopmentConfig, ProductionConfig
 from models import db, Session, TestResult, Note, AuthzMatrix, Project, ScopeItem, TimelineEvent, ReconRun, Evidence, CustomTest, ToolRun, Finding, AIInteractionLog, AIProviderSetting, AuthSettings
 import auth
+import retest as retest_lib
 import authz_matrix
 import image_types
 import mapping as mapping_lib
@@ -26,6 +27,7 @@ import report_builder
 import report_html
 import report_generator
 import report_pdf
+import report_retest
 import evidence_intel
 import tool_runner
 import cvss
@@ -1444,6 +1446,13 @@ def upload_evidence(project_id):
         if len(file_bytes) == 0:
             return jsonify({'error': 'Dosya boş'}), 400
 
+        linked_finding_id = None
+        raw_fid = (request.form.get('linked_finding_id') or '').strip()
+        if raw_fid:
+            if not raw_fid.isdigit() or not Finding.query.filter_by(id=int(raw_fid), project_id=project_id).first():
+                return jsonify({'error': 'Bağlanacak bulgu bu projede bulunamadı'}), 400
+            linked_finding_id = int(raw_fid)
+
         # Tür, istemcinin söylediğinden değil içerikten belirlenir.
         image_type = image_types.detect_image_type(file_bytes)
         if not image_type:
@@ -1465,7 +1474,8 @@ def upload_evidence(project_id):
             size_bytes=len(file_bytes),
             linked_session_id=request.form.get('linked_session_id') or None,
             linked_test_id=request.form.get('linked_test_id') or None,
-            review_status='manual' if request.form.get('linked_test_id') else 'pending'
+            linked_finding_id=linked_finding_id,
+            review_status='manual' if request.form.get('linked_test_id') or linked_finding_id else 'pending'
         )
         db.session.add(evidence)
         db.session.commit()
@@ -1956,6 +1966,59 @@ def update_finding(project_id, finding_id):
         return _error_response(e)
 
 
+@app.route('/api/projects/<project_id>/findings/<int:finding_id>/retest', methods=['POST'])
+def retest_finding(project_id, finding_id):
+    """Yeniden test sonucunu kaydeder (bkz. retest.py): fixed -> resolved,
+    not_fixed -> open. Tarih sunucuda atanır; zaman çizelgesine yazılır."""
+    try:
+        _project_or_404(project_id)
+        finding = Finding.query.filter_by(id=finding_id, project_id=project_id).first()
+        if not finding:
+            return jsonify({'error': 'Bulgu bulunamadı'}), 404
+        data = request.get_json(silent=True) or {}
+        try:
+            fields = retest_lib.transition(data.get('result'), data.get('notes'))
+        except retest_lib.RetestError as e:
+            return jsonify({'error': str(e)}), 400
+        old_status = finding.status
+        for k, v in fields.items():
+            setattr(finding, k, v)
+        finding.retested_at = datetime.utcnow()
+        finding.updated_at = finding.retested_at
+        db.session.commit()
+        label = 'düzeldi' if fields['retest_result'] == 'fixed' else 'hâlâ açık'
+        log_event(project_id, 'finding_retested', f"FND-{finding.id:04d} yeniden test: {label}",
+                  {'finding_id': finding.id, 'result': fields['retest_result'], 'from': old_status, 'to': finding.status})
+        return jsonify(finding.to_dict()), 200
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        return _error_response(e)
+
+
+@app.route('/api/projects/<project_id>/retest', methods=['GET'])
+def retest_overview(project_id):
+    """Yeniden test ekranı: kapsamdaki bulgular durumlarıyla + özet."""
+    try:
+        _project_or_404(project_id)
+        evidence_by_finding = {}
+        for ev in Evidence.query.filter(Evidence.project_id == project_id, Evidence.linked_finding_id.isnot(None)).all():
+            evidence_by_finding.setdefault(ev.linked_finding_id, []).append({
+                'id': ev.id, 'evidence_type': ev.evidence_type or 'image', 'filename': ev.filename,
+                'created_at': ev.created_at.isoformat() if ev.created_at else None})
+        items = []
+        for f in Finding.query.filter_by(project_id=project_id).order_by(Finding.id.asc()).all():
+            d = f.to_dict()
+            d['retest_state'] = retest_lib.classify(d)
+            d['evidence'] = evidence_by_finding.get(f.id, [])
+            items.append(d)
+        return jsonify({'findings': items, 'summary': retest_lib.summarize(items)}), 200
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        return _error_response(e)
+
+
 @app.route('/api/projects/<project_id>/findings/<int:finding_id>', methods=['DELETE'])
 def delete_finding(project_id, finding_id):
     try:
@@ -2318,6 +2381,38 @@ def generate_pdf_report(project_id):
         safe_name = ''.join(c if c.isalnum() or c in ' -_' else '_' for c in project.name)[:60]
         filename = f"{safe_name}_report.pdf"
         return send_file(pdf_buf, as_attachment=True, download_name=filename, mimetype='application/pdf')
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except report_pdf.PdfReportError as e:
+        return _error_response(e, 'PDF oluşturulamadı.')
+    except Exception as e:
+        return _error_response(e)
+
+
+@app.route('/api/projects/<project_id>/reports/retest/<fmt>', methods=['GET', 'POST'])
+def generate_retest_report(project_id, fmt):
+    """Yeniden Test Raporu (bkz. report_retest.py). fmt: html | pdf."""
+    try:
+        if fmt not in ('html', 'pdf'):
+            return jsonify({'error': 'Biçim html ya da pdf olmalı'}), 404
+        project = _project_or_404(project_id)
+        body = (request.get_json(silent=True) or {}) if request.method == 'POST' else {}
+        args = request.args
+        pick = lambda k: body.get(k) if body.get(k) not in (None, '') else args.get(k)
+        truthy = lambda v, default: default if v is None else str(v).lower() in ('1', 'true', 'yes', 'on')
+        options = {
+            'title': pick('title'), 'client_name': pick('client_name'), 'pentester_name': pick('pentester_name'),
+            'retest_date': pick('retest_date'), 'template': pick('template') or 'standard',
+            'confidential': truthy(pick('confidential'), False),
+            'include_pending': truthy(pick('include_pending'), True),
+        }
+        lang = 'en' if pick('lang') == 'en' else 'tr'
+        findings = [f.to_dict() for f in Finding.query.filter_by(project_id=project_id).all()]
+        if fmt == 'html':
+            return report_retest.build_html(project.to_dict(), findings, options, lang), 200, {'Content-Type': 'text/html; charset=utf-8'}
+        pdf_buf = report_retest.build_pdf(project.to_dict(), findings, options, lang)
+        safe_name = ''.join(c if c.isalnum() or c in ' -_' else '_' for c in project.name)[:60]
+        return send_file(pdf_buf, as_attachment=True, download_name=f"{safe_name}_retest.pdf", mimetype='application/pdf')
     except NotFoundError as e:
         return jsonify({'error': str(e)}), 404
     except report_pdf.PdfReportError as e:

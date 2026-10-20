@@ -73,6 +73,7 @@ The checklist works with only a static file server. Projects, findings, evidence
 - Server-side PDF report generated with `xhtml2pdf` (cover page, executive summary, risk breakdown, per-finding details, appendices, page numbers) with an embedded font for Turkish characters
 - Finding selection for HTML/PDF reports: all, critical + high only, or hand-picked
 - Session-level reports (Markdown / DOCX) and an optional AI-drafted executive summary
+- Retest workflow (project tab): findings the client reports as fixed are listed as pending; each is marked "Fixed" (status → Resolved) or "Still open" (reopened) with a note and screenshot evidence, and every retest is recorded in the timeline. A separate Retest Report (PDF/HTML) summarises verified, still-open and not-yet-retested findings
 
 **AI assistance**
 - Providers: Anthropic, OpenAI, Google Gemini, Ollama (local)
@@ -234,6 +235,8 @@ WSTG-Copilot/
 │   ├── report_html.py          # HTML report
 │   ├── report_pdf.py           # PDF report
 │   ├── report_generator.py     # Session-level reports
+│   ├── report_retest.py        # Retest report
+│   ├── retest.py               # Retest workflow rules
 │   ├── test_*.py               # Tests
 │   ├── .env.example
 │   └── requirements.txt
@@ -335,6 +338,7 @@ Checklist yalnızca statik bir dosya sunucusuyla çalışır. Projeler, bulgular
 - `xhtml2pdf` ile sunucu tarafında üretilen PDF rapor (kapak, yönetici özeti, risk dağılımı, bulgu detayları, ekler, sayfa numaraları); Türkçe karakterler için gömülü font
 - HTML/PDF raporlarında bulgu seçimi: tümü, yalnızca kritik + yüksek ya da tek tek seçim
 - Oturum bazlı raporlar (Markdown / DOCX) ve opsiyonel AI destekli yönetici özeti taslağı
+- Yeniden test akışı (proje sekmesi): müşterinin düzelttiğini bildirdiği bulgular "bekleyen" olarak listelenir; her biri not ve ekran görüntüsü kanıtıyla "Düzeldi" (durum → Kapatıldı) ya da "Hâlâ açık" (yeniden açılır) olarak işaretlenir ve her yeniden test zaman çizelgesine yazılır. Ayrı bir Yeniden Test Raporu (PDF/HTML) doğrulanan, açık kalan ve henüz yeniden test edilmeyen bulguları özetler
 
 **AI desteği**
 - Sağlayıcılar: Anthropic, OpenAI, Google Gemini, Ollama (yerel)
@@ -496,6 +500,8 @@ WSTG-Copilot/
 │   ├── report_html.py          # HTML rapor
 │   ├── report_pdf.py           # PDF rapor
 │   ├── report_generator.py     # Oturum bazlı raporlar
+│   ├── report_retest.py        # Yeniden test raporu
+│   ├── retest.py               # Yeniden test kuralları
 │   ├── test_*.py               # Testler
 │   ├── .env.example
 │   └── requirements.txt

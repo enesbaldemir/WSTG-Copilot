@@ -297,6 +297,12 @@ body {{ font-family: "Vera"; font-size: 9.5pt; color: #1e293b; }}
 </body>
 </html>'''
 
+    return html_to_pdf(html)
+
+
+def html_to_pdf(html):
+    """xhtml2pdf ile HTML -> PDF (BytesIO). Vera fontlarını kaydeder; CSS
+    font-family: "Vera" kullanılmalıdır (Türkçe karakterler için)."""
     _register_fonts()
     buf = io.BytesIO()
     result = pisa.CreatePDF(io.StringIO(html), dest=buf, encoding='utf-8')
