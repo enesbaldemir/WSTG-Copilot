@@ -198,6 +198,8 @@ PROTECTED = [
     ('GET', '/api/ai/settings'),
     ('POST', '/api/ai/settings'),
     ('POST', '/api/recon'),
+    ('GET', '/api/projects/x/authz-matrix'),
+    ('PUT', '/api/projects/x/authz-matrix'),
     ('GET', '/api/sessions/x/notes'),
     ('POST', '/api/sessions/x/notes'),
     ('PUT', '/api/sessions/x/notes/1'),

@@ -60,6 +60,7 @@ The checklist works with only a static file server. Projects, findings, evidence
 - Duplicate detection based on title/description/endpoint/CWE similarity (`difflib`), with merge or create-anyway options
 - Attack-chain correlation: findings are matched against 10 fixed attack-chain patterns (e.g. user enumeration → weak authentication → account takeover). No AI involved
 - Kanban board for test results with the columns To Do, Testing, Review, Confirmed and Done
+- Authorization matrix (project tab): roles as columns, endpoints as rows (added by hand or taken from the Attack Surface). For each cell you mark the expected access (allowed / denied) and what your own test showed; cells expected "denied" but accessible are highlighted and can be turned into WSTG-ATHZ-02/03 findings with one click. Exportable as CSV. The app never sends requests to the target
 
 **Evidence**
 - Screenshot upload (PNG/JPEG/WebP/GIF), stored under server-generated UUID file names
@@ -226,6 +227,7 @@ WSTG-Copilot/
 │   ├── crypto_utils.py         # Fernet encryption for stored keys
 │   ├── mapping.py              # WSTG ↔ OWASP Top 10 ↔ CWE index
 │   ├── notes.py                # Notebook input / image validation
+│   ├── authz_matrix.py         # Authorization matrix validation
 │   ├── study_metrics.py        # A/B study metrics
 │   ├── cvss.py                 # CVSS v3.1 scoring
 │   ├── report_builder.py       # DOCX project reports
@@ -320,6 +322,7 @@ Checklist yalnızca statik bir dosya sunucusuyla çalışır. Projeler, bulgular
 - Başlık/açıklama/endpoint/CWE benzerliğine (`difflib`) dayalı tekrar tespiti; birleştir ya da yine de oluştur seçenekleri
 - Saldırı zinciri korelasyonu: bulgular 10 sabit saldırı zinciri kalıbıyla eşleştirilir (ör. kullanıcı numaralandırma → zayıf kimlik doğrulama → hesap ele geçirme). AI kullanılmaz
 - Test sonuçları için Yapılacak, Test Ediliyor, İncelemede, Onaylandı ve Tamamlandı sütunlarından oluşan Kanban panosu
+- Yetkilendirme matrisi (proje sekmesi): roller sütun, endpoint'ler satır (elle ya da Saldırı Yüzeyi'nden eklenir). Her hücrede beklenen erişimi (izinli / yasak) ve kendi denemenizin sonucunu işaretlersiniz; beklenen "yasak" iken erişilebilen hücreler vurgulanır ve tek tıkla WSTG-ATHZ-02/03 bulgusuna dönüştürülebilir. CSV olarak dışa aktarılabilir. Uygulama hedefe istek göndermez
 
 **Kanıtlar**
 - Ekran görüntüsü yükleme (PNG/JPEG/WebP/GIF); dosyalar sunucu tarafında üretilen UUID adlarıyla saklanır
@@ -486,6 +489,7 @@ WSTG-Copilot/
 │   ├── crypto_utils.py         # Saklanan key'ler için Fernet şifreleme
 │   ├── mapping.py              # WSTG ↔ OWASP Top 10 ↔ CWE indeksi
 │   ├── notes.py                # Not defteri girdi / görsel doğrulaması
+│   ├── authz_matrix.py         # Yetkilendirme matrisi doğrulaması
 │   ├── study_metrics.py        # A/B çalışma metrikleri
 │   ├── cvss.py                 # CVSS v3.1 skorlama
 │   ├── report_builder.py       # Proje DOCX raporları
