@@ -91,6 +91,46 @@ def _add_security_headers(response):
     return response
 
 
+# ========================
+# HATA YANITLARI
+# ========================
+# Beklenmeyen istisnaların metni (str(e)) istemciye GÖNDERİLMEZ: SQL
+# hataları, dosya yolları, iç modül adları gibi ayrıntılar taşıyabilir.
+# Bunun yerine kısa bir hata kimliği döner; tam traceback aynı kimlikle
+# backend terminaline (app.logger) yazılır. Kasıtlı, kullanıcıya yönelik
+# mesajlar (doğrulama hataları, NotFoundError, AI yapılandırma/istek
+# hataları) kendi yanıtlarıyla olduğu gibi gösterilmeye devam eder.
+
+HTTP_ERROR_MESSAGES = {
+    400: 'Geçersiz istek (gövde okunamadı ya da eksik).',
+    404: 'Kayıt bulunamadı.',
+    405: 'Bu işlem bu adreste desteklenmiyor.',
+    415: 'Desteklenmeyen içerik türü (JSON bekleniyordu).',
+}
+
+
+def _log_unexpected(e):
+    error_id = uuid.uuid4().hex[:8]
+    app.logger.error('Beklenmeyen hata [%s] %s %s', error_id, request.method, request.path,
+                     exc_info=(type(e), e, e.__traceback__))
+    return error_id
+
+
+def _error_response(e, public_message=None):
+    """Rotalardaki `except Exception as e:` blokları için tek çıkış noktası."""
+    try:
+        db.session.rollback()
+    except Exception:
+        pass
+    if isinstance(e, HTTPException) and e.code and e.code < 500:
+        # ör. get_or_404 -> 404, bozuk JSON -> 400 (eskiden 500 dönüyordu)
+        return jsonify({'error': HTTP_ERROR_MESSAGES.get(e.code, e.name)}), e.code
+    error_id = _log_unexpected(e)
+    message = public_message or 'Beklenmeyen bir sunucu hatası oluştu.'
+    return jsonify({'error': f'{message} (hata kimliği: {error_id}; ayrıntı backend terminalinde)',
+                    'error_id': error_id}), 500
+
+
 @app.errorhandler(413)
 def _payload_too_large(_e):
     limit_mb = (app.config.get('MAX_CONTENT_LENGTH') or 0) // (1024 * 1024)
@@ -421,15 +461,14 @@ def get_sessions():
         sessions = query.order_by(Session.created_at.desc()).all()
         return jsonify([s.to_dict() for s in sessions]), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 @app.route('/api/sessions/<session_id>', methods=['GET'])
 def get_session(session_id):
-    try:
-        session = Session.query.get_or_404(session_id)
-        return jsonify(session.to_dict()), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 404
+    session = db.session.get(Session, session_id)
+    if not session:
+        return jsonify({'error': 'Oturum bulunamadı'}), 404
+    return jsonify(session.to_dict()), 200
 
 @app.route('/api/sessions', methods=['POST'])
 def create_session():
@@ -468,7 +507,7 @@ def create_session():
         return jsonify(session.to_dict()), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 @app.route('/api/sessions/<session_id>', methods=['PUT'])
 def update_session(session_id):
@@ -507,7 +546,7 @@ def update_session(session_id):
         return jsonify(session.to_dict()), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 @app.route('/api/sessions/<session_id>', methods=['DELETE'])
 def delete_session(session_id):
@@ -518,7 +557,7 @@ def delete_session(session_id):
         return jsonify({'message': 'Oturum silindi'}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 # ========================
 # TEST RESULT ENDPOINT'LERİ
@@ -530,18 +569,14 @@ def get_test_results(session_id):
         results = TestResult.query.filter_by(session_id=session_id).all()
         return jsonify([r.to_dict() for r in results]), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 @app.route('/api/sessions/<session_id>/results/<test_id>', methods=['GET'])
 def get_test_result(session_id, test_id):
-    try:
-        result = TestResult.query.filter_by(
-            session_id=session_id, 
-            test_id=test_id
-        ).first_or_404()
-        return jsonify(result.to_dict()), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 404
+    result = TestResult.query.filter_by(session_id=session_id, test_id=test_id).first()
+    if not result:
+        return jsonify({'error': 'Test sonucu bulunamadı'}), 404
+    return jsonify(result.to_dict()), 200
 
 @app.route('/api/sessions/<session_id>/results', methods=['POST'])
 def create_test_result(session_id):
@@ -586,7 +621,7 @@ def create_test_result(session_id):
         return jsonify(result.to_dict()), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 @app.route('/api/sessions/<session_id>/results/<test_id>', methods=['PUT'])
 def update_test_result(session_id, test_id):
@@ -641,7 +676,7 @@ def update_test_result(session_id, test_id):
         return jsonify(result.to_dict()), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 @app.route('/api/sessions/<session_id>/results/<test_id>', methods=['DELETE'])
 def delete_test_result(session_id, test_id):
@@ -657,7 +692,7 @@ def delete_test_result(session_id, test_id):
         return jsonify({'message': 'Test sonucu silindi'}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 # ========================
 # NOT DEFTERİ
@@ -809,7 +844,7 @@ def generate_report(session_id):
         
         return jsonify(report), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 # ========================
 # ATTACK SURFACE DISCOVERY (RECON) ENDPOINT'İ
@@ -861,7 +896,7 @@ def run_recon():
 
         return jsonify(result), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/projects/<project_id>/recon/latest', methods=['GET'])
@@ -878,7 +913,7 @@ def get_latest_recon(project_id):
     except NotFoundError as e:
         return jsonify({'error': str(e)}), 404
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/projects/<project_id>/recon', methods=['DELETE'])
@@ -896,7 +931,7 @@ def clear_project_recon(project_id):
         return jsonify({'error': str(e)}), 404
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 # ========================
 # PROJECT / ENGAGEMENT ENDPOINT'LERİ
@@ -935,7 +970,7 @@ def get_projects():
         projects = Project.query.order_by(Project.updated_at.desc()).all()
         return jsonify([p.to_dict() for p in projects]), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/projects', methods=['POST'])
@@ -966,7 +1001,7 @@ def create_project():
         return jsonify(project.to_dict()), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/projects/<project_id>', methods=['GET'])
@@ -977,7 +1012,7 @@ def get_project(project_id):
     except NotFoundError as e:
         return jsonify({'error': str(e)}), 404
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/projects/<project_id>', methods=['PUT'])
@@ -1011,7 +1046,7 @@ def update_project(project_id):
         return jsonify({'error': str(e)}), 404
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/projects/<project_id>', methods=['DELETE'])
@@ -1029,7 +1064,7 @@ def delete_project(project_id):
         return jsonify({'error': str(e)}), 404
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/projects/<project_id>/dashboard', methods=['GET'])
@@ -1123,7 +1158,7 @@ def project_dashboard(project_id):
     except NotFoundError as e:
         return jsonify({'error': str(e)}), 404
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/projects/<project_id>/assets', methods=['GET'])
@@ -1148,7 +1183,7 @@ def project_assets(project_id):
     except NotFoundError as e:
         return jsonify({'error': str(e)}), 404
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/projects/<project_id>/scope', methods=['GET'])
@@ -1160,7 +1195,7 @@ def get_scope(project_id):
     except NotFoundError as e:
         return jsonify({'error': str(e)}), 404
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/projects/<project_id>/scope', methods=['POST'])
@@ -1190,7 +1225,7 @@ def add_scope_item(project_id):
         return jsonify({'error': str(e)}), 404
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/projects/<project_id>/scope/<int:scope_id>', methods=['DELETE'])
@@ -1209,7 +1244,7 @@ def delete_scope_item(project_id, scope_id):
         return jsonify({'message': 'Kapsam kaydı silindi'}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/projects/<project_id>/timeline', methods=['GET'])
@@ -1221,7 +1256,7 @@ def get_timeline(project_id):
     except NotFoundError as e:
         return jsonify({'error': str(e)}), 404
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/projects/<project_id>/attack-chains', methods=['GET'])
@@ -1239,7 +1274,7 @@ def get_attack_chains(project_id):
     except NotFoundError as e:
         return jsonify({'error': str(e)}), 404
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/projects/<project_id>/lifecycle', methods=['GET'])
@@ -1286,7 +1321,7 @@ def get_lifecycle(project_id):
     except NotFoundError as e:
         return jsonify({'error': str(e)}), 404
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 VALID_REPORT_TYPES = {'technical', 'executive', 'developer'}
@@ -1324,7 +1359,7 @@ def generate_project_report(project_id, report_type):
     except NotFoundError as e:
         return jsonify({'error': str(e)}), 404
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 # ========================
@@ -1356,7 +1391,7 @@ def list_evidence(project_id):
     except NotFoundError as e:
         return jsonify({'error': str(e)}), 404
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/projects/<project_id>/evidence', methods=['POST'])
@@ -1422,7 +1457,7 @@ def upload_evidence(project_id):
         raise   # ör. 413 (Content-Length olmadan gönderilen büyük gövde)
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/evidence/<int:evidence_id>/file', methods=['GET'])
@@ -1449,7 +1484,7 @@ def get_evidence_file(evidence_id):
         response.headers['Cache-Control'] = 'private, no-cache'
         return response
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/projects/<project_id>/evidence/http', methods=['POST'])
@@ -1492,7 +1527,7 @@ def create_http_evidence(project_id):
         return jsonify({'error': str(e)}), 404
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/evidence/<int:evidence_id>/raw', methods=['GET'])
@@ -1508,7 +1543,7 @@ def get_evidence_raw(evidence_id):
             return jsonify({'error': 'Bu kanıt bir HTTP transaction değil'}), 400
         return jsonify(evidence.to_dict(include_raw=True)), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/evidence/<int:evidence_id>', methods=['PUT'])
@@ -1542,7 +1577,7 @@ def update_evidence(evidence_id):
         return jsonify(evidence.to_dict()), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/evidence/<int:evidence_id>', methods=['DELETE'])
@@ -1562,7 +1597,7 @@ def delete_evidence(evidence_id):
         return jsonify({'message': 'Kanıt silindi'}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 # ========================
@@ -1585,7 +1620,7 @@ def get_custom_tests(project_id):
     except NotFoundError as e:
         return jsonify({'error': str(e)}), 404
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/projects/<project_id>/custom-tests', methods=['POST'])
@@ -1611,7 +1646,7 @@ def add_custom_test(project_id):
         return jsonify({'error': str(e)}), 404
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/projects/<project_id>/custom-tests/<test_id>', methods=['DELETE'])
@@ -1626,7 +1661,7 @@ def delete_custom_test(project_id, test_id):
         return jsonify({'message': 'Özel test silindi'}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 # ========================
@@ -1647,7 +1682,7 @@ def list_tools():
     try:
         return jsonify(tool_runner.list_tools()), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/tools/preview', methods=['POST'])
@@ -1660,7 +1695,7 @@ def preview_tool_command():
     except (tool_runner.ToolError, recon.ReconError) as e:
         return jsonify({'error': str(e)}), 400
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/projects/<project_id>/tools/run', methods=['POST'])
@@ -1704,7 +1739,7 @@ def run_project_tool(project_id):
         return jsonify({'error': str(e)}), 404
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/projects/<project_id>/tools/runs', methods=['GET'])
@@ -1716,7 +1751,7 @@ def list_project_tool_runs(project_id):
     except NotFoundError as e:
         return jsonify({'error': str(e)}), 404
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 # ========================
@@ -1733,7 +1768,7 @@ def calculate_cvss():
     except cvss.CvssError as e:
         return jsonify({'error': str(e)}), 400
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 # ========================
@@ -1757,7 +1792,7 @@ def list_findings(project_id):
     except NotFoundError as e:
         return jsonify({'error': str(e)}), 404
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/projects/<project_id>/findings', methods=['POST'])
@@ -1809,7 +1844,7 @@ def create_finding(project_id):
         return jsonify({'error': str(e)}), 404
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/projects/<project_id>/findings/<int:finding_id>', methods=['GET'])
@@ -1823,7 +1858,7 @@ def get_finding(project_id, finding_id):
     except NotFoundError as e:
         return jsonify({'error': str(e)}), 404
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/projects/<project_id>/findings/<int:finding_id>', methods=['PUT'])
@@ -1883,7 +1918,7 @@ def update_finding(project_id, finding_id):
         return jsonify({'error': str(e)}), 404
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/projects/<project_id>/findings/<int:finding_id>', methods=['DELETE'])
@@ -1900,7 +1935,7 @@ def delete_finding(project_id, finding_id):
         return jsonify({'error': str(e)}), 404
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 # ========================
@@ -1931,7 +1966,7 @@ def check_duplicate_findings(project_id):
     except NotFoundError as e:
         return jsonify({'error': str(e)}), 404
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/projects/<project_id>/findings/merge', methods=['POST'])
@@ -2003,7 +2038,7 @@ def merge_findings(project_id):
         return jsonify({'error': str(e)}), 404
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 # ========================
@@ -2048,7 +2083,7 @@ def _handle_ai_error(e):
         return jsonify({'error': str(e), 'ai_configured': False}), 503
     if isinstance(e, AIRequestError):
         return jsonify({'error': str(e)}), 502
-    return jsonify({'error': str(e)}), 500
+    return _error_response(e)
 
 
 def _log_ai_interaction(purpose, ai_result=None, error=None, project_id=None, finding_id=None, session_id=None):
@@ -2091,7 +2126,7 @@ def ai_generate_description(project_id, finding_id):
     except (AIConfigError, AIRequestError) as e:
         return _handle_ai_error(e)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/projects/<project_id>/findings/<int:finding_id>/ai/remediation', methods=['POST'])
@@ -2115,7 +2150,7 @@ def ai_generate_remediation(project_id, finding_id):
     except (AIConfigError, AIRequestError) as e:
         return _handle_ai_error(e)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/projects/<project_id>/findings/<int:finding_id>/ai/analyze', methods=['POST'])
@@ -2147,7 +2182,7 @@ def ai_analyze_finding(project_id, finding_id):
     except (AIConfigError, AIRequestError) as e:
         return _handle_ai_error(e)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/ai/rewrite', methods=['POST'])
@@ -2169,7 +2204,7 @@ def ai_rewrite_text():
     except (AIConfigError, AIRequestError) as e:
         return _handle_ai_error(e)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/projects/<project_id>/ai/executive-summary', methods=['POST'])
@@ -2193,7 +2228,7 @@ def ai_project_executive_summary(project_id):
     except (AIConfigError, AIRequestError) as e:
         return _handle_ai_error(e)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 # ========================
@@ -2251,9 +2286,9 @@ def generate_pdf_report(project_id):
     except NotFoundError as e:
         return jsonify({'error': str(e)}), 404
     except report_pdf.PdfReportError as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e, 'PDF oluşturulamadı.')
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/projects/<project_id>/reports/html', methods=['GET', 'POST'])
@@ -2302,7 +2337,7 @@ def generate_html_report(project_id):
     except NotFoundError as e:
         return jsonify({'error': str(e)}), 404
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 # ========================
@@ -2347,7 +2382,7 @@ def get_kanban_board(project_id):
     except NotFoundError as e:
         return jsonify({'error': str(e)}), 404
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/kanban/card/<int:test_result_id>/move', methods=['PUT'])
@@ -2375,7 +2410,7 @@ def move_kanban_card(test_result_id):
         return jsonify(result.to_dict()), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/kanban/card/<int:test_result_id>', methods=['PUT'])
@@ -2401,7 +2436,7 @@ def update_kanban_card(test_result_id):
         return jsonify(result.to_dict()), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/projects/<project_id>/kanban/stats', methods=['GET'])
@@ -2423,7 +2458,7 @@ def get_kanban_stats(project_id):
     except NotFoundError as e:
         return jsonify({'error': str(e)}), 404
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 # ========================
@@ -2450,7 +2485,7 @@ def list_ai_settings():
         settings = AIProviderSetting.query.order_by(AIProviderSetting.provider).all()
         return jsonify([_masked_setting_dict(s) for s in settings]), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/ai/settings', methods=['POST'])
@@ -2479,7 +2514,7 @@ def upsert_ai_setting():
         return jsonify(_masked_setting_dict(setting)), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/ai/settings/<provider>', methods=['DELETE'])
@@ -2493,7 +2528,7 @@ def delete_ai_setting(provider):
         return jsonify({'message': 'Silindi'}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/ai/settings/activate', methods=['POST'])
@@ -2510,7 +2545,7 @@ def activate_ai_setting():
         return jsonify(_masked_setting_dict(setting)), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 def _classify_ai_error(message):
@@ -2541,7 +2576,9 @@ def _ping_provider(provider):
             'error_type': _classify_ai_error(str(e)), 'latency_ms': e.latency_ms,
         }
     except Exception as e:
-        return {'ok': False, 'provider': getattr(provider, 'name', None), 'error': str(e), 'error_type': 'unknown'}
+        error_id = _log_unexpected(e)
+        return {'ok': False, 'provider': getattr(provider, 'name', None), 'error_type': 'unknown',
+                'error': f'Beklenmeyen hata (hata kimliği: {error_id}; ayrıntı backend terminalinde).'}
 
 
 @app.route('/api/ai/settings/test', methods=['POST'])
@@ -2570,7 +2607,7 @@ def test_ai_setting():
         result = _ping_provider(test_provider)
         return jsonify(result), 200 if result['ok'] else 503
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/ai/status', methods=['GET'])
@@ -2586,7 +2623,7 @@ def ai_status():
             'configured': provider.is_configured(),
         }), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/ai/ping', methods=['GET', 'POST'])
@@ -2596,7 +2633,7 @@ def ai_ping():
         result = _ping_provider(provider)
         return jsonify(result), 200 if result['ok'] else 503
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/ai/logs', methods=['GET'])
@@ -2612,7 +2649,7 @@ def get_ai_logs():
         logs = query.order_by(AIInteractionLog.created_at.desc()).limit(200).all()
         return jsonify([l.to_dict() for l in logs]), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 # ========================
@@ -2651,7 +2688,7 @@ def ai_analyze_finding_generic():
         _log_ai_interaction('finding_analysis', error=e, session_id=session_id)
         return jsonify({'error': str(e)}), 502
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
     _log_ai_interaction('finding_analysis', ai_result=ai_result, session_id=session_id)
     analysis['provider'] = ai_result.provider
@@ -2694,7 +2731,7 @@ def ai_suggest_next_test():
         _log_ai_interaction('next_test_suggestion', error=e, session_id=session_id)
         return jsonify({'error': str(e)}), 502
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
     if ai_result is not None:
         _log_ai_interaction('next_test_suggestion', ai_result=ai_result, session_id=session_id)
@@ -2747,7 +2784,7 @@ def get_session_report_data(session_id):
         report_data = report_generator.build_report_data(session.to_dict(), results, notes, lang=lang)
         return jsonify(report_data), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/sessions/<session_id>/report/summary', methods=['POST'])
@@ -2773,7 +2810,7 @@ def generate_session_report_summary(session_id):
     except (AIConfigError, AIRequestError) as e:
         return _handle_ai_error(e)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 @app.route('/api/sessions/<session_id>/report/download', methods=['POST'])
@@ -2804,7 +2841,7 @@ def download_session_report(session_id):
             mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
         )
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return _error_response(e)
 
 
 # ========================
