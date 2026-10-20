@@ -24,17 +24,31 @@ Turkce karakter notu (onemli):
   ğ/Ğ, ş/Ş, ı/İ karakterlerini İCERMEZ (ç/ö/ü Latin-1'de oldugu icin sorun
   cikarmaz, ama ğ/ş/ı/İ bos kare olarak basilir). Bunu cozmek icin
   reportlab'in kendi paketiyle birlikte gelen Bitstream Vera TTF fontlarini
-  (Vera.ttf / VeraBd.ttf) @font-face ile gomuyoruz -- bu fontlar WGL4
-  kapsamina sahip oldugu icin Turkce alfabenin tamamini dogru basar. Ekstra
-  bir font dosyasi indirmeye/pakete eklemeye gerek yok: reportlab zaten
-  xhtml2pdf'in bagimliligi oldugu icin bu dosyalar her kurulumda hazir gelir.
+  (Vera*.ttf) gomuyoruz -- bu fontlar WGL4 kapsamina sahip oldugu icin
+  Turkce alfabenin tamamini dogru basar. Ekstra bir font dosyasi
+  indirmeye/pakete eklemeye gerek yok: reportlab zaten xhtml2pdf'in
+  bagimliligi oldugu icin bu dosyalar her kurulumda hazir gelir.
+
+Windows notu (onemli):
+  Fontlar CSS @font-face ile VERILMEZ. xhtml2pdf @font-face dosyasini once
+  acik tuttugu bir NamedTemporaryFile'a kopyalar, sonra reportlab ayni
+  dosyayi ADIYLA tekrar acar. Linux/macOS buna izin verir; Windows vermez
+  ve rapor "PermissionError: [Errno 13] ... .ttf" ile 500 doner. Bunun
+  yerine fontlari reportlab'e kendi yerlerinden (_register_fonts) bir kez
+  kaydedip xhtml2pdf'in font tablosuna "Vera" adiyla ekliyoruz; boylece
+  hicbir gecici font dosyasi olusmaz.
 """
 
 import io
 import os
+import threading
 from datetime import datetime
 
 import reportlab
+from reportlab.lib.fonts import addMapping
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from xhtml2pdf import default as pisa_default
 from xhtml2pdf import pisa
 
 from report_html import (
@@ -43,12 +57,47 @@ from report_html import (
 )
 
 _FONT_DIR = os.path.join(os.path.dirname(reportlab.__file__), 'fonts')
-_FONT_REGULAR = os.path.join(_FONT_DIR, 'Vera.ttf').replace('\\', '/')
-_FONT_BOLD = os.path.join(_FONT_DIR, 'VeraBd.ttf').replace('\\', '/')
+FONT_FAMILY = 'Vera'
+# (kalin, italik) -> (reportlab font adi, dosya)
+_FONT_FILES = {
+    (0, 0): ('WSTGVera', 'Vera.ttf'),
+    (1, 0): ('WSTGVera-Bold', 'VeraBd.ttf'),
+    (0, 1): ('WSTGVera-Italic', 'VeraIt.ttf'),
+    (1, 1): ('WSTGVera-BoldItalic', 'VeraBI.ttf'),
+}
+_fonts_lock = threading.Lock()
+_fonts_registered = False
 
 
 class PdfReportError(Exception):
     pass
+
+
+def _register_fonts():
+    """Vera ailesini reportlab'e dogrudan (gecici dosya olmadan) kaydeder.
+
+    Islem basina bir kez calisir. CSS'teki font-family: "Vera" xhtml2pdf'in
+    DEFAULT_FONT tablosu uzerinden buraya cozulur; kalin/italik varyantlar
+    reportlab'in addMapping tablosundan secilir."""
+    global _fonts_registered
+    if _fonts_registered:
+        return
+    with _fonts_lock:
+        if _fonts_registered:
+            return
+        try:
+            for (bold, italic), (name, filename) in _FONT_FILES.items():
+                if name not in pdfmetrics.getRegisteredFontNames():
+                    pdfmetrics.registerFont(TTFont(name, os.path.join(_FONT_DIR, filename)))
+            # xhtml2pdf kalin/italigi CSS ailesine ("Vera") degil, cozdugu
+            # font adina ("WSTGVera") gore arar; ikisini de esle.
+            for family in (FONT_FAMILY, _FONT_FILES[(0, 0)][0]):
+                for (bold, italic), (name, _) in _FONT_FILES.items():
+                    addMapping(family, bold, italic, name)
+        except Exception as e:  # font dosyasi eksik/bozuk reportlab kurulumu
+            raise PdfReportError(f'PDF fontu yüklenemedi: {e}') from e
+        pisa_default.DEFAULT_FONT[FONT_FAMILY.lower()] = _FONT_FILES[(0, 0)][0]
+        _fonts_registered = True
 
 
 def _render_findings_pdf(sorted_findings, lang, template):
@@ -156,9 +205,6 @@ def build_pdf_report(project, findings, all_results, options=None, executive_sum
 <head>
 <meta charset="utf-8">
 <style>
-@font-face {{ font-family: "Vera"; src: url("{_FONT_REGULAR}"); }}
-@font-face {{ font-family: "Vera"; font-weight: bold; src: url("{_FONT_BOLD}"); }}
-
 @page {{
   size: a4 portrait;
   margin: 2.6cm 1.8cm 2.2cm 1.8cm;
@@ -251,6 +297,7 @@ body {{ font-family: "Vera"; font-size: 9.5pt; color: #1e293b; }}
 </body>
 </html>'''
 
+    _register_fonts()
     buf = io.BytesIO()
     result = pisa.CreatePDF(io.StringIO(html), dest=buf, encoding='utf-8')
     if result.err:
