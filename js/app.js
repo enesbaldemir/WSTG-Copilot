@@ -7,6 +7,8 @@
   const THEME_KEY = "wstg_theme_v1";
   const SESSION_ID_KEY = "wstg_session_id_v1";
   const SKIP_SESSION_KEY = "wstg_skip_session_v1";
+  const LAST_PROJECT_KEY = "wstg_last_project_v1";
+  const BEGINNER_KEY = "wstg_beginner_v1";
   const RECON_PRIORITY_KEY = "wstg_recon_priority_v1";
   const RECON_CACHE_KEY = "wstg_recon_cache_v1";
   // Sayfanın açıldığı host'a göre (127.0.0.1:8000 -> 127.0.0.1:5000); oturum
@@ -1640,6 +1642,98 @@
     selectTestHint: "Pick a test from the list to see its steps, examples and your notes here."
   });
 
+  // Akışa göre yeniden düzenlenen arayüz: Projelerim, proje sayfası, başlangıç modu
+  Object.assign(I18N.tr, {
+    navMyProjects: "Projelerim", navCurrentProject: "Açık proje", navProjectOverview: "Proje Özeti",
+    stepPrep: "Hazırlık", stepRecon: "Keşif", stepTest: "Test", stepFindings: "Bulgular", stepReport: "Rapor", stepAdvanced: "Gelişmiş",
+    navScope: "Kapsam", navRunRecon: "Keşif Çalıştır", navWstgTests: "WSTG Testleri",
+    navNoProjectHint: "Bir proje açtığında test adımları burada sırayla görünür.",
+    navReferences: "Başvuru", navLibrary: "WSTG Rehberi",
+    beginnerModeLabel: "Başlangıç modu",
+    beginnerModeOn: "Sade görünüm açık", beginnerModeOff: "Tüm özellikler görünür",
+    beginnerModeHint: "Açıkken Kanban, Saldırı Zincirleri, Araçlar, Zaman Çizelgesi ve Çalışma Metrikleri gizlenir. Hiçbir veri silinmez.",
+    beginnerOnToast: "Başlangıç modu açıldı: gelişmiş araçlar gizlendi.",
+    beginnerOffToast: "Başlangıç modu kapandı: tüm özellikler görünür.",
+    homeEyebrow: "Hoş geldin", homeTitleFirst: "İlk pentest projeni oluştur",
+    homeDescFirst: "Proje; test ettiğin hedefi, bulduğun açıkları ve raporu tek yerde tutar. Başlamak için bir ad yazman yeterli.",
+    homeEyebrowBack: "Tekrar hoş geldin", homeTitleBack: "Kaldığın yerden devam et",
+    homeDescBack: "Bir projeyi açarak devam et ya da yeni bir proje başlat.",
+    homeProjectsTitle: "Projelerin", homeProjectsCount: n => `${n} proje`,
+    homeLastOpened: "Son açılan", homeContinueBtn: "Devam et", homeOpenBtn: "Aç",
+    homeProjectsLoadError: "Projeler yüklenemedi.",
+    quickProjectTitle: "Yeni proje",
+    qpNameLabel: "Proje adı", qpNamePlaceholder: "Örn: Acme web uygulaması testi",
+    qpTargetLabel: "Test edilecek adres", optionalTag: "(isteğe bağlı)",
+    qpTargetHint: "Kapsama eklenir. Bu adrese şimdi hiçbir istek gönderilmez.",
+    qpClientLabel: "Müşteri / kurum",
+    qpAuthNote: "Yalnızca test etmek için yazılı izin aldığın sistemleri ekle.",
+    qpSubmit: "Projeyi oluştur ve başla",
+    qpNameRequired: "Projeye bir ad ver.",
+    qpTargetInvalid: "Adres anlaşılamadı. Örnek: https://test.example.com ya da 10.0.0.5",
+    qpCreating: "Oluşturuluyor…",
+    qpCreated: name => `"${name}" oluşturuldu. İlk adım: kapsamı kontrol et.`,
+    qpPartialError: "Proje oluşturuldu ama hedef kapsama eklenemedi; Kapsam sayfasından ekleyebilirsin.",
+    howTitle: "Nasıl çalışır?",
+    howStep1: "Kapsamı yaz: test etmene izin verilen adresler.",
+    howStep2: "Hedefi tanı: sayfalar, teknolojiler, giriş noktaları.",
+    howStep3: "WSTG listesindeki testleri adım adım uygula, not al.",
+    howStep4: "Bulduğun açıkları kanıtlarıyla kaydet.",
+    howStep5: "Tek tıkla PDF ya da Word rapor üret.",
+    homeLibraryBtn: "Önce WSTG Rehberi'ne göz at",
+    libraryTitle: "WSTG Rehberi",
+    libraryDesc: "OWASP Web Security Testing Guide v4.2'deki tüm testler: her birinin ne olduğu, nasıl uygulanacağı ve örnekleri. Bir proje açıksa işaretlediğin testler o projeye kaydedilir.",
+    startNeedProject: "Teste başlamak için önce bir proje oluştur ya da aç.",
+    lastProjectMissing: "Son açtığın proje bulunamadı; listeden seçebilirsin.",
+    pwWstgIntro: "Testler OWASP WSTG kategorilerine ayrılmıştır. Bir kategori seç: her testin amacını, nasıl uygulanacağını ve örneklerini göreceksin. Bitirdiğin testleri işaretle; ilerlemen bu projeye kaydedilir.",
+    pwWstgProgress: (d, n) => `${n} testten ${d} tanesi tamamlandı`,
+    pwWstgSessionError: "Test listesi hazırlanamadı. Sayfayı yenileyip tekrar dene."
+  });
+  Object.assign(I18N.en, {
+    navMyProjects: "My Projects", navCurrentProject: "Open project", navProjectOverview: "Project Overview",
+    stepPrep: "Prepare", stepRecon: "Discover", stepTest: "Test", stepFindings: "Findings", stepReport: "Report", stepAdvanced: "Advanced",
+    navScope: "Scope", navRunRecon: "Run Discovery", navWstgTests: "WSTG Tests",
+    navNoProjectHint: "Open a project and its testing steps appear here in order.",
+    navReferences: "Reference", navLibrary: "WSTG Guide",
+    beginnerModeLabel: "Beginner mode",
+    beginnerModeOn: "Simple view on", beginnerModeOff: "All features visible",
+    beginnerModeHint: "When on, Kanban, Attack Chains, Tools, Timeline and Study Metrics are hidden. No data is deleted.",
+    beginnerOnToast: "Beginner mode on: advanced tools are hidden.",
+    beginnerOffToast: "Beginner mode off: all features are visible.",
+    homeEyebrow: "Welcome", homeTitleFirst: "Create your first pentest project",
+    homeDescFirst: "A project keeps the target you test, the issues you find and the report in one place. All you need to start is a name.",
+    homeEyebrowBack: "Welcome back", homeTitleBack: "Pick up where you left off",
+    homeDescBack: "Open a project to continue, or start a new one.",
+    homeProjectsTitle: "Your projects", homeProjectsCount: n => `${n} project${n === 1 ? '' : 's'}`,
+    homeLastOpened: "Last opened", homeContinueBtn: "Continue", homeOpenBtn: "Open",
+    homeProjectsLoadError: "Could not load projects.",
+    quickProjectTitle: "New project",
+    qpNameLabel: "Project name", qpNamePlaceholder: "e.g. Acme web application test",
+    qpTargetLabel: "Address to test", optionalTag: "(optional)",
+    qpTargetHint: "Added to the scope. No request is sent to this address now.",
+    qpClientLabel: "Client / organization",
+    qpAuthNote: "Only add systems you have written permission to test.",
+    qpSubmit: "Create project and start",
+    qpNameRequired: "Give the project a name.",
+    qpTargetInvalid: "Could not read that address. Example: https://test.example.com or 10.0.0.5",
+    qpCreating: "Creating…",
+    qpCreated: name => `"${name}" created. First step: check the scope.`,
+    qpPartialError: "The project was created but the target could not be added to the scope; add it from the Scope page.",
+    howTitle: "How it works",
+    howStep1: "Write down the scope: the addresses you are allowed to test.",
+    howStep2: "Get to know the target: pages, technologies, entry points.",
+    howStep3: "Work through the WSTG tests step by step and take notes.",
+    howStep4: "Record the issues you find with evidence.",
+    howStep5: "Generate a PDF or Word report in one click.",
+    homeLibraryBtn: "Browse the WSTG Guide first",
+    libraryTitle: "WSTG Guide",
+    libraryDesc: "Every test in the OWASP Web Security Testing Guide v4.2: what it is, how to run it, with examples. When a project is open, the tests you tick are saved to that project.",
+    startNeedProject: "Create or open a project before you start testing.",
+    lastProjectMissing: "Your last project was not found; pick one from the list.",
+    pwWstgIntro: "Tests are grouped into OWASP WSTG categories. Pick a category to see each test's goal, how to run it and examples. Tick the tests you finish; your progress is saved to this project.",
+    pwWstgProgress: (d, n) => `${d} of ${n} tests done`,
+    pwWstgSessionError: "Could not prepare the test list. Reload the page and try again."
+  });
+
   let DATA = null;
   let TOP10 = null;
   let top10Index = 0;
@@ -1662,7 +1756,16 @@
   let currentProjectObj = null;
   let editingProjectId = null; // newProjectOverlay create/edit modunu ayırt eder
   let activePwTab = 'overview';
+  let currentView = 'library';  // 'home' (Projelerim) | 'project' | 'library' (WSTG Rehberi)
+  let beginnerMode = window.WSTGFlow.isBeginner(readStored(BEGINNER_KEY));
   let customTests = []; // aktif projenin özel (Custom) test maddeleri
+
+  function readStored(key){
+    try{ return localStorage.getItem(key); }catch(e){ return null; }
+  }
+  function writeStored(key, value){
+    try{ value == null ? localStorage.removeItem(key) : localStorage.setItem(key, value); }catch(e){}
+  }
 
   function loadLang(){
     try{ return localStorage.getItem(LANG_KEY) || "tr"; }catch(e){ return "tr"; }
@@ -1890,6 +1993,9 @@
     });
     updateThemeTrigger();
     updateProjectChip();
+    applyBeginnerMode();
+    const sectionTitle = document.getElementById('pwSectionTitle');
+    if(sectionTitle && currentProjectId) sectionTitle.textContent = pwSectionLabel(activePwTab);
     const langSelect = document.getElementById('langSelect');
     if(langSelect) langSelect.value = currentLang;
     const authLangSelect = document.getElementById('authLangSelect');
@@ -2243,6 +2349,8 @@
     overlay.classList.remove('open');
     document.body.style.overflow = '';
     if(wasOpen && DATA) renderSidebar();
+    // Proje sayfasındaki WSTG kartlarının ilerlemesi checklist kapanınca güncellenir.
+    if(wasOpen && currentView === 'project' && (activePwTab === 'wstg' || activePwTab === 'overview')) renderPwTab();
   }
 
   function renderTestList(opts){
@@ -2689,6 +2797,7 @@
     const badge = document.getElementById('dbBadge');
     if(badge){
       badge.className = 'scope-badge ' + (dbOnline ? 'verified' : 'unverified');
+      badge.hidden = dbOnline; // bağlıyken gösterilmez; yalnızca sorun olduğunda görünür
       badge.textContent = dbOnline ? t('dbBadgeOnline') : t('dbBadgeOffline');
       badge.title = dbOnline ? t('dbOnline') : t('dbOffline');
     }
@@ -2744,8 +2853,11 @@
       if(!currentSession || currentSession.id !== session.id) return;
       currentProjectId = project.id;
       currentProjectObj = project;
+      writeStored(LAST_PROJECT_KEY, project.id);
       updateProjectChip();
       reloadReconContext();
+      renderProjectWorkspaceHeader();
+      if(currentView === 'project') renderPwTab();
       return apiRequest(`/projects/${project.id}/custom-tests`).then(items => {
         customTests = items || [];
         renderSidebar(); renderDashboard();
@@ -3642,8 +3754,7 @@
       .then(r => {
         statusEl.textContent = '';
         showToast(t('importProResult')(r.created, r.skipped, r.failed));
-        const ws = document.getElementById('projectWorkspaceOverlay');
-        if(ws && ws.classList.contains('open') && (activePwTab === 'findings' || activePwTab === 'evidence')) renderPwTab();
+        if(currentView === 'project' && (activePwTab === 'findings' || activePwTab === 'evidence')) renderPwTab();
         if(r.failed){ statusEl.textContent = t('importProResult')(r.created, r.skipped, r.failed); statusEl.classList.add('error'); }
         else closeImportModal();
       })
@@ -3985,6 +4096,9 @@
     const chip = document.getElementById('projectChip');
     if(!chip) return;
     const name = document.getElementById('projectChipName');
+    document.body.classList.toggle('has-project', !!currentProjectObj);
+    const navName = document.getElementById('navProjectName');
+    if(navName) navName.textContent = currentProjectObj ? currentProjectObj.name : '—';
     if(currentProjectObj){
       chip.classList.remove('placeholder');
       name.textContent = currentProjectObj.name;
@@ -4079,6 +4193,7 @@
       closeNewProjectModal();
       showToast(t('projectSaved'));
       if(document.getElementById('projectsOverlay').classList.contains('open')) renderProjectList();
+      if(currentView === 'home') renderHome();
       if(currentProjectId === project.id){
         currentProjectObj = project;
         updateProjectChip();
@@ -4091,15 +4206,12 @@
     if(!confirm(t('projectDeleteConfirm'))) return;
     apiRequest(`/projects/${id}`, { method: 'DELETE' }).then(()=>{
       if(currentProjectId === id){
-        currentProjectId = null;
-        currentProjectObj = null;
-        customTests = [];
-        updateProjectChip();
-        closeProjectWorkspace();
-        reloadReconContext();
-        renderSidebar(); renderDashboard();
+        leaveProject();
+        showView('home');
       }
-      renderProjectList();
+      if(readStored(LAST_PROJECT_KEY) === id) writeStored(LAST_PROJECT_KEY, null);
+      if(document.getElementById('projectsOverlay').classList.contains('open')) renderProjectList();
+      if(currentView === 'home') renderHome();
       showToast(t('projectDeleted'));
     }).catch(err => showToast(err.message || t('resultSaveError')));
   }
@@ -4113,32 +4225,194 @@
     pill.className = `project-status-pill ${currentProjectObj.status}`;
   }
 
-  function openProjectWorkspace(projectId, initialTab){
-    apiRequest(`/projects/${projectId}`).then(project => {
+  // Proje artık bir sayfadır (modal değil). Açılınca projenin test oturumu
+  // arka planda hazırlanır; kullanıcı "oturum" kavramıyla uğraşmaz.
+  function loadProject(projectId, initialTab){
+    return apiRequest(`/projects/${projectId}`).then(project => {
       currentProjectId = project.id;
       currentProjectObj = project;
+      writeStored(LAST_PROJECT_KEY, project.id);
       updateProjectChip();
       closeProjectsModal();
       reloadReconContext();
       renderProjectWorkspaceHeader();
+      showView('project');
       switchPwTab(initialTab || 'overview');
-      document.getElementById('projectWorkspaceOverlay').classList.add('open');
-      return apiRequest(`/projects/${projectId}/custom-tests`);
-    }).then(items => {
-      customTests = items || [];
-      renderSidebar(); renderDashboard();
-    }).catch(err => showToast(err.message || t('projectsLoadError')));
+      return Promise.all([
+        apiRequest(`/projects/${projectId}/custom-tests`).then(items => {
+          customTests = items || [];
+          renderSidebar(); renderDashboard();
+        }).catch(()=>{}),
+        ensureProjectSessionOpen(project)
+      ]);
+    });
   }
-  function closeProjectWorkspace(){
-    document.getElementById('projectWorkspaceOverlay').classList.remove('open');
+
+  function openProjectWorkspace(projectId, initialTab){
+    return loadProject(projectId, initialTab).catch(err => showToast(err.message || t('projectsLoadError')));
+  }
+
+  // Projenin ilk test oturumunu açar (yoksa oluşturur). Oturum zaten bu
+  // projeye aitse dokunmaz.
+  function ensureProjectSessionOpen(project){
+    if(currentSession && currentSession.project_id === project.id) return Promise.resolve(currentSession);
+    return ensureProjectPrimarySession(project.id)
+      .then(session => openSessionById(session.id))
+      .then(()=>{
+        if(currentView === 'project' && (activePwTab === 'wstg' || activePwTab === 'overview')) renderPwTab();
+        return currentSession;
+      })
+      .catch(()=>{ showToast(t('pwWstgSessionError')); return null; });
+  }
+
+  function leaveProject(){
+    currentProjectId = null;
+    currentProjectObj = null;
+    customTests = [];
+    writeStored(LAST_PROJECT_KEY, null);
+    if(currentSession){
+      currentSession = null;
+      sessionResults = {};
+      saveSessionId(null);
+      progress = loadProgress();
+      updateSessionUI();
+    }
+    updateProjectChip();
+    reloadReconContext();
+    renderSidebar(); renderDashboard();
   }
 
   function switchPwTab(tabName){
-    activePwTab = tabName;
-    document.querySelectorAll('#pwTabs .pw-tab').forEach(btn=>{
-      btn.classList.toggle('active', btn.dataset.tab === tabName);
-    });
+    activePwTab = window.WSTGFlow.resolveTab(tabName, beginnerMode);
+    const title = document.getElementById('pwSectionTitle');
+    if(title) title.textContent = pwSectionLabel(activePwTab);
+    updateNavActive();
     renderPwTab();
+  }
+
+  function pwSectionLabel(tab){
+    const keys = { overview: 'navProjectOverview', scope: 'navScope', assets: 'navAttackSurface', wstg: 'navWstgTests',
+      recon: 'pwTabRecon', testplan: 'pwTabTestPlan' };
+    return t(keys[tab] || ('pwTab' + tab.charAt(0).toUpperCase() + tab.slice(1)));
+  }
+
+  // ---- Görünümler: Projelerim · Proje sayfası · WSTG Rehberi ----
+  const VIEW_PAGES = { home: 'homePage', project: 'projectPage', library: 'libraryPage' };
+
+  function showView(view){
+    if(view === 'project' && !currentProjectId) view = 'home';
+    if(view === 'home' && !dbOnline) view = 'library';
+    const changed = currentView !== view;
+    currentView = view;
+    Object.entries(VIEW_PAGES).forEach(([v, id]) => {
+      const el = document.getElementById(id);
+      if(el) el.classList.toggle('active', v === view);
+    });
+    updateNavActive();
+    if(view === 'home') renderHome();
+    if(changed) window.scrollTo(0, 0);
+  }
+
+  function updateNavActive(){
+    document.querySelectorAll('.sidebar .nav-link').forEach(el => el.classList.remove('active'));
+    let target = null;
+    if(currentView === 'home') target = document.getElementById('projectsNavBtn');
+    else if(currentView === 'library') target = document.getElementById('dashboardNav');
+    else if(currentView === 'project') target = document.querySelector(`.sidebar .nav-link[data-pw-tab="${activePwTab}"]`);
+    if(target) target.classList.add('active');
+  }
+
+  function applyBeginnerMode(){
+    document.body.classList.toggle('beginner-mode', beginnerMode);
+    const toggle = document.getElementById('beginnerModeToggle');
+    if(toggle) toggle.checked = beginnerMode;
+    const sub = document.getElementById('beginnerModeSub');
+    if(sub) sub.textContent = t(beginnerMode ? 'beginnerModeOn' : 'beginnerModeOff');
+    const sw = document.getElementById('beginnerModeSwitch');
+    if(sw) sw.title = t('beginnerModeHint');
+  }
+
+  function setBeginnerMode(on){
+    beginnerMode = !!on;
+    writeStored(BEGINNER_KEY, beginnerMode ? '1' : '0');
+    applyBeginnerMode();
+    if(beginnerMode && currentView === 'project' && window.WSTGFlow.isAdvancedTab(activePwTab)) switchPwTab('overview');
+    showToast(t(beginnerMode ? 'beginnerOnToast' : 'beginnerOffToast'));
+  }
+
+  // ---- Projelerim (ana sayfa) ----
+  function renderHome(){
+    const list = document.getElementById('homeProjectList');
+    const section = document.getElementById('homeProjectsSection');
+    if(!list || !dbOnline) return;
+    apiRequest('/projects').then(projects => {
+      const has = projects.length > 0;
+      document.getElementById('homeLayout').classList.toggle('has-projects', has);
+      section.hidden = !has;
+      setI18nText(document.getElementById('homeEyebrow'), has ? 'homeEyebrowBack' : 'homeEyebrow');
+      setI18nText(document.getElementById('homeTitle'), has ? 'homeTitleBack' : 'homeTitleFirst');
+      setI18nText(document.getElementById('homeDesc'), has ? 'homeDescBack' : 'homeDescFirst');
+      document.getElementById('homeProjectsCount').textContent = has ? t('homeProjectsCount')(projects.length) : '';
+      const lastId = readStored(LAST_PROJECT_KEY);
+      list.innerHTML = projects.map(p => {
+        const isLast = p.id === lastId;
+        const dates = p.start_date ? `${escapeHtml(p.start_date)}${p.end_date ? ' – ' + escapeHtml(p.end_date) : ''}` : '';
+        return `<article class="home-project ${isLast ? 'is-last' : ''}" data-id="${escapeHtml(p.id)}">
+          <div class="home-project-top">
+            <span class="project-status-pill ${escapeHtml(p.status)}">${escapeHtml(t('projectStatus_' + p.status))}</span>
+            ${isLast ? `<span class="home-project-last">${escapeHtml(t('homeLastOpened'))}</span>` : ''}
+          </div>
+          <h3 class="home-project-name">${escapeHtml(p.name)}</h3>
+          <p class="home-project-meta">${[p.client ? escapeHtml(p.client) : '', dates].filter(Boolean).join(' · ') || '&nbsp;'}</p>
+          <div class="home-project-actions">
+            <button type="button" class="btn btn-primary btn-sm" data-action="open" data-id="${escapeHtml(p.id)}">${escapeHtml(t(isLast ? 'homeContinueBtn' : 'homeOpenBtn'))}</button>
+            <button type="button" class="btn btn-ghost btn-sm" data-action="edit" data-id="${escapeHtml(p.id)}">${escapeHtml(t('editBtn'))}</button>
+            <button type="button" class="btn btn-ghost btn-sm danger" data-action="delete" data-id="${escapeHtml(p.id)}">${escapeHtml(t('pwEvidenceDelete'))}</button>
+          </div>
+        </article>`;
+      }).join('');
+    }).catch(err => {
+      section.hidden = false;
+      list.innerHTML = `<div class="search-empty">${escapeHtml(t('homeProjectsLoadError'))}<br><small>${escapeHtml(String(err.message || err))}</small></div>`;
+    });
+  }
+
+  function submitQuickProject(e){
+    e.preventDefault();
+    const nameEl = document.getElementById('qpName');
+    const targetEl = document.getElementById('qpTarget');
+    const errEl = document.getElementById('qpError');
+    const btn = document.getElementById('qpSubmit');
+    errEl.textContent = '';
+    const name = nameEl.value.trim();
+    if(!name){ errEl.textContent = t('qpNameRequired'); nameEl.focus(); return; }
+    const rawTarget = targetEl.value.trim();
+    const target = rawTarget ? window.WSTGFlow.parseTarget(rawTarget) : null;
+    if(rawTarget && !target){ errEl.textContent = t('qpTargetInvalid'); targetEl.focus(); return; }
+    btn.disabled = true;
+    const today = new Date().toISOString().slice(0, 10);
+    let created = null;
+    let scopeFailed = false;
+    apiRequest('/projects', { method: 'POST', body: JSON.stringify({
+      name, client: document.getElementById('qpClient').value.trim(), description: '', status: 'active', start_date: today, end_date: null
+    }) }).then(project => {
+      created = project;
+      // Kapsam kaydı ve oturum yalnızca yerel veritabanına yazılır; hedefe istek gitmez.
+      const scope = target
+        ? apiRequest(`/projects/${project.id}/scope`, { method: 'POST', body: JSON.stringify({ type: target.scopeType, value: target.host, in_scope: true }) })
+            .catch(()=>{ scopeFailed = true; })
+        : Promise.resolve();
+      return scope.then(()=> apiRequest('/sessions', { method: 'POST', body: JSON.stringify({
+        name: `${project.name} — Test Oturumu`, project_id: project.id, target_url: target ? target.url : ''
+      }) }));
+    }).then(()=>{
+      document.getElementById('quickProjectForm').reset();
+      showToast(scopeFailed ? t('qpPartialError') : t('qpCreated')(created.name));
+      return loadProject(created.id, 'scope');
+    }).catch(err => {
+      if(created) return openProjectWorkspace(created.id, 'scope');
+      errEl.textContent = err.message || t('resultSaveError');
+    }).finally(()=>{ btn.disabled = false; });
   }
 
   function renderPwTab(){
@@ -4196,16 +4470,22 @@
             </div>`).join('')}
         </div>` : '';
 
+      // İlerleme, yalnızca dokunulan testlere göre değil tüm WSTG listesine göre gösterilir
+      // (1 test işaretlenince "%100" görünmesin).
+      const wstgCov = d.coverage && d.coverage.wstg;
+      const totalTests = wstgCov ? wstgCov.total : d.total_tests;
+      const doneTests = wstgCov ? wstgCov.completed : d.completed_tests;
+      const progressPct = wstgCov ? wstgCov.pct : d.progress_pct;
       content.innerHTML = `
         <div class="pw-stats-grid">
           <div class="pw-stat-card"><div class="label">${t('pwStatAssets')}</div><div class="value">${d.asset_count}</div></div>
-          <div class="pw-stat-card"><div class="label">${t('pwStatTests')}</div><div class="value">${d.total_tests}</div></div>
-          <div class="pw-stat-card"><div class="label">${t('pwStatCompleted')}</div><div class="value">${d.completed_tests}</div></div>
+          <div class="pw-stat-card"><div class="label">${t('pwStatTests')}</div><div class="value">${totalTests}</div></div>
+          <div class="pw-stat-card"><div class="label">${t('pwStatCompleted')}</div><div class="value">${doneTests}</div></div>
           <div class="pw-stat-card"><div class="label">${t('pwStatFindings')}</div><div class="value">${d.pro_finding_count !== undefined ? d.pro_finding_count : d.finding_count}</div></div>
         </div>
         <div class="cat-progress-row" style="margin-bottom:22px">
-          <div class="cat-progress-bar" style="flex:1"><div class="cat-progress-fill" style="width:${d.progress_pct}%"></div></div>
-          <div class="cat-progress-text">${d.progress_pct}%</div>
+          <div class="cat-progress-bar" style="flex:1"><div class="cat-progress-fill" style="width:${progressPct}%"></div></div>
+          <div class="cat-progress-text">${progressPct}%</div>
         </div>
         ${coverageHtml}
         <h5 class="pw-section-heading">${t('pwSeverityDistLabel')}</h5>
@@ -4730,7 +5010,7 @@
       const action = e.target.closest('[data-as-action]');
       if(action){
         const a = action.dataset.asAction;
-        if(a === 'open-recon'){ closeProjectWorkspace(); openReconModal(); }
+        if(a === 'open-recon'){ openReconModal(); }
         if(a === 'clear-filters'){ asFilters = { q: '', type: 'all', scope: 'all', hideStatic: false }; saveHideStatic(false); renderAttackSurface(); }
         if(a === 'toggle-suggestions'){ asShowAllSuggestions = !asShowAllSuggestions; renderAsSuggestions(); }
         return;
@@ -4744,7 +5024,7 @@
       const test = e.target.closest('[data-as-test]');
       if(test){
         const meta = testInfoById(test.dataset.asTest);
-        if(meta){ closeProjectWorkspace(); openCategory(meta.catId, test.dataset.asTest); }
+        if(meta){ openCategory(meta.catId, test.dataset.asTest); }
         return;
       }
       const copy = e.target.closest('[data-as-copy]');
@@ -4775,10 +5055,7 @@
         <p>${t('pwReconDesc')}</p>
         <button type="button" class="btn btn-primary" id="pwOpenReconBtn">${t('pwReconOpenBtn')}</button>
       </div>`;
-    document.getElementById('pwOpenReconBtn').addEventListener('click', ()=>{
-      closeProjectWorkspace();
-      openReconModal();
-    });
+    document.getElementById('pwOpenReconBtn').addEventListener('click', openReconModal);
   }
 
   // ========================
@@ -4942,10 +5219,7 @@
         <p>${t('pwTestPlanDesc')}</p>
         <button type="button" class="btn btn-primary" id="pwOpenPlannerBtn">${t('pwTestPlanOpenBtn')}</button>
       </div>`;
-    document.getElementById('pwOpenPlannerBtn').addEventListener('click', ()=>{
-      closeProjectWorkspace();
-      openPlannerModal();
-    });
+    document.getElementById('pwOpenPlannerBtn').addEventListener('click', openPlannerModal);
   }
 
   function ensureProjectPrimarySession(projectId){
@@ -4958,13 +5232,33 @@
     });
   }
 
+  // WSTG testleri artık proje sayfasının içinde: kategori kartları + ilerleme.
+  // Karta tıklanınca projenin oturumu hazır olduğundan doğrudan checklist açılır.
   function renderPwWstg(){
+    const s = stats();
+    const cats = getEffectiveCategories();
     document.getElementById('pwContent').innerHTML = `
-      <div class="pw-shortcut-card">
-        <p>${t('pwWstgDesc')}</p>
-        <button type="button" class="btn btn-primary" id="pwOpenWstgBtn">${t('pwWstgOpenBtn')}</button>
+      <p class="pw-intro">${escapeHtml(t('pwWstgIntro'))}</p>
+      <div class="pw-wstg-progress">
+        <div class="cat-progress-bar" style="flex:1"><div class="cat-progress-fill" style="width:${s.pct}%"></div></div>
+        <span class="cat-progress-text">${escapeHtml(t('pwWstgProgress')(s.done, s.total))}</span>
       </div>
-      <div class="custom-tests-section">
+      <div class="categories pw-wstg-grid">
+        ${cats.map(c => {
+          const done = c.tests.filter(x => progress[x.id]).length;
+          const pct = c.tests.length ? Math.round((done / c.tests.length) * 100) : 0;
+          return `<div class="category-card ${pct === 100 ? 'done-all' : ''}" data-cat="${escapeHtml(c.id)}" tabindex="0" role="button">
+            <div class="cc-top"><span class="cc-ico">${icon(c.icon)}</span><span class="badge">${escapeHtml(c.code)}</span></div>
+            <h4>${escapeHtml(c.name)}</h4>
+            <p>${escapeHtml(c.description || '')}</p>
+            <div class="cat-progress-row">
+              <div class="cat-progress-bar"><div class="cat-progress-fill" style="width:${pct}%"></div></div>
+              <div class="cat-progress-text">${done}/${c.tests.length}</div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="custom-tests-section adv-only">
         <h5>${t('customTestsLabel')}</h5>
         <p class="import-preview-source" style="margin-bottom:14px">${t('customTestsDesc')}</p>
         <div class="pw-scope-form">
@@ -4974,11 +5268,15 @@
         <input type="text" id="customTestDescInput" placeholder="${t('customTestDescPlaceholder')}" style="width:100%;margin-bottom:14px;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:10px;font-size:.85rem;font-family:inherit">
         <div id="customTestsList" class="pw-scope-list"></div>
       </div>`;
-    document.getElementById('pwOpenWstgBtn').addEventListener('click', ()=>{
-      ensureProjectPrimarySession(currentProjectId).then(session => {
-        closeProjectWorkspace();
-        return openSessionById(session.id);
-      }).catch(err => showToast(err.message || t('resultSaveError')));
+    const grid = document.querySelector('#pwContent .pw-wstg-grid');
+    const open = catId => {
+      if(!currentProjectObj) return;
+      ensureProjectSessionOpen(currentProjectObj).then(sess => { if(sess) openCategory(catId); });
+    };
+    grid.addEventListener('click', e => { const card = e.target.closest('.category-card'); if(card) open(card.dataset.cat); });
+    grid.addEventListener('keydown', e => {
+      const card = e.target.closest('.category-card');
+      if(card && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); open(card.dataset.cat); }
     });
     document.getElementById('addCustomTestBtn').addEventListener('click', ()=>{
       const title = document.getElementById('customTestTitleInput').value.trim();
@@ -6687,7 +6985,6 @@
       content.querySelectorAll('button[data-action="report"]').forEach(btn=>{
         btn.addEventListener('click', ()=>{
           openSessionById(btn.dataset.id).then(()=>{
-            closeProjectWorkspace();
             exportReport();
           });
         });
@@ -6933,11 +7230,30 @@
       if(e.target.id === 'categoryOverlay') closeCategory();
     });
 
-    document.getElementById('dashboardNav').addEventListener('click', ()=>{
-      window.scrollTo({top:0, behavior:'smooth'});
-    });
+    document.getElementById('dashboardNav').addEventListener('click', ()=> showView('library'));
     document.getElementById('top10NavBtn').addEventListener('click', ()=>{
+      showView('library');
       document.getElementById('top10Section')?.scrollIntoView({behavior:'smooth', block:'start'});
+    });
+    // Proje adımları: data-pw-tab taşıyan her kenar çubuğu bağlantısı proje sayfasında o bölümü açar.
+    document.getElementById('sidebar').addEventListener('click', e=>{
+      const link = e.target.closest('.nav-link[data-pw-tab]');
+      if(!link || !currentProjectId) return;
+      closeSidebar();
+      showView('project');
+      switchPwTab(link.dataset.pwTab);
+    });
+    document.getElementById('beginnerModeToggle').addEventListener('change', e=> setBeginnerMode(e.target.checked));
+    document.getElementById('quickProjectForm').addEventListener('submit', submitQuickProject);
+    document.getElementById('homeLibraryBtn').addEventListener('click', ()=> showView('library'));
+    document.getElementById('pwBackHome').addEventListener('click', ()=> showView('home'));
+    document.getElementById('homeProjectList').addEventListener('click', e=>{
+      const btn = e.target.closest('button[data-action]');
+      if(!btn) return;
+      const id = btn.dataset.id;
+      if(btn.dataset.action === 'open') openProjectWorkspace(id);
+      if(btn.dataset.action === 'delete') deleteProjectUI(id);
+      if(btn.dataset.action === 'edit') apiRequest(`/projects/${id}`).then(openNewProjectModal).catch(err => showToast(err.message || t('resultSaveError')));
     });
     document.getElementById('closeTop10Overlay').addEventListener('click', closeTop10Detail);
     document.getElementById('top10Overlay').addEventListener('click', e=>{
@@ -6954,7 +7270,7 @@
     });
     document.getElementById('sidebarScrim').addEventListener('click', closeSidebar);
     document.querySelectorAll('.sidebar .nav-link[id]').forEach(btn=>{
-      if(btn.id !== 'categoryToggle') btn.addEventListener('click', closeSidebar);
+      if(btn.id !== 'categoryToggle' && !btn.dataset.pwTab) btn.addEventListener('click', closeSidebar);
     });
     document.getElementById('categoryToggle').addEventListener('click', ()=>{
       const list = document.getElementById('categoryNav');
@@ -6962,7 +7278,7 @@
       document.getElementById('categoryToggle').classList.toggle('collapsed', hidden);
     });
     document.getElementById('brandLink').addEventListener('click', e=>{
-      e.preventDefault(); window.scrollTo({top:0, behavior:'smooth'});
+      e.preventDefault(); showView(dbOnline ? 'home' : 'library');
     });
     document.getElementById('sessionChip').addEventListener('click', ()=> openSessionGate(true));
     document.getElementById('mobileSearchBtn').addEventListener('click', e=>{
@@ -7002,10 +7318,6 @@
     });
 
     document.getElementById('reconNavBtn').addEventListener('click', openReconModal);
-    document.getElementById('attackSurfaceNavBtn').addEventListener('click', ()=>{
-      if(currentProjectId) openProjectWorkspace(currentProjectId, 'assets');
-      else { openProjectsModal(); showToast(t('asNeedProject')); }
-    });
     document.getElementById('closeReconOverlay').addEventListener('click', closeReconModal);
     document.getElementById('reconOverlay').addEventListener('click', e=>{
       if(e.target.id === 'reconOverlay') closeReconModal();
@@ -7035,7 +7347,7 @@
     });
     document.getElementById('aiNextTestAskBtn').addEventListener('click', askAiNextTest);
 
-    document.getElementById('projectsNavBtn').addEventListener('click', openProjectsModal);
+    document.getElementById('projectsNavBtn').addEventListener('click', ()=> showView('home'));
     document.getElementById('closeProjectsOverlay').addEventListener('click', closeProjectsModal);
     document.getElementById('projectsOverlay').addEventListener('click', e=>{
       if(e.target.id === 'projectsOverlay') closeProjectsModal();
@@ -7053,10 +7365,6 @@
       if(btn.dataset.action === 'open') openProjectWorkspace(id);
       if(btn.dataset.action === 'delete') deleteProjectUI(id);
       if(btn.dataset.action === 'edit') apiRequest(`/projects/${id}`).then(openNewProjectModal).catch(err => showToast(err.message || t('resultSaveError')));
-    });
-    document.getElementById('closeProjectWorkspace').addEventListener('click', closeProjectWorkspace);
-    document.getElementById('projectWorkspaceOverlay').addEventListener('click', e=>{
-      if(e.target.id === 'projectWorkspaceOverlay') closeProjectWorkspace();
     });
     document.getElementById('pwEditBtn').addEventListener('click', ()=> currentProjectObj && openNewProjectModal(currentProjectObj));
 
@@ -7097,15 +7405,7 @@
       openFindingModal(m.finding, null);
     });
 
-    document.getElementById('pwTabs').addEventListener('click', e=>{
-      const btn = e.target.closest('.pw-tab');
-      if(!btn) return;
-      switchPwTab(btn.dataset.tab);
-    });
-    document.getElementById('projectChip').addEventListener('click', ()=>{
-      if(currentProjectId) openProjectWorkspace(currentProjectId);
-      else openProjectsModal();
-    });
+    document.getElementById('projectChip').addEventListener('click', ()=> showView('home'));
 
     document.getElementById('importNavBtn').addEventListener('click', openImportModal);
     document.getElementById('closeImportOverlay').addEventListener('click', closeImportModal);
@@ -7125,7 +7425,7 @@
     document.addEventListener('keydown', e=>{
       if(e.key === 'Escape'){
         closeCategory(); closeSidebar(); closeNewSessionOverlay(); closeTop10Detail(); closeImportModal(); closeReconModal(); closePlannerModal(); closeAiNextTestModal();
-        closeProjectsModal(); closeNewProjectModal(); closeProjectWorkspace(); closeFindingModal(); closeDuplicateAlert(); closeAiSettingsModal(); closeByokModal();
+        closeProjectsModal(); closeNewProjectModal(); closeFindingModal(); closeDuplicateAlert(); closeAiSettingsModal(); closeByokModal();
         closeNoteLightbox(); closeNoteEditor(); closeNotebook(); closeStudyMetrics();
         if(document.getElementById('closeSessionGate').style.display !== 'none') closeSessionGate();
       }
@@ -7212,7 +7512,8 @@
     });
     document.getElementById('resetBtn').addEventListener('click', resetProgress);
     document.getElementById('startBtn').addEventListener('click', ()=>{
-      if(dbOnline && !currentSession){ openSessionGate(true); return; }
+      if(dbOnline && !currentProjectId){ showToast(t('startNeedProject')); showView('home'); return; }
+      if(dbOnline){ showView('project'); switchPwTab('wstg'); return; }
       const first = DATA.categories[0];
       if(first) openCategory(first.id);
     });
@@ -7248,6 +7549,8 @@
       if(top10WasOpen){
         renderTop10Detail();
       }
+      if(currentView === 'project') renderPwTab();
+      if(currentView === 'home') renderHome();
     });
   }
 
@@ -7290,6 +7593,8 @@
     renderTop10Grid();
     bindEvents();
     updateSessionUI();
+    applyBeginnerMode();
+    showView('library');
 
     bindAuthEvents();
     checkDb().then(status => {
@@ -7308,16 +7613,24 @@
 
     renderAiStatusBadge();
 
-    const savedId = loadSavedSessionId();
-    if(savedId){
-      openSessionById(savedId).then(()=>{
-        showToast(`${currentSession.name} ${t('sessionResumed')}`);
-      }).catch(()=>{
-        saveSessionId(null);
-        if(!getSkipFlag()) openSessionGate(false);
+    document.body.classList.add('is-online');
+    // Oturum kapısı yok: son açılan proje varsa oraya, yoksa Projelerim'e.
+    const lastProject = readStored(LAST_PROJECT_KEY);
+    const savedSession = loadSavedSessionId();
+    if(lastProject){
+      loadProject(lastProject).catch(()=>{
+        writeStored(LAST_PROJECT_KEY, null);
+        showToast(t('lastProjectMissing'));
+        showView('home');
       });
-    } else if(!getSkipFlag()){
-      openSessionGate(false);
+    } else if(savedSession){
+      // Eski sürümden kalan oturum: projesi varsa proje sayfası açılır.
+      openSessionById(savedSession).then(()=>{
+        if(currentSession && currentSession.project_id) return loadProject(currentSession.project_id);
+        showView('home');
+      }).catch(()=>{ saveSessionId(null); showView('home'); });
+    } else {
+      showView('home');
     }
   }
 
@@ -7485,6 +7798,7 @@
       hideAuthScreen();
       dbOnline = false;
       updateSessionUI();
+      showView('library');
     });
     document.getElementById('authLangSelect').addEventListener('change', e => switchLanguage(e.target.value));
     document.getElementById('changePasswordBtn').addEventListener('click', openChangePassword);

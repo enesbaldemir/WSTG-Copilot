@@ -34,6 +34,12 @@ The checklist works with only a static file server. Projects, findings, evidence
 
 ### Features
 
+**Interface**
+- Project-first flow: after sign-in, **My Projects** creates a project from a name (plus an optional target address, which is added to the scope without sending it any request) and opens it. The project's test session is created in the background, and the last project reopens on the next visit
+- The project is a page, and the sidebar follows the pentest steps: Prepare (scope) · Discover · Test · Findings · Report
+- **Beginner mode** (on by default, one click in the sidebar) hides Kanban, Attack Chains, Tools, Timeline, Study Metrics and the session picker. No data is deleted
+- **WSTG Guide** shows every test without opening a project
+
 **Checklist**
 - 98 WSTG v4.2 test items in 12 categories; each item has a description, testing steps, an example payload/command and suggested tools
 - Alternate checklist: OWASP LLM Top 10 (10 categories, 21 test items) for LLM-based targets
@@ -299,6 +305,12 @@ Pentest Workspace, **OWASP Web Security Testing Guide (WSTG) v4.2** temelli sız
 Checklist yalnızca statik bir dosya sunucusuyla çalışır. Projeler, bulgular, kanıtlar, raporlar ve AI özellikleri için Flask + SQLite backend'i gerekir.
 
 ### Özellikler
+
+**Arayüz**
+- Proje odaklı akış: girişten sonra **Projelerim** sayfasında yalnızca bir adla (isteğe bağlı hedef adresiyle; adres kapsama eklenir, ona istek gönderilmez) proje oluşturulur ve açılır. Projenin test oturumu arka planda hazırlanır; sonraki açılışta son proje kaldığı yerden açılır
+- Proje bir sayfadır; kenar çubuğu pentest adımlarına göre gruplanır: Hazırlık (kapsam) · Keşif · Test · Bulgular · Rapor
+- **Başlangıç modu** (varsayılan açık, kenar çubuğunda tek tık) Kanban, Saldırı Zincirleri, Araçlar, Zaman Çizelgesi, Çalışma Metrikleri ve oturum seçiciyi gizler. Hiçbir veri silinmez
+- **WSTG Rehberi** tüm testleri proje açmadan gösterir
 
 **Checklist**
 - 12 kategoride 98 WSTG v4.2 test maddesi; her maddede açıklama, test adımları, örnek payload/komut ve önerilen araçlar
