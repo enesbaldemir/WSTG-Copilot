@@ -86,3 +86,24 @@ test('WSTG kodları açıklanır', () => {
   assert.match(flow.explainCode('wstg-inpv', 'en'), /^WSTG = OWASP Web Security Testing Guide · INPV = Input Validation$/);
   for(const bad of ['LLM01', 'WSTG-XXXX-01', '', null, 'WSTG-ATHN-03<script>']) assert.strictEqual(flow.explainCode(bad, 'tr'), null);
 });
+
+test('bulgular önem derecesine göre sıralanır ve filtrelenir', () => {
+  const list = [
+    { id: 1, title: 'Ürün aramasında XSS', severity: 'high', status: 'open', cvss_score: 7.1, endpoint: '/search' },
+    { id: 2, title: 'IDOR', severity: 'critical', status: 'confirmed', cvss_score: 9.1, finding_code: 'FND-0002' },
+    { id: 3, title: 'Çerez bayrağı', severity: 'low', status: 'fixed' },
+    { id: 4, title: 'Başka XSS', severity: 'high', status: 'open', cvss_score: 8.2, test_id: 'WSTG-INPV-02' },
+    { id: 5, title: 'Sürüm bilgisi', severity: 'info', status: 'open' }
+  ];
+  assert.deepStrictEqual(flow.filterFindings(list).map(f => f.id), [2, 4, 1, 3, 5]);
+  assert.deepStrictEqual(flow.filterFindings(list, { sort: 'newest' }).map(f => f.id), [5, 4, 3, 2, 1]);
+  assert.deepStrictEqual(flow.filterFindings(list, { severity: 'high' }).map(f => f.id), [4, 1]);
+  assert.deepStrictEqual(flow.filterFindings(list, { status: 'open', severity: 'info' }).map(f => f.id), [5]);
+  assert.deepStrictEqual(flow.filterFindings(list, { q: 'xss' }).map(f => f.id), [4, 1]);
+  assert.deepStrictEqual(flow.filterFindings(list, { q: 'urun' }).map(f => f.id), [1]);      // aksan duyarsız
+  assert.deepStrictEqual(flow.filterFindings(list, { q: 'ÇEREZ' }).map(f => f.id), [3]);
+  assert.deepStrictEqual(flow.filterFindings(list, { q: 'fnd-0002' }).map(f => f.id), [2]);
+  assert.deepStrictEqual(flow.filterFindings(list, { q: 'inpv' }).map(f => f.id), [4]);
+  assert.deepStrictEqual(flow.filterFindings(null), []);
+  assert.strictEqual(list[0].id, 1);   // girdi dizisi değişmez
+});

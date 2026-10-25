@@ -128,6 +128,7 @@ class Finding(db.Model):
     description = db.Column(db.Text)
     impact = db.Column(db.Text)
     remediation = db.Column(db.Text)
+    steps_to_reproduce = db.Column(db.Text)  # müşterinin açığı tekrar üretebileceği adımlar (PoC)
     references = db.Column(db.Text)  # satır satır URL
 
     status = db.Column(db.String(20), default='open')  # open|confirmed|fixed|retest_pending|resolved|wont_fix|accepted_risk
@@ -169,6 +170,7 @@ class Finding(db.Model):
             'description': self.description,
             'impact': self.impact,
             'remediation': self.remediation,
+            'steps_to_reproduce': self.steps_to_reproduce,
             'references': self.references,
             'status': self.status,
             'assigned_to': self.assigned_to,

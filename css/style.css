@@ -1803,3 +1803,44 @@ body:not(.is-online) .online-only{ display:none !important; }
   .result-seg{ order:-1; width:100%; }
   .result-btn{ flex:1; padding:0 6px; font-size:12.5px; }
 }
+
+/* Bulgu formu: önem derecesi seçici, ayrıntılar ve CVSS katlanır */
+.sev-picker{ display:flex; flex-wrap:wrap; gap:6px; }
+.sev-pick{ height:34px; padding:0 13px; border-radius:999px; border:1px solid var(--border-strong); background:var(--surface); color:var(--text-2); font-size:13px; font-weight:500; display:inline-flex; align-items:center; gap:6px; }
+.sev-pick::before{ content:""; width:8px; height:8px; border-radius:50%; background:var(--sev-info); }
+.sev-pick.sev-critical::before{ background:var(--sev-critical); }
+.sev-pick.sev-high::before{ background:var(--sev-high); }
+.sev-pick.sev-medium::before{ background:var(--sev-medium); }
+.sev-pick.sev-low::before{ background:var(--sev-low); }
+.sev-pick:hover:not(:disabled){ background:var(--surface-3); }
+.sev-pick.active{ border-color:var(--text); color:var(--text); font-weight:650; box-shadow:0 0 0 2px var(--accent-soft); }
+.sev-pick:disabled{ cursor:not-allowed; opacity:.55; }
+.sev-pick.active:disabled{ opacity:1; }
+#findingSeverityHint{ margin:2px 0 4px; }
+.finding-more{ margin-top:14px; border:1px solid var(--border); border-radius:var(--radius); background:var(--surface-2); }
+.finding-more > summary, .cvss-details > summary{ cursor:pointer; padding:10px 14px; font-size:13.5px; font-weight:600; color:var(--text-2); }
+.finding-more[open] > summary{ border-bottom:1px solid var(--border); }
+.finding-more-body{ display:flex; flex-direction:column; gap:6px; padding:4px 14px 14px; }
+.finding-more-body label{ margin-top:8px; }
+.cvss-details{ border:1px solid var(--border); border-radius:var(--radius); padding:0 0 4px; }
+.cvss-details > summary{ padding:10px 14px; }
+.cvss-details[open] > summary{ border-bottom:1px solid var(--border); margin-bottom:10px; }
+.cvss-details > :not(summary){ margin-left:14px; margin-right:14px; }
+.cvss-details .optional{ color:var(--faint); font-weight:400; }
+.cvss-score-display #cvssResetBtn{ margin-left:auto; }
+
+/* Bulgu listesi: araç çubuğu ve önem kenarı */
+.findings-toolbar{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:4px 0 6px; }
+.findings-toolbar .search-input{ flex:1 1 280px; }
+.findings-toolbar select{ flex:0 1 190px; }
+.findings-count{ margin:0 0 10px; }
+.finding-card[class*="sev-edge-"]{ border-left-width:4px; }
+.finding-card.sev-edge-critical{ border-left-color:var(--sev-critical); }
+.finding-card.sev-edge-high{ border-left-color:var(--sev-high); }
+.finding-card.sev-edge-medium{ border-left-color:var(--sev-medium); }
+.finding-card.sev-edge-low{ border-left-color:var(--sev-low); }
+.finding-card.sev-edge-info{ border-left-color:var(--sev-info); }
+.finding-missing{ color:var(--amber); }
+@media (max-width:900px){
+  .findings-toolbar select{ flex:1 1 140px; }
+}

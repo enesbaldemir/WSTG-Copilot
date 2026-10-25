@@ -64,6 +64,8 @@ The checklist works with only a static file server. Projects, findings, evidence
 - Study metrics (A/B): sessions can be assigned to an "AI-assisted" or "control" group. While a control session is open the AI buttons are hidden. The Study Metrics panel compares the groups (completion time, completion rate, findings, false-positive rate, AI calls and latency) and copies per-session data as CSV. Completion time is measured for sessions closed with "Complete" in the session list
 
 **Findings**
+- Short finding form: a title and a severity are enough; **steps to reproduce (PoC)** has its own field and appears in the HTML/PDF report. Parameter, CWE, OWASP, impact, references and status sit under "More details", and the CVSS calculator is optional. When a CVSS score is entered the severity comes from it (the API enforces the same rule and rejects unknown severities)
+- The findings list is sorted by severity (then CVSS), with search (title, code, endpoint, test ID, CWE) and severity/status filters; findings without reproduction steps are flagged
 - Title, description, affected endpoint, remediation, CWE, severity and a CVSS v3.1 calculator with live scoring (client and server side)
 - Duplicate detection based on title/description/endpoint/CWE similarity (`difflib`), with merge or create-anyway options
 - Attack-chain correlation: findings are matched against 10 fixed attack-chain patterns (e.g. user enumeration → weak authentication → account takeover). No AI involved
@@ -338,6 +340,8 @@ Checklist yalnızca statik bir dosya sunucusuyla çalışır. Projeler, bulgular
 - Çalışma metrikleri (A/B): oturumlar "AI destekli" veya "kontrol" grubuna atanabilir; kontrol oturumu açıkken AI düğmeleri gizlenir. Çalışma Metrikleri paneli grupları karşılaştırır (tamamlama süresi, tamamlanma oranı, bulgu sayısı, false-positive oranı, AI çağrısı ve gecikmesi) ve oturum verisini CSV olarak kopyalar. Süre, oturum listesinden "Tamamla" ile kapatılan oturumlar için ölçülür
 
 **Bulgular**
+- Kısa bulgu formu: başlık ve önem derecesi yeterli; **tekrarlama adımları (PoC)** ayrı bir alandır ve HTML/PDF raporda yer alır. Parametre, CWE, OWASP, etki, referanslar ve durum "Ayrıntılar" altındadır; CVSS hesaplayıcı isteğe bağlıdır. CVSS puanı girilirse önem derecesi puandan gelir (API de aynı kuralı uygular ve bilinmeyen önem derecelerini reddeder)
+- Bulgu listesi önem derecesine (sonra CVSS'e) göre sıralanır; başlık, kod, endpoint, test ID ve CWE ile aranabilir, önem derecesi ve duruma göre filtrelenebilir; tekrarlama adımı olmayan bulgular işaretlenir
 - Başlık, açıklama, etkilenen endpoint, remediation, CWE, önem derecesi ve canlı skor hesaplayan CVSS v3.1 hesaplayıcı (istemci ve sunucu tarafı)
 - Başlık/açıklama/endpoint/CWE benzerliğine (`difflib`) dayalı tekrar tespiti; birleştir ya da yine de oluştur seçenekleri
 - Saldırı zinciri korelasyonu: bulgular 10 sabit saldırı zinciri kalıbıyla eşleştirilir (ör. kullanıcı numaralandırma → zayıf kimlik doğrulama → hesap ele geçirme). AI kullanılmaz

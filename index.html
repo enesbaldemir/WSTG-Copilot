@@ -557,75 +557,96 @@
     </div>
     <div class="panel-body finding-modal-body">
       <div class="finding-form-col">
-        <label data-i18n="findingTitleLabel">Başlık *</label>
+        <label for="findingTitleInput" data-i18n="findingTitleLabel">Başlık *</label>
         <input type="text" id="findingTitleInput" data-i18n-placeholder="findingTitlePlaceholder" placeholder="Örn: Sipariş detayında IDOR (yetkisiz erişim)">
-        <label data-i18n="findingTestIdLabel">İlişkili WSTG/LLM Test ID (opsiyonel)</label>
-        <input type="text" id="findingTestIdInput" placeholder="WSTG-ATHZ-04">
+        <label id="findingSeverityLabel" data-i18n="findingSeverityLabel">Önem derecesi *</label>
+        <div class="sev-picker" id="findingSeverityPicker" role="radiogroup" aria-labelledby="findingSeverityLabel">
+          <button type="button" class="sev-pick sev-critical" data-sev="critical" role="radio" data-i18n="severity_critical">Kritik</button>
+          <button type="button" class="sev-pick sev-high" data-sev="high" role="radio" data-i18n="severity_high">Yüksek</button>
+          <button type="button" class="sev-pick sev-medium" data-sev="medium" role="radio" data-i18n="severity_medium">Orta</button>
+          <button type="button" class="sev-pick sev-low" data-sev="low" role="radio" data-i18n="severity_low">Düşük</button>
+          <button type="button" class="sev-pick sev-info" data-sev="info" role="radio" data-i18n="severity_info">Bilgi</button>
+        </div>
+        <p class="hint" id="findingSeverityHint"></p>
         <div class="finding-form-row">
           <div>
-            <label data-i18n="findingEndpointLabel">Endpoint</label>
+            <label for="findingTestIdInput" data-i18n="findingTestIdLabel">İlişkili test</label>
+            <input type="text" id="findingTestIdInput" placeholder="WSTG-ATHZ-04">
+          </div>
+          <div>
+            <label for="findingEndpointInput" data-i18n="findingEndpointLabel">Endpoint</label>
             <input type="text" id="findingEndpointInput" placeholder="/api/users/{id}">
           </div>
-          <div>
-            <label data-i18n="findingParameterLabel">Parametre</label>
-            <input type="text" id="findingParameterInput" placeholder="id">
-          </div>
         </div>
-        <div class="finding-form-row">
-          <div>
-            <label data-i18n="findingCweLabel">CWE</label>
-            <input type="text" id="findingCweInput" placeholder="CWE-639">
-          </div>
-          <div>
-            <label data-i18n="findingOwaspCatLabel">OWASP Kategorisi</label>
-            <input type="text" id="findingOwaspCatInput" placeholder="A01:2025 Broken Access Control">
-          </div>
-        </div>
-        <label data-i18n="findingDescLabel">Açıklama</label>
-        <textarea id="findingDescInput" rows="3" placeholder=""></textarea>
-        <label data-i18n="findingImpactLabel">Etki</label>
-        <textarea id="findingImpactInput" rows="2" placeholder=""></textarea>
-        <label data-i18n="findingRemediationLabel">Remediation</label>
+        <label for="findingDescInput" data-i18n="findingDescLabel">Açıklama</label>
+        <textarea id="findingDescInput" rows="3" data-i18n-placeholder="findingDescPlaceholder" placeholder=""></textarea>
+        <label for="findingStepsInput" data-i18n="findingStepsLabel">Tekrarlama adımları (PoC)</label>
+        <textarea id="findingStepsInput" rows="4" data-i18n-placeholder="findingStepsPlaceholder" placeholder=""></textarea>
+        <label for="findingRemediationInput" data-i18n="findingRemediationLabel">Çözüm önerisi</label>
         <textarea id="findingRemediationInput" rows="2" placeholder=""></textarea>
-        <label data-i18n="findingReferencesLabel">Referanslar (her satıra bir URL)</label>
-        <textarea id="findingReferencesInput" rows="2" placeholder="https://..."></textarea>
-        <div class="finding-form-row">
-          <div>
-            <label data-i18n="findingStatusLabel">Durum</label>
-            <select id="findingStatusInput">
-              <option value="open" data-i18n="findingStatus_open">Open</option>
-              <option value="confirmed" data-i18n="findingStatus_confirmed">Confirmed</option>
-              <option value="fixed" data-i18n="findingStatus_fixed">Fixed</option>
-              <option value="retest_pending" data-i18n="findingStatus_retest_pending">Retest Pending</option>
-              <option value="resolved" data-i18n="findingStatus_resolved">Resolved</option>
-              <option value="wont_fix" data-i18n="findingStatus_wont_fix">Won't Fix</option>
-              <option value="accepted_risk" data-i18n="findingStatus_accepted_risk">Accepted Risk</option>
-            </select>
+
+        <details class="finding-more" id="findingMoreDetails">
+          <summary data-i18n="findingMoreSummary">Ayrıntılar (isteğe bağlı): parametre, CWE, OWASP, etki, referanslar, durum</summary>
+          <div class="finding-more-body">
+            <div class="finding-form-row">
+              <div>
+                <label for="findingParameterInput" data-i18n="findingParameterLabel">Parametre</label>
+                <input type="text" id="findingParameterInput" placeholder="id">
+              </div>
+              <div>
+                <label for="findingCweInput" data-i18n="findingCweLabel">CWE</label>
+                <input type="text" id="findingCweInput" placeholder="CWE-639">
+              </div>
+            </div>
+            <label for="findingOwaspCatInput" data-i18n="findingOwaspCatLabel">OWASP Kategorisi</label>
+            <input type="text" id="findingOwaspCatInput" placeholder="A01:2025 Broken Access Control">
+            <label for="findingImpactInput" data-i18n="findingImpactLabel">Etki</label>
+            <textarea id="findingImpactInput" rows="2" placeholder=""></textarea>
+            <label for="findingReferencesInput" data-i18n="findingReferencesLabel">Referanslar (her satıra bir URL)</label>
+            <textarea id="findingReferencesInput" rows="2" placeholder="https://..."></textarea>
+            <div class="finding-form-row">
+              <div>
+                <label for="findingStatusInput" data-i18n="findingStatusLabel">Durum</label>
+                <select id="findingStatusInput">
+                  <option value="open" data-i18n="findingStatus_open">Open</option>
+                  <option value="confirmed" data-i18n="findingStatus_confirmed">Confirmed</option>
+                  <option value="fixed" data-i18n="findingStatus_fixed">Fixed</option>
+                  <option value="retest_pending" data-i18n="findingStatus_retest_pending">Retest Pending</option>
+                  <option value="resolved" data-i18n="findingStatus_resolved">Resolved</option>
+                  <option value="wont_fix" data-i18n="findingStatus_wont_fix">Won't Fix</option>
+                  <option value="accepted_risk" data-i18n="findingStatus_accepted_risk">Accepted Risk</option>
+                </select>
+              </div>
+              <div>
+                <label for="findingAssignedInput" data-i18n="findingAssignedLabel">Atanan Kişi</label>
+                <input type="text" id="findingAssignedInput" placeholder="">
+              </div>
+            </div>
+            <div id="findingRetestSection" style="display:none">
+              <label for="findingRetestResultInput" data-i18n="findingRetestResultLabel">Retest Sonucu</label>
+              <select id="findingRetestResultInput">
+                <option value="not_tested" data-i18n="findingRetest_not_tested">Henüz test edilmedi</option>
+                <option value="fixed" data-i18n="findingRetest_fixed">Düzeltildi ✓</option>
+                <option value="not_fixed" data-i18n="findingRetest_not_fixed">Düzeltilmedi ✗</option>
+              </select>
+              <label for="findingRetestNotesInput" data-i18n="findingRetestNotesLabel">Retest Notları</label>
+              <textarea id="findingRetestNotesInput" rows="2"></textarea>
+            </div>
           </div>
-          <div>
-            <label data-i18n="findingAssignedLabel">Atanan Kişi</label>
-            <input type="text" id="findingAssignedInput" placeholder="">
-          </div>
-        </div>
-        <div id="findingRetestSection" style="display:none">
-          <label data-i18n="findingRetestResultLabel">Retest Sonucu</label>
-          <select id="findingRetestResultInput">
-            <option value="not_tested" data-i18n="findingRetest_not_tested">Henüz test edilmedi</option>
-            <option value="fixed" data-i18n="findingRetest_fixed">Düzeltildi ✓</option>
-            <option value="not_fixed" data-i18n="findingRetest_not_fixed">Düzeltilmedi ✗</option>
-          </select>
-          <label data-i18n="findingRetestNotesLabel">Retest Notları</label>
-          <textarea id="findingRetestNotesInput" rows="2"></textarea>
-        </div>
+        </details>
       </div>
       <div class="finding-form-col finding-cvss-col">
-        <h5 data-i18n="findingCvssTitle">CVSS v3.1 Hesaplayıcı</h5>
-        <div class="cvss-score-display">
-          <div class="cvss-score-value" id="cvssScoreValue">0.0</div>
-          <div class="cvss-score-severity" id="cvssScoreSeverity"></div>
-        </div>
-        <code class="cvss-vector-string" id="cvssVectorString"></code>
-        <div id="cvssCalcGrid" class="cvss-calc-grid"></div>
+        <details class="cvss-details" id="cvssDetails">
+          <summary><span data-i18n="findingCvssTitle">CVSS v3.1 ile puanla</span> <span class="optional" data-i18n="optionalTag">(isteğe bağlı)</span></summary>
+          <p class="hint" data-i18n="cvssIntroHint">CVSS, açığın ciddiyetini 0–10 arası puanlar. Puan girersen önem derecesi bu puandan belirlenir.</p>
+          <div class="cvss-score-display">
+            <div class="cvss-score-value" id="cvssScoreValue">0.0</div>
+            <div class="cvss-score-severity" id="cvssScoreSeverity"></div>
+            <button type="button" class="btn btn-ghost btn-xs" id="cvssResetBtn" data-i18n="cvssResetBtn">Puanı kaldır</button>
+          </div>
+          <code class="cvss-vector-string" id="cvssVectorString"></code>
+          <div id="cvssCalcGrid" class="cvss-calc-grid"></div>
+        </details>
 
         <h5 style="margin-top:20px" data-i18n="aiAssistantTitle">AI Assistant</h5>
         <div class="ai-assistant-box">
