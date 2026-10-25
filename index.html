@@ -136,9 +136,9 @@
 
       <div class="nav-step"><span class="nav-step-num">2</span><span data-i18n="stepRecon">Keşif</span></div>
       <nav class="nav-group">
-        <button class="nav-link" id="reconNavBtn"><svg class="i"><use href="#ic-search"/></svg><span data-i18n="navRunRecon">Keşif Çalıştır</span></button>
+        <button class="nav-link" id="reconNavBtn" data-pw-tab="recon"><svg class="i"><use href="#ic-search"/></svg><span data-i18n="navRunRecon">Keşif Çalıştır</span></button>
         <button class="nav-link" id="attackSurfaceNavBtn" data-pw-tab="assets"><svg class="i"><use href="#ic-sitemap"/></svg><span data-i18n="navAttackSurface">Saldırı Yüzeyi</span></button>
-        <button class="nav-link" id="plannerNavBtn"><svg class="i"><use href="#ic-list"/></svg><span data-i18n="navPlanner">Test Planı</span></button>
+        <button class="nav-link" id="plannerNavBtn" data-pw-tab="testplan"><svg class="i"><use href="#ic-list"/></svg><span data-i18n="navPlanner">Test Planı</span></button>
       </nav>
 
       <div class="nav-step"><span class="nav-step-num">3</span><span data-i18n="stepTest">Test</span></div>
@@ -285,6 +285,7 @@
           <button type="button" class="crumb-btn" id="pwBackHome"><svg class="i i-sm"><use href="#ic-folder"/></svg><span data-i18n="navMyProjects">Projelerim</span></button>
           <h1 class="page-title" id="pwName">-</h1>
           <p class="project-head-meta"><span id="pwClient"></span> <span id="pwStatusPill" class="project-status-pill"></span></p>
+          <label class="pw-mobile-nav"><span class="sr-only" data-i18n="pwMobileNavLabel">Bölüm</span><select id="pwMobileNav"></select></label>
         </div>
         <div class="page-actions">
           <button type="button" class="btn btn-secondary btn-sm" id="pwEditBtn" data-i18n="editBtn">Düzenle</button>
@@ -295,6 +296,7 @@
       </div>
       <div id="pwHelp"></div>
       <div class="pw-content" id="pwContent"></div>
+      <div class="pw-embed" id="pwEmbed"></div>
     </div>
 
     <div class="page" id="libraryPage">
@@ -466,26 +468,6 @@
           <button type="button" class="btn btn-primary" id="createSessionBtn" data-i18n="startSession">Oturumu Başlat</button>
         </div>
       </form>
-    </div>
-  </div>
-</div>
-
-<!-- Projeler (Project / Engagement Management) -->
-<div class="overlay" id="projectsOverlay">
-  <div class="panel" style="max-width:820px">
-    <div class="panel-header">
-      <div>
-        <h3 data-i18n="projectsModalTitle">Projeler</h3>
-        <p data-i18n="projectsModalDesc">Her pentest çalışmasını bir Project/Engagement altında yönetin: kapsam, recon, test planı, WSTG testleri, bulgular ve timeline tek yerde.</p>
-      </div>
-      <button class="close-btn" id="closeProjectsOverlay">&times;</button>
-    </div>
-    <div class="panel-body">
-      <div class="filter-bar" style="padding:0 0 14px">
-        <span style="color:var(--muted);font-size:.85rem" id="projectsCountLabel"></span>
-        <button type="button" class="btn btn-primary btn-sm" id="newProjectBtn" data-i18n="newProjectBtn">+ Yeni Proje</button>
-      </div>
-      <div id="projectListBody"></div>
     </div>
   </div>
 </div>

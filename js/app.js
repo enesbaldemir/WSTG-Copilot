@@ -307,6 +307,7 @@
       plannerModalTitle: "Test Planı",
       plannerModalDesc: "Saldırı Yüzeyi Keşfi'nden gelen önceliklendirilmiş maddeler; kanıt sayısı ve WSTG metodoloji sırasına göre şeffaf bir skorla sıralanır. Her önerinin yanında nedeni gösterilir.",
       plannerEmpty: "Henüz bir test planı yok. Önce Saldırı Yüzeyi Keşfi ile bir hedef tarayıp bulguları önceliklendirin.",
+      plannerEmptyTitle: "Henüz test planı yok",
       plannerReasonLabel: "Neden",
       plannerGotoBtn: "Bu maddeye git",
       plannerScoreNote: "Skor: kanıt sayısı + öncelik seviyesi + WSTG metodoloji sırasına göre hesaplanır (sabit kurallar, model çağrısı yapılmaz).",
@@ -1030,6 +1031,7 @@
       plannerModalTitle: "Test Plan",
       plannerModalDesc: "Prioritized items from Attack Surface Discovery, ranked by a transparent score based on evidence count and WSTG methodology order. The reason is shown next to each suggestion.",
       plannerEmpty: "No test plan yet. Run Attack Surface Discovery against a target first and prioritize the findings.",
+      plannerEmptyTitle: "No test plan yet",
       plannerReasonLabel: "Reason",
       plannerGotoBtn: "Go to this item",
       plannerScoreNote: "Score is computed from evidence count + priority level + WSTG methodology order (fixed rules, no model call involved).",
@@ -1784,6 +1786,8 @@
     pwFindingsNoSession: "Test listesi hazırlanıyor; birazdan tekrar dene.",
     pwReportsNoSession: "Test listesi hazırlanıyor; birazdan tekrar dene.",
     promoteFindingBtn: "Bulguya dönüştür",
+    pwMobileNavLabel: "Bölüm",
+    plannerEmpty: "Plan, keşif sonuçlarından oluşur. Önce Keşif Çalıştır'ı kullan ve bulunan önerileri uygula. Keşif yapmayacaksan doğrudan WSTG testlerine geçebilirsin.",
     pwHelp: {
       overview: { s: "Projenin beş adımdan hangisinde olduğunu gösterir. \"Sıradaki adım\" kartındaki düğme seni yapman gereken işe götürür." },
       scope: { s: "Kapsam, test etmene yazılı olarak izin verilen adreslerdir.", steps: ["Alan adı (ör. test.example.com), alt alan adı, IP ya da IP aralığı (CIDR) ekle.", "İzin verilmeyen adresleri \"Kapsam Dışı\" olarak işaretle.", "Keşif ve bağlantılar bu listeye bakarak seni uyarır."] },
@@ -1798,7 +1802,8 @@
       kanban: { s: "Testleri Yapılacak → Tamamlandı sütunlarında izlemeni sağlar; ekip çalışması için." },
       chains: { s: "Birden fazla bulgunun birleşip daha ciddi bir saldırıya dönüşebileceği durumları kurallarla gösterir." },
       tools: { s: "nmap, httpx gibi araçları sabit komutlarla kendi bilgisayarında çalıştırır. Yalnızca izinli hedeflerde kullan." },
-      recon: { s: "Keşif aracını açar." }, testplan: { s: "Test planını açar." }
+      recon: { s: "Keşif, hedef hakkında pasif ve hafif yöntemlerle bilgi toplar: alt alan adları (sertifika kayıtlarından), sayfalar, formlar ve kullanılan teknolojiler.", steps: ["Hedef adresi yaz ve bu hedefi test etme iznin olduğunu onayla.", "Sonuçlar ilgili WSTG testleriyle eşleştirilir ve Saldırı Yüzeyi'ne kaydedilir.", "Yerel ağ adresleri güvenlik nedeniyle taranmaz; yerel bir laboratuvarı test ediyorsan bu adımı atlayabilirsin."] },
+      testplan: { s: "Keşif sonuçlarına göre hangi testlerin önce yapılması gerektiğini sıralar ve her önerinin nedenini gösterir.", steps: ["Plan keşiften oluşur; boşsa önce Keşif Çalıştır.", "Bir satırdaki düğmeyle ilgili testi doğrudan aç."] }
     }
   });
   Object.assign(I18N.en, {
@@ -1850,6 +1855,8 @@
     pwFindingsNoSession: "The test list is being prepared; try again in a moment.",
     pwReportsNoSession: "The test list is being prepared; try again in a moment.",
     promoteFindingBtn: "Promote to finding",
+    pwMobileNavLabel: "Section",
+    plannerEmpty: "The plan is built from discovery results. Run Discovery first and apply its suggestions. If you are skipping discovery, go straight to the WSTG tests.",
     pwHelp: {
       overview: { s: "Shows which of the five steps the project is in. The button on the \"Next step\" card takes you to what to do next." },
       scope: { s: "The scope is the set of addresses you have written permission to test.", steps: ["Add a domain (e.g. test.example.com), subdomain, IP or IP range (CIDR).", "Mark addresses you may not touch as \"Out of scope\".", "Discovery and links check this list and warn you."] },
@@ -1864,7 +1871,8 @@
       kanban: { s: "Tracks tests across To do → Done columns; useful for teams." },
       chains: { s: "Uses rules to show where several findings could combine into a more serious attack." },
       tools: { s: "Runs tools such as nmap and httpx on your own machine with fixed commands. Use only on authorized targets." },
-      recon: { s: "Opens the discovery tool." }, testplan: { s: "Opens the test plan." }
+      recon: { s: "Discovery gathers information about the target with passive, lightweight methods: subdomains (from certificate logs), pages, forms and the technologies in use.", steps: ["Enter the target address and confirm you are authorized to test it.", "Results are matched to WSTG tests and saved to the Attack Surface.", "Private network addresses are not scanned for safety; if you are testing a local lab you can skip this step."] },
+      testplan: { s: "Orders the tests by what discovery found and shows the reason behind each suggestion.", steps: ["The plan is built from discovery; if it is empty, run discovery first.", "Use the button on a row to open that test directly."] }
     }
   });
 
@@ -2908,6 +2916,7 @@
   function updateSessionUI(){
     if(!currentSession || sessionNotesFor !== currentSession.id){ sessionNotes = []; sessionNotesFor = null; }
     updateStudyGroupBodyClass();
+    renderPwMobileNav();
     const chip = document.getElementById('sessionChip');
     const topName = document.getElementById('topbarSessionName');
     const topBtn = document.getElementById('topbarSessionBtn');
@@ -3902,16 +3911,25 @@
 
   let lastReconResult = null;
 
+  // Proje açıkken Keşif, proje sayfasının bir bölümü olarak açılır (pencere değil).
   function openReconModal(){
+    if(currentProjectId && dbOnline){ showView('project'); switchPwTab('recon'); return; }
+    prepareRecon();
+    document.getElementById('reconOverlay').classList.add('open');
+  }
+
+  // Formu sıfırlar ve varsa bu projenin kayıtlı son keşfini gösterir.
+  // Yeni tarama başlatmaz; tarama yalnızca kullanıcı onaylayıp "Başlat" deyince çalışır.
+  function prepareRecon(){
     document.getElementById('reconResultsWrap').style.display = 'none';
-    document.getElementById('reconTargetInput').value = '';
+    // Projenin hedef adresi forma önceden yazılır; tarama yine yalnızca yetki onayı ve "Başlat" ile çalışır.
+    document.getElementById('reconTargetInput').value = (currentProjectId && currentSession && currentSession.target_url) || '';
     document.getElementById('reconAuthCheck').checked = false;
     document.getElementById('reconCachedNotice').style.display = 'none';
     const status = document.getElementById('reconStatus');
     status.textContent = '';
     status.classList.remove('error');
     lastReconResult = null;
-    document.getElementById('reconOverlay').classList.add('open');
 
     // Daha önce bu proje/oturum için bir tarama yapıldıysa, yeniden
     // taramaya gerek kalmadan sonuçları geri getir.
@@ -4054,7 +4072,9 @@
     renderDashboard();
     if(currentCategoryId) renderTestList();
     showToast(t('reconAppliedToast')(count));
-    closeReconModal();
+    // Proje sayfasında: öncelikler uygulanınca doğal sonraki adım Test Planı.
+    if(embeddedPanel) switchPwTab('testplan');
+    else closeReconModal();
   }
 
   // ========================
@@ -4088,6 +4108,7 @@
   }
 
   function openPlannerModal(){
+    if(currentProjectId && dbOnline){ showView('project'); switchPwTab('testplan'); return; }
     renderPlanner();
     document.getElementById('plannerOverlay').classList.add('open');
   }
@@ -4099,7 +4120,12 @@
     const list = document.getElementById('plannerList');
     const rows = buildTestPlan();
     if(!rows.length){
-      list.innerHTML = `<div class="search-empty">${t('plannerEmpty')}</div>`;
+      list.innerHTML = embeddedPanel
+        ? emptyStateHtml('ic-list', t('plannerEmptyTitle'), t('plannerEmpty'), [
+            { action: 'recon', label: t('navRunRecon'), primary: true },
+            { action: 'wstg', label: t('emptyFindingsGoTests') }
+          ])
+        : `<div class="search-empty">${t('plannerEmpty')}</div>`;
       return;
     }
     const maxScore = rows[0].score || 1;
@@ -4245,54 +4271,6 @@
     }
   }
 
-  function openProjectsModal(){
-    document.getElementById('projectsOverlay').classList.add('open');
-    renderProjectList();
-  }
-  function closeProjectsModal(){
-    document.getElementById('projectsOverlay').classList.remove('open');
-  }
-
-  function renderProjectList(){
-    const body = document.getElementById('projectListBody');
-    const countLabel = document.getElementById('projectsCountLabel');
-    if(!dbOnline){
-      countLabel.textContent = '';
-      body.innerHTML = `<div class="search-empty">${t('projectsBackendOffline')}</div>`;
-      return;
-    }
-    body.innerHTML = `<div class="search-empty">${t('loadingSessions')}</div>`;
-    apiRequest('/projects').then(projects => {
-      countLabel.textContent = t('projectsCountLabel')(projects.length);
-      if(!projects.length){
-        body.innerHTML = `<div class="search-empty">${t('noProjectsYet')}</div>`;
-        return;
-      }
-      body.innerHTML = projects.map(p => `
-        <div class="project-card" data-id="${p.id}">
-          <div class="project-card-top">
-            <div>
-              <div class="project-card-name">${escapeHtml(p.name)}</div>
-              <div class="project-card-meta">
-                ${p.client ? `<span>${escapeHtml(p.client)}</span>` : ''}
-                <span>${t('projectSessionsLabel')(p.session_count || 0)}</span>
-                ${p.start_date ? `<span>${escapeHtml(p.start_date)}${p.end_date ? ' → ' + escapeHtml(p.end_date) : ''}</span>` : ''}
-              </div>
-            </div>
-            <span class="project-status-pill ${p.status}">${t('projectStatus_'+p.status)}</span>
-          </div>
-          ${p.description ? `<div class="import-preview-source">${escapeHtml(p.description)}</div>` : ''}
-          <div class="project-card-actions">
-            <button data-action="open" data-id="${p.id}">${t('openProjectBtn')}</button>
-            <button data-action="edit" data-id="${p.id}">${t('editBtn')}</button>
-            <button data-action="delete" data-id="${p.id}" class="danger">${t('pwEvidenceDelete')}</button>
-          </div>
-        </div>`).join('');
-    }).catch(err => {
-      body.innerHTML = `<div class="search-empty">${t('projectsLoadError')}<br><small>${escapeHtml(String(err.message||err))}</small></div>`;
-    });
-  }
-
   function openNewProjectModal(project){
     editingProjectId = project ? project.id : null;
     document.getElementById('newProjectTitle').textContent = project ? t('editProjectModalTitle') : t('newProjectModalTitle');
@@ -4326,7 +4304,6 @@
     req.then(project => {
       closeNewProjectModal();
       showToast(t('projectSaved'));
-      if(document.getElementById('projectsOverlay').classList.contains('open')) renderProjectList();
       if(currentView === 'home') renderHome();
       if(currentProjectId === project.id){
         currentProjectObj = project;
@@ -4344,7 +4321,6 @@
         showView('home');
       }
       if(readStored(LAST_PROJECT_KEY) === id) writeStored(LAST_PROJECT_KEY, null);
-      if(document.getElementById('projectsOverlay').classList.contains('open')) renderProjectList();
       if(currentView === 'home') renderHome();
       showToast(t('projectDeleted'));
     }).catch(err => showToast(err.message || t('resultSaveError')));
@@ -4367,7 +4343,6 @@
       currentProjectObj = project;
       writeStored(LAST_PROJECT_KEY, project.id);
       updateProjectChip();
-      closeProjectsModal();
       reloadReconContext();
       renderProjectWorkspaceHeader();
       showView('project');
@@ -4422,11 +4397,39 @@
     if(title) title.textContent = pwSectionLabel(activePwTab);
     renderPwHelp();
     updateNavActive();
+    const mobileNav = document.getElementById('pwMobileNav');
+    if(mobileNav) mobileNav.value = 'tab:' + activePwTab;
     renderPwTab();
   }
 
   // Her bölümün başında "bu ne işe yarar / nasıl kullanılır" kutusu.
   // Başlangıç modunda açık gelir; gelişmiş modda kapalı.
+  // Telefonda kenar çubuğu gizli olduğundan proje bölümleri başlığın altındaki
+  // açılır listeden de seçilebilir. Liste kenar çubuğundan üretilir: aynı
+  // adımlar, aynı sıra; başlangıç modunda gizlenenler listede de yok.
+  function renderPwMobileNav(){
+    const sel = document.getElementById('pwMobileNav');
+    const root = document.getElementById('navProject');
+    if(!sel || !root) return;
+    let html = '';
+    let groupOpen = false;
+    root.querySelectorAll('.nav-step, .nav-link').forEach(el => {
+      const hidden = el.closest('.adv-only') && beginnerMode;
+      if(hidden || (el.classList.contains('ai-feature') && document.body.classList.contains('study-control-mode'))) return;
+      if(el.classList.contains('nav-step')){
+        if(groupOpen) html += '</optgroup>';
+        html += `<optgroup label="${escapeHtml(el.textContent.replace(/\s+/g, ' ').trim())}">`;
+        groupOpen = true;
+        return;
+      }
+      const value = el.dataset.pwTab ? 'tab:' + el.dataset.pwTab : (el.id ? 'btn:' + el.id : '');
+      if(value) html += `<option value="${escapeHtml(value)}">${escapeHtml(el.textContent.trim())}</option>`;
+    });
+    if(groupOpen) html += '</optgroup>';
+    sel.innerHTML = html;
+    sel.value = 'tab:' + activePwTab;
+  }
+
   function renderPwHelp(){
     const box = document.getElementById('pwHelp');
     if(!box) return;
@@ -4495,7 +4498,7 @@
 
   function pwSectionLabel(tab){
     const keys = { overview: 'navProjectOverview', scope: 'navScope', assets: 'navAttackSurface', wstg: 'navWstgTests',
-      recon: 'pwTabRecon', testplan: 'pwTabTestPlan' };
+      recon: 'navRunRecon', testplan: 'pwTabTestPlan' };
     return t(keys[tab] || ('pwTab' + tab.charAt(0).toUpperCase() + tab.slice(1)));
   }
 
@@ -4506,6 +4509,7 @@
     if(view === 'project' && !currentProjectId) view = 'home';
     if(view === 'home' && !dbOnline) view = 'library';
     const changed = currentView !== view;
+    if(view !== 'project') restoreEmbeddedPanel();
     currentView = view;
     Object.entries(VIEW_PAGES).forEach(([v, id]) => {
       const el = document.getElementById(id);
@@ -4527,6 +4531,7 @@
 
   function applyBeginnerMode(){
     document.body.classList.toggle('beginner-mode', beginnerMode);
+    renderPwMobileNav();
     const toggle = document.getElementById('beginnerModeToggle');
     if(toggle) toggle.checked = beginnerMode;
     const sub = document.getElementById('beginnerModeSub');
@@ -4626,6 +4631,7 @@
       findings: renderPwFindings, evidence: renderPwEvidence, chains: renderPwChains,
       timeline: renderPwTimeline, kanban: renderPwKanban, reports: renderPwReports, authz: renderPwAuthz, retest: renderPwRetest
     };
+    if(!EMBEDDED_PANELS[activePwTab]) restoreEmbeddedPanel();
     const fn = map[activePwTab];
     if(fn) fn();
   }
@@ -5299,13 +5305,35 @@
     });
   }
 
+  // Keşif ve Test Planı kendi pencereleriyle yazılmıştı. Proje sayfasında o
+  // pencerelerin paneli sayfaya taşınır (DOM düğümü taşındığı için olay
+  // dinleyicileri aynen çalışır); başka bölüme geçince yerine döner.
+  const EMBEDDED_PANELS = { recon: 'reconOverlay', testplan: 'plannerOverlay' };
+  let embeddedPanel = null; // { overlay, panel }
+
+  function embedPanel(tab){
+    restoreEmbeddedPanel();
+    const overlay = document.getElementById(EMBEDDED_PANELS[tab]);
+    const panel = overlay && overlay.querySelector('.panel');
+    const host = document.getElementById('pwEmbed');
+    if(!panel || !host) return;
+    overlay.classList.remove('open');
+    panel.classList.add('embedded');
+    host.appendChild(panel);
+    embeddedPanel = { overlay, panel };
+  }
+
+  function restoreEmbeddedPanel(){
+    if(!embeddedPanel) return;
+    embeddedPanel.panel.classList.remove('embedded');
+    embeddedPanel.overlay.appendChild(embeddedPanel.panel);
+    embeddedPanel = null;
+  }
+
   function renderPwRecon(){
-    document.getElementById('pwContent').innerHTML = `
-      <div class="pw-shortcut-card">
-        <p>${t('pwReconDesc')}</p>
-        <button type="button" class="btn btn-primary" id="pwOpenReconBtn">${t('pwReconOpenBtn')}</button>
-      </div>`;
-    document.getElementById('pwOpenReconBtn').addEventListener('click', openReconModal);
+    document.getElementById('pwContent').innerHTML = '';
+    embedPanel('recon');
+    prepareRecon();
   }
 
   // ========================
@@ -5464,12 +5492,9 @@
   }
 
   function renderPwTestPlan(){
-    document.getElementById('pwContent').innerHTML = `
-      <div class="pw-shortcut-card">
-        <p>${t('pwTestPlanDesc')}</p>
-        <button type="button" class="btn btn-primary" id="pwOpenPlannerBtn">${t('pwTestPlanOpenBtn')}</button>
-      </div>`;
-    document.getElementById('pwOpenPlannerBtn').addEventListener('click', openPlannerModal);
+    document.getElementById('pwContent').innerHTML = '';
+    embedPanel('testplan');
+    renderPlanner();
   }
 
   function ensureProjectPrimarySession(projectId){
@@ -7513,7 +7538,16 @@
       switchPwTab(link.dataset.pwTab);
     });
     document.getElementById('beginnerModeToggle').addEventListener('change', e=> setBeginnerMode(e.target.checked));
-    document.getElementById('pwContent').addEventListener('click', e=>{
+    document.getElementById('pwMobileNav').addEventListener('change', e=>{
+      const [kind, value] = e.target.value.split(':');
+      if(kind === 'tab') switchPwTab(value);
+      else {
+        e.target.value = 'tab:' + activePwTab; // pencere açan öğeler (Not Defteri, AI...) seçili kalmaz
+        const btn = document.getElementById(value);
+        if(btn) btn.click();
+      }
+    });
+    document.getElementById('projectPage').addEventListener('click', e=>{
       const guide = e.target.closest('[data-empty-action]');
       if(guide){ runGuideAction(guide.dataset.emptyAction); return; }
       if(e.target.closest('.pro-report-card, #openHtmlReportBtn, #downloadPdfReportBtn')) markProjectReported();
@@ -7591,7 +7625,6 @@
       if(btn.dataset.action === 'reopen') setSessionStatusUI(id, 'active');
     });
 
-    document.getElementById('reconNavBtn').addEventListener('click', openReconModal);
     document.getElementById('closeReconOverlay').addEventListener('click', closeReconModal);
     document.getElementById('reconOverlay').addEventListener('click', e=>{
       if(e.target.id === 'reconOverlay') closeReconModal();
@@ -7602,7 +7635,6 @@
 
     bindNotebookAndStudyEvents();
 
-    document.getElementById('plannerNavBtn').addEventListener('click', openPlannerModal);
     document.getElementById('closePlannerOverlay').addEventListener('click', closePlannerModal);
     document.getElementById('plannerOverlay').addEventListener('click', e=>{
       if(e.target.id === 'plannerOverlay') closePlannerModal();
@@ -7622,24 +7654,11 @@
     document.getElementById('aiNextTestAskBtn').addEventListener('click', askAiNextTest);
 
     document.getElementById('projectsNavBtn').addEventListener('click', ()=> showView('home'));
-    document.getElementById('closeProjectsOverlay').addEventListener('click', closeProjectsModal);
-    document.getElementById('projectsOverlay').addEventListener('click', e=>{
-      if(e.target.id === 'projectsOverlay') closeProjectsModal();
-    });
-    document.getElementById('newProjectBtn').addEventListener('click', ()=> openNewProjectModal(null));
     document.getElementById('closeNewProjectOverlay').addEventListener('click', closeNewProjectModal);
     document.getElementById('newProjectOverlay').addEventListener('click', e=>{
       if(e.target.id === 'newProjectOverlay') closeNewProjectModal();
     });
     document.getElementById('submitProjectBtn').addEventListener('click', submitProjectForm);
-    document.getElementById('projectListBody').addEventListener('click', e=>{
-      const btn = e.target.closest('button[data-action]');
-      if(!btn) return;
-      const id = btn.dataset.id;
-      if(btn.dataset.action === 'open') openProjectWorkspace(id);
-      if(btn.dataset.action === 'delete') deleteProjectUI(id);
-      if(btn.dataset.action === 'edit') apiRequest(`/projects/${id}`).then(openNewProjectModal).catch(err => showToast(err.message || t('resultSaveError')));
-    });
     document.getElementById('pwEditBtn').addEventListener('click', ()=> currentProjectObj && openNewProjectModal(currentProjectObj));
 
     document.getElementById('closeFindingModal').addEventListener('click', closeFindingModal);
@@ -7699,7 +7718,7 @@
     document.addEventListener('keydown', e=>{
       if(e.key === 'Escape'){
         closeCategory(); closeSidebar(); closeNewSessionOverlay(); closeTop10Detail(); closeImportModal(); closeReconModal(); closePlannerModal(); closeAiNextTestModal();
-        closeProjectsModal(); closeNewProjectModal(); closeFindingModal(); closeDuplicateAlert(); closeAiSettingsModal(); closeByokModal();
+        closeNewProjectModal(); closeFindingModal(); closeDuplicateAlert(); closeAiSettingsModal(); closeByokModal();
         closeNoteLightbox(); closeNoteEditor(); closeNotebook(); closeStudyMetrics();
         if(document.getElementById('closeSessionGate').style.display !== 'none') closeSessionGate();
       }

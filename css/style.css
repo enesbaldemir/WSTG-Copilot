@@ -1769,3 +1769,20 @@ body:not(.is-online) .online-only{ display:none !important; }
   .next-step-actions .btn{ flex:1 1 auto; }
   .pw-help-toggle{ display:none; }
 }
+
+/* ==========================================================================
+   Cila: proje sayfasına gömülen paneller (Keşif, Test Planı) ve mobil bölüm seçici
+   ========================================================================== */
+.panel.embedded{ max-width:none !important; box-shadow:none; animation:none; max-height:none; overflow:visible; border-radius:var(--radius-lg); }
+.panel.embedded > .panel-header{ display:none; }
+.panel.embedded > .panel-body{ padding:20px 22px 22px; }
+.pw-embed:empty{ display:none; }
+.pw-mobile-nav{ display:none; }
+@media (max-width:900px){
+  .pw-mobile-nav{ display:block; margin-top:12px; }
+  .project-head-text{ flex:1 1 auto; }
+  .pw-mobile-nav select{ width:100%; font-weight:600; }
+  .project-head{ padding-bottom:12px; margin-bottom:14px; }
+  .panel.embedded{ border-radius:var(--radius-lg); }
+  .panel.embedded > .panel-body{ padding:16px; }
+}

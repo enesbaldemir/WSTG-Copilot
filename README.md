@@ -36,7 +36,7 @@ The checklist works with only a static file server. Projects, findings, evidence
 
 **Interface**
 - Project-first flow: after sign-in, **My Projects** creates a project from a name (plus an optional target address, which is added to the scope without sending it any request) and opens it. The project's test session is created in the background, and the last project reopens on the next visit
-- The project is a page, and the sidebar follows the pentest steps: Prepare (scope) · Discover · Test · Findings · Report
+- The project is a page, and the sidebar follows the pentest steps: Prepare (scope) · Discover · Test · Findings · Report. Discovery and the Test Plan open inside the project page rather than in pop-up windows; on phones a section picker under the project title replaces the sidebar
 - **Beginner mode** (on by default, one click in the sidebar) hides Kanban, Attack Chains, Tools, Timeline, Study Metrics and the session picker. No data is deleted
 - **WSTG Guide** shows every test without opening a project
 - Guidance: the project overview shows a five-step bar and a **Next step** card (scope → optional discovery → tests → findings → report → retest) with a button that goes straight to the task; each page opens with a short "what is this / how to use it" box; empty pages explain what to do and offer the next action; hovering a WSTG code (e.g. `WSTG-ATHN-03`) explains it
@@ -309,7 +309,7 @@ Checklist yalnızca statik bir dosya sunucusuyla çalışır. Projeler, bulgular
 
 **Arayüz**
 - Proje odaklı akış: girişten sonra **Projelerim** sayfasında yalnızca bir adla (isteğe bağlı hedef adresiyle; adres kapsama eklenir, ona istek gönderilmez) proje oluşturulur ve açılır. Projenin test oturumu arka planda hazırlanır; sonraki açılışta son proje kaldığı yerden açılır
-- Proje bir sayfadır; kenar çubuğu pentest adımlarına göre gruplanır: Hazırlık (kapsam) · Keşif · Test · Bulgular · Rapor
+- Proje bir sayfadır; kenar çubuğu pentest adımlarına göre gruplanır: Hazırlık (kapsam) · Keşif · Test · Bulgular · Rapor. Keşif ve Test Planı açılır pencere yerine proje sayfasının içinde açılır; telefonda proje başlığının altındaki bölüm seçici kenar çubuğunun işini görür
 - **Başlangıç modu** (varsayılan açık, kenar çubuğunda tek tık) Kanban, Saldırı Zincirleri, Araçlar, Zaman Çizelgesi, Çalışma Metrikleri ve oturum seçiciyi gizler. Hiçbir veri silinmez
 - **WSTG Rehberi** tüm testleri proje açmadan gösterir
 - Rehberlik: proje özetinde beş adımlı çubuk ve doğrudan ilgili işe götüren **Sıradaki adım** kartı (kapsam → isteğe bağlı keşif → testler → bulgular → rapor → yeniden test); her sayfanın başında kısa bir "bu ne işe yarar / nasıl kullanılır" kutusu; boş sayfalarda ne yapılacağını anlatan açıklama ve sonraki işe götüren düğmeler; bir WSTG kodunun (ör. `WSTG-ATHN-03`) üzerine gelince açıklaması
