@@ -1787,6 +1787,12 @@
     pwReportsNoSession: "Test listesi hazırlanıyor; birazdan tekrar dene.",
     promoteFindingBtn: "Bulguya dönüştür",
     pwMobileNavLabel: "Bölüm",
+    backupBtn: "Yedekle", backupBtnTitle: "Projeyi tüm bulgu, not ve kanıtlarıyla tek bir JSON dosyasına indir",
+    backupDone: "Yedek indirildi. Dosya tüm bulguları ve kanıtları içerir; güvenli bir yerde sakla.",
+    restoreHint: "Bir yedeğin mi var?", restoreBtn: "Yedekten geri yükle",
+    restoreTooLarge: "Yedek dosyası 16 MB'tan büyük; sunucu bu boyutu kabul etmiyor.",
+    restoreNotJson: "Dosya okunamadı ya da geçerli bir JSON değil.",
+    restoreDone: name => `"${name}" yedekten yeni bir proje olarak geri yüklendi.`,
     reportQuickTitle: "Raporu indir",
     reportQuickSummary: (n, bits) => `${n} bulgu${bits ? ' (' + bits + ')' : ''}. Rapor, Bulgular sayfasındaki kayıtlardan oluşur; test ettiğin kapsam ve sonuçlar da eklenir.`,
     reportQuickPdf: "PDF indir", reportQuickWord: "Word (.docx)", reportQuickHtml: "Tarayıcıda aç",
@@ -1911,6 +1917,12 @@
     pwReportsNoSession: "The test list is being prepared; try again in a moment.",
     promoteFindingBtn: "Promote to finding",
     pwMobileNavLabel: "Section",
+    backupBtn: "Back up", backupBtnTitle: "Download the project with all findings, notes and evidence as one JSON file",
+    backupDone: "Backup downloaded. The file contains all findings and evidence; keep it somewhere safe.",
+    restoreHint: "Have a backup?", restoreBtn: "Restore from backup",
+    restoreTooLarge: "The backup file is larger than 16 MB, which the server does not accept.",
+    restoreNotJson: "The file could not be read or is not valid JSON.",
+    restoreDone: name => `"${name}" was restored from the backup as a new project.`,
     reportQuickTitle: "Download the report",
     reportQuickSummary: (n, bits) => `${n} finding${n === 1 ? '' : 's'}${bits ? ' (' + bits + ')' : ''}. The report is built from the records on the Findings page, together with the tested scope and results.`,
     reportQuickPdf: "Download PDF", reportQuickWord: "Word (.docx)", reportQuickHtml: "Open in browser",
@@ -4735,6 +4747,47 @@
       section.hidden = false;
       list.innerHTML = `<div class="search-empty">${escapeHtml(t('homeProjectsLoadError'))}<br><small>${escapeHtml(String(err.message || err))}</small></div>`;
     });
+  }
+
+  // ---- Proje yedekleme ----
+  const BACKUP_MAX_BYTES = 16 * 1024 * 1024; // sunucunun istek sınırı (config.MAX_CONTENT_LENGTH)
+
+  function downloadProjectBackup(){
+    if(!currentProjectId) return;
+    const btn = document.getElementById('pwBackupBtn');
+    btn.disabled = true;
+    apiFetch(`/projects/${currentProjectId}/export`).then(async res => {
+      if(!res.ok){ const j = await res.json().catch(()=>({})); throw new Error(j.error || res.statusText); }
+      // Arayüz ve API farklı portlarda olduğundan Content-Disposition okunamaz; ad burada üretilir.
+      const base = ((currentProjectObj && currentProjectObj.name) || 'proje').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 60);
+      const name = `${base}-yedek-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.json`;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=> URL.revokeObjectURL(url), 4000);
+      showToast(t('backupDone'));
+    }).catch(err => showToast(err.message || t('resultSaveError')))
+      .finally(()=>{ btn.disabled = false; });
+  }
+
+  function restoreProjectBackup(file){
+    if(!file) return;
+    if(file.size > BACKUP_MAX_BYTES){ showToast(t('restoreTooLarge')); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      let data;
+      try{ data = JSON.parse(reader.result); }catch(e){ showToast(t('restoreNotJson')); return; }
+      apiRequest('/projects/import', { method: 'POST', body: JSON.stringify(data) })
+        .then(project => {
+          showToast(t('restoreDone')(project.name));
+          return openProjectWorkspace(project.id, 'overview');
+        })
+        .catch(err => showToast(err.message || t('resultSaveError')));
+    };
+    reader.onerror = () => showToast(t('restoreNotJson'));
+    reader.readAsText(file);
   }
 
   function submitQuickProject(e){
@@ -7968,6 +8021,13 @@
     document.getElementById('quickProjectForm').addEventListener('submit', submitQuickProject);
     document.getElementById('homeLibraryBtn').addEventListener('click', ()=> showView('library'));
     document.getElementById('pwBackHome').addEventListener('click', ()=> showView('home'));
+    document.getElementById('pwBackupBtn').addEventListener('click', downloadProjectBackup);
+    document.getElementById('restoreBackupBtn').addEventListener('click', ()=> document.getElementById('restoreBackupInput').click());
+    document.getElementById('restoreBackupBtn2').addEventListener('click', ()=> document.getElementById('restoreBackupInput').click());
+    document.getElementById('restoreBackupInput').addEventListener('change', e=>{
+      restoreProjectBackup(e.target.files[0]);
+      e.target.value = '';
+    });
     document.getElementById('homeProjectList').addEventListener('click', e=>{
       const btn = e.target.closest('button[data-action]');
       if(!btn) return;

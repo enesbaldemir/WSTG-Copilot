@@ -1873,3 +1873,9 @@ body:not(.is-online) .online-only{ display:none !important; }
 .finding-template-controls select{ flex:1; min-width:0; }
 .finding-template-row .hint{ margin:0; }
 .finding-template-controls [hidden], #cvssResetBtn[hidden]{ display:none !important; }
+
+/* Proje yedekleme */
+.restore-row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:10px; padding-top:12px; border-top:1px solid var(--border); }
+.restore-row .hint{ margin:0; }
+.project-head .page-actions{ gap:8px; }
+.section-head-actions{ display:inline-flex; align-items:center; gap:10px; }
