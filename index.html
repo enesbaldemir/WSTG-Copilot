@@ -50,6 +50,8 @@
     <symbol id="ic-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></symbol>
     <symbol id="ic-note" viewBox="0 0 24 24"><path d="M5 4h10l4 4v12H5z"/><path d="M15 4v4h4M8 12h8M8 16h5"/></symbol>
     <symbol id="ic-chart" viewBox="0 0 24 24"><path d="M4 20h16"/><path d="M7 16v-5M12 16V7M17 16v-8"/></symbol>
+    <symbol id="ic-alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17h.01"/></symbol>
+    <symbol id="ic-flow" viewBox="0 0 24 24"><circle cx="5" cy="6" r="2.5"/><circle cx="19" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M7 7l8 9M17 7l-7.5 8.5"/></symbol>
     <symbol id="ic-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></symbol>
   </defs>
 </svg>
@@ -72,7 +74,7 @@
     </a>
 
     <div class="topbar-context">
-      <div class="ctx-item">
+      <div class="ctx-item online-only">
         <span class="ctx-label" data-i18n="ctxProject">Proje</span>
         <button type="button" class="ctx-select placeholder" id="projectChip">
           <span id="projectChipName" data-i18n="ctxNoProject">Proje seçilmedi</span>
@@ -80,8 +82,8 @@
         </button>
         <span id="projectChipSub" hidden></span>
       </div>
-      <span class="ctx-sep"></span>
-      <div class="ctx-item">
+      <span class="ctx-sep adv-only online-only"></span>
+      <div class="ctx-item adv-only online-only">
         <span class="ctx-label" data-i18n="ctxSession">Oturum</span>
         <button type="button" class="ctx-select" id="topbarSessionBtn">
           <span id="topbarSessionName">—</span>
@@ -111,50 +113,97 @@
     </div>
   </header>
 
-  <!-- Kenar çubuğu -->
+  <!-- Kenar çubuğu: proje açıkken pentest adımlarına göre gruplanır -->
   <aside class="sidebar" id="sidebar">
-    <nav class="nav-group">
-      <button class="nav-link active" id="dashboardNav"><svg class="i"><use href="#ic-home"/></svg><span data-i18n="navDashboard">Genel Bakış</span></button>
-      <button class="nav-link" id="projectsNavBtn"><svg class="i"><use href="#ic-folder"/></svg><span data-i18n="navProjects">Projeler</span></button>
-      <button class="nav-link" id="sessionsNavBtn"><svg class="i"><use href="#ic-clipboard"/></svg><span data-i18n="navSessions">Test Oturumları</span></button>
-      <button class="nav-link" id="notebookNavBtn"><svg class="i"><use href="#ic-note"/></svg><span data-i18n="navNotebook">Not Defteri</span></button>
-      <button class="nav-link" id="attackSurfaceNavBtn"><svg class="i"><use href="#ic-sitemap"/></svg><span data-i18n="navAttackSurface">Saldırı Yüzeyi</span></button>
-      <button class="nav-link" id="reconNavBtn"><svg class="i"><use href="#ic-search"/></svg><span data-i18n="navRecon">Attack Surface Discovery</span></button>
-      <button class="nav-link" id="plannerNavBtn"><svg class="i"><use href="#ic-list"/></svg><span data-i18n="navPlanner">Test Planı</span></button>
-      <button class="nav-link ai-feature" id="aiNextTestNavBtn"><svg class="i"><use href="#ic-spark"/></svg><span data-i18n="navAiNextTest">AI: Sırada Ne Var?</span></button>
-      <button class="nav-link" id="importNavBtn"><svg class="i"><use href="#ic-upload"/></svg><span data-i18n="navImport">Bulgu İçe Aktar</span></button>
-      <button class="nav-link" id="studyMetricsNavBtn"><svg class="i"><use href="#ic-chart"/></svg><span data-i18n="navStudyMetrics">Çalışma Metrikleri</span></button>
+    <nav class="nav-group online-only">
+      <button class="nav-link" id="projectsNavBtn"><svg class="i"><use href="#ic-folder"/></svg><span data-i18n="navMyProjects">Projelerim</span></button>
     </nav>
 
-    <div class="nav-divider"></div>
+    <div class="nav-project proj-only" id="navProject">
+      <div class="nav-project-head">
+        <span class="nav-project-label" data-i18n="navCurrentProject">Açık proje</span>
+        <span class="nav-project-name" id="navProjectName">—</span>
+      </div>
+      <nav class="nav-group">
+        <button class="nav-link" data-pw-tab="overview"><svg class="i"><use href="#ic-home"/></svg><span data-i18n="navProjectOverview">Proje Özeti</span></button>
+      </nav>
 
+      <div class="nav-step"><span class="nav-step-num">1</span><span data-i18n="stepPrep">Hazırlık</span></div>
+      <nav class="nav-group">
+        <button class="nav-link" data-pw-tab="scope"><svg class="i"><use href="#ic-target"/></svg><span data-i18n="navScope">Kapsam</span></button>
+      </nav>
+
+      <div class="nav-step"><span class="nav-step-num">2</span><span data-i18n="stepRecon">Keşif</span></div>
+      <nav class="nav-group">
+        <button class="nav-link" id="reconNavBtn"><svg class="i"><use href="#ic-search"/></svg><span data-i18n="navRunRecon">Keşif Çalıştır</span></button>
+        <button class="nav-link" id="attackSurfaceNavBtn" data-pw-tab="assets"><svg class="i"><use href="#ic-sitemap"/></svg><span data-i18n="navAttackSurface">Saldırı Yüzeyi</span></button>
+        <button class="nav-link" id="plannerNavBtn"><svg class="i"><use href="#ic-list"/></svg><span data-i18n="navPlanner">Test Planı</span></button>
+      </nav>
+
+      <div class="nav-step"><span class="nav-step-num">3</span><span data-i18n="stepTest">Test</span></div>
+      <nav class="nav-group">
+        <button class="nav-link" data-pw-tab="wstg"><svg class="i"><use href="#ic-check"/></svg><span data-i18n="navWstgTests">WSTG Testleri</span></button>
+        <button class="nav-link" data-pw-tab="authz"><svg class="i"><use href="#ic-lock"/></svg><span data-i18n="pwTabAuthz">Yetki Matrisi</span></button>
+        <button class="nav-link" id="notebookNavBtn"><svg class="i"><use href="#ic-note"/></svg><span data-i18n="navNotebook">Not Defteri</span></button>
+        <button class="nav-link ai-feature" id="aiNextTestNavBtn"><svg class="i"><use href="#ic-spark"/></svg><span data-i18n="navAiNextTest">AI: Sırada Ne Var?</span></button>
+      </nav>
+
+      <div class="nav-step"><span class="nav-step-num">4</span><span data-i18n="stepFindings">Bulgular</span></div>
+      <nav class="nav-group">
+        <button class="nav-link" data-pw-tab="findings"><svg class="i"><use href="#ic-alert"/></svg><span data-i18n="pwTabFindings">Bulgular</span></button>
+        <button class="nav-link" data-pw-tab="evidence"><svg class="i"><use href="#ic-image"/></svg><span data-i18n="pwTabEvidence">Kanıtlar</span></button>
+        <button class="nav-link" id="importNavBtn"><svg class="i"><use href="#ic-upload"/></svg><span data-i18n="navImport">Bulgu İçe Aktar</span></button>
+      </nav>
+
+      <div class="nav-step"><span class="nav-step-num">5</span><span data-i18n="stepReport">Rapor</span></div>
+      <nav class="nav-group">
+        <button class="nav-link" data-pw-tab="reports"><svg class="i"><use href="#ic-file"/></svg><span data-i18n="pwTabReports">Raporlar</span></button>
+        <button class="nav-link" data-pw-tab="retest"><svg class="i"><use href="#ic-reset"/></svg><span data-i18n="pwTabRetest">Yeniden Test</span></button>
+      </nav>
+
+      <div class="nav-step adv-only"><span class="nav-step-num nav-step-adv">+</span><span data-i18n="stepAdvanced">Gelişmiş</span></div>
+      <nav class="nav-group adv-only">
+        <button class="nav-link" data-pw-tab="timeline"><svg class="i"><use href="#ic-clock"/></svg><span data-i18n="pwTabTimeline">Zaman Çizelgesi</span></button>
+        <button class="nav-link" data-pw-tab="kanban"><svg class="i"><use href="#ic-grid"/></svg><span data-i18n="pwTabKanban">Kanban</span></button>
+        <button class="nav-link" data-pw-tab="chains"><svg class="i"><use href="#ic-flow"/></svg><span data-i18n="pwTabChains">Saldırı Zincirleri</span></button>
+        <button class="nav-link" data-pw-tab="tools"><svg class="i"><use href="#ic-monitor"/></svg><span data-i18n="pwTabTools">Araçlar</span></button>
+      </nav>
+    </div>
+
+    <div class="nav-hint online-only noproj-only" data-i18n="navNoProjectHint">Bir proje açtığında test adımları burada sırayla görünür.</div>
+
+    <div class="nav-divider online-only"></div>
+    <div class="nav-section-label" data-i18n="navReferences">Başvuru</div>
     <nav class="nav-group">
-      <button class="nav-link" id="categoryToggle" type="button">
-        <svg class="i"><use href="#ic-book"/></svg><span id="categoryToggleLabel" data-i18n="navCategories">OWASP WSTG</span>
+      <button class="nav-link" id="dashboardNav"><svg class="i"><use href="#ic-book"/></svg><span data-i18n="navLibrary">WSTG Rehberi</span></button>
+      <button class="nav-link adv-only" id="categoryToggle" type="button">
+        <svg class="i"><use href="#ic-grid"/></svg><span id="categoryToggleLabel" data-i18n="navCategories">OWASP WSTG</span>
         <svg class="i chev"><use href="#ic-chev"/></svg>
       </button>
-      <div class="nav-sub-list" id="categoryNav"><!-- JS ile doldurulur --></div>
+      <div class="nav-sub-list adv-only" id="categoryNav"><!-- JS ile doldurulur --></div>
       <button class="nav-link" id="top10NavBtn"><svg class="i"><use href="#ic-shield"/></svg><span data-i18n="navTop10">OWASP Top 10:2025</span></button>
+      <button class="nav-link adv-only online-only" id="sessionsNavBtn"><svg class="i"><use href="#ic-clipboard"/></svg><span data-i18n="navSessions">Test Oturumları</span></button>
+      <button class="nav-link adv-only" id="studyMetricsNavBtn"><svg class="i"><use href="#ic-chart"/></svg><span data-i18n="navStudyMetrics">Çalışma Metrikleri</span></button>
     </nav>
 
     <div class="sidebar-bottom">
-      <button type="button" class="session-chip" id="sessionChip" style="display:none">
+      <button type="button" class="session-chip adv-only" id="sessionChip" style="display:none">
         <span class="session-chip-dot"></span>
         <span class="session-chip-info">
           <span class="session-chip-name" id="sessionChipName">-</span>
           <span class="session-chip-sub" id="sessionChipSub">0/0</span>
         </span>
       </button>
-      <button class="nav-link" id="exportBtn"><svg class="i"><use href="#ic-file"/></svg><span data-i18n="exportReport">Raporu Dışa Aktar</span></button>
+      <button class="nav-link adv-only" id="exportBtn"><svg class="i"><use href="#ic-file"/></svg><span data-i18n="exportReport">Raporu Dışa Aktar</span></button>
       <button class="nav-link" id="aiSettingsNavBtn"><svg class="i"><use href="#ic-key"/></svg><span data-i18n="navAiSettings">AI Ayarları</span></button>
       <div class="ai-status-line"><span class="ai-status-badge" id="aiStatusBadge"></span></div>
-      <button class="nav-link" id="resetBtn"><svg class="i"><use href="#ic-reset"/></svg><span data-i18n="resetProgress">İlerlemeyi Sıfırla</span></button>
+      <button class="nav-link adv-only" id="resetBtn"><svg class="i"><use href="#ic-reset"/></svg><span data-i18n="resetProgress">İlerlemeyi Sıfırla</span></button>
       <div class="auth-nav" id="authNav" hidden>
         <button class="nav-link" id="changePasswordBtn" type="button"><svg class="i"><use href="#ic-lock"/></svg><span data-i18n="authChangePassword">Parolayı değiştir</span></button>
         <button class="nav-link" id="logoutBtn" type="button"><svg class="i"><use href="#ic-logout"/></svg><span data-i18n="authLogout">Çıkış yap</span></button>
       </div>
       <div class="sidebar-settings">
-        <label class="sidebar-setting">
+        <label class="sidebar-setting adv-only">
           <span data-i18n="frameworkLabel">Checklist</span>
           <select id="frameworkSelect">
             <option value="wstg" data-i18n="frameworkWstg">OWASP WSTG (Web)</option>
@@ -170,16 +219,87 @@
         </label>
       </div>
     </div>
+    <label class="mode-switch mode-switch-pinned" id="beginnerModeSwitch" data-i18n-title="beginnerModeHint" title="">
+      <span class="mode-switch-text">
+        <span class="mode-switch-title" data-i18n="beginnerModeLabel">Başlangıç modu</span>
+        <span class="mode-switch-sub" id="beginnerModeSub"></span>
+      </span>
+      <input type="checkbox" id="beginnerModeToggle" role="switch">
+      <span class="mode-switch-track" aria-hidden="true"><span class="mode-switch-thumb"></span></span>
+    </label>
   </aside>
   <div class="sidebar-scrim" id="sidebarScrim"></div>
 
-  <!-- Ana içerik -->
+  <!-- Ana içerik: Projelerim (home) · Proje sayfası · WSTG Rehberi (library) -->
   <main class="main">
-    <div class="page active">
+    <div class="page" id="homePage">
+      <div class="home-layout" id="homeLayout">
+        <section class="home-hero">
+          <span class="home-eyebrow" id="homeEyebrow" data-i18n="homeEyebrow">Hoş geldin</span>
+          <h1 class="page-title" id="homeTitle" data-i18n="homeTitleFirst">İlk pentest projeni oluştur</h1>
+          <p class="page-desc" id="homeDesc" data-i18n="homeDescFirst">Proje; test ettiğin hedefi, bulduğun açıkları ve raporu tek yerde tutar. Başlamak için bir ad yazman yeterli.</p>
+        </section>
+
+        <section class="home-projects" id="homeProjectsSection" hidden>
+          <div class="section-head">
+            <h2 class="section-title" data-i18n="homeProjectsTitle">Projelerin</h2>
+            <span class="section-sub" id="homeProjectsCount"></span>
+          </div>
+          <div class="home-project-list" id="homeProjectList"></div>
+        </section>
+
+        <div class="home-grid">
+          <form class="card quick-project" id="quickProjectForm" autocomplete="off" novalidate>
+            <h2 class="card-title" id="quickProjectTitle" data-i18n="quickProjectTitle">Yeni proje</h2>
+            <label for="qpName" data-i18n="qpNameLabel">Proje adı</label>
+            <input type="text" id="qpName" maxlength="200" data-i18n-placeholder="qpNamePlaceholder" placeholder="Örn: Acme web uygulaması testi">
+            <label for="qpTarget"><span data-i18n="qpTargetLabel">Test edilecek adres</span> <span class="optional" data-i18n="optionalTag">(isteğe bağlı)</span></label>
+            <input type="text" id="qpTarget" maxlength="2048" placeholder="https://test.example.com" inputmode="url">
+            <p class="hint" data-i18n="qpTargetHint">Kapsama eklenir. Bu adrese şimdi hiçbir istek gönderilmez.</p>
+            <label for="qpClient"><span data-i18n="qpClientLabel">Müşteri / kurum</span> <span class="optional" data-i18n="optionalTag">(isteğe bağlı)</span></label>
+            <input type="text" id="qpClient" maxlength="200" placeholder="Acme A.Ş.">
+            <p class="quick-project-note" data-i18n="qpAuthNote">Yalnızca test etmek için yazılı izin aldığın sistemleri ekle.</p>
+            <p class="form-error" id="qpError" role="alert"></p>
+            <button type="submit" class="btn btn-primary" id="qpSubmit"><svg class="i"><use href="#ic-play"/></svg><span data-i18n="qpSubmit">Projeyi oluştur ve başla</span></button>
+          </form>
+
+          <section class="card how-it-works">
+            <h2 class="card-title" data-i18n="howTitle">Nasıl çalışır?</h2>
+            <ol class="flow-steps">
+              <li><span class="flow-num">1</span><div><b data-i18n="stepPrep">Hazırlık</b><p data-i18n="howStep1">Kapsamı yaz: test etmene izin verilen adresler.</p></div></li>
+              <li><span class="flow-num">2</span><div><b data-i18n="stepRecon">Keşif</b><p data-i18n="howStep2">Hedefi tanı: sayfalar, teknolojiler, giriş noktaları.</p></div></li>
+              <li><span class="flow-num">3</span><div><b data-i18n="stepTest">Test</b><p data-i18n="howStep3">WSTG listesindeki testleri adım adım uygula, not al.</p></div></li>
+              <li><span class="flow-num">4</span><div><b data-i18n="stepFindings">Bulgular</b><p data-i18n="howStep4">Bulduğun açıkları kanıtlarıyla kaydet.</p></div></li>
+              <li><span class="flow-num">5</span><div><b data-i18n="stepReport">Rapor</b><p data-i18n="howStep5">Tek tıkla PDF ya da Word rapor üret.</p></div></li>
+            </ol>
+            <button type="button" class="btn btn-secondary btn-sm" id="homeLibraryBtn"><svg class="i"><use href="#ic-book"/></svg><span data-i18n="homeLibraryBtn">Önce WSTG Rehberi'ne göz at</span></button>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="projectPage">
+      <div class="project-head">
+        <div class="project-head-text">
+          <button type="button" class="crumb-btn" id="pwBackHome"><svg class="i i-sm"><use href="#ic-folder"/></svg><span data-i18n="navMyProjects">Projelerim</span></button>
+          <h1 class="page-title" id="pwName">-</h1>
+          <p class="project-head-meta"><span id="pwClient"></span> <span id="pwStatusPill" class="project-status-pill"></span></p>
+        </div>
+        <div class="page-actions">
+          <button type="button" class="btn btn-secondary btn-sm" id="pwEditBtn" data-i18n="editBtn">Düzenle</button>
+        </div>
+      </div>
+      <div class="pw-section-head">
+        <h2 class="pw-section-title" id="pwSectionTitle"></h2>
+      </div>
+      <div class="pw-content" id="pwContent"></div>
+    </div>
+
+    <div class="page" id="libraryPage">
       <div class="page-head">
         <div>
-          <h1 class="page-title" data-i18n="heroTitle">Web Pentest Workspace</h1>
-          <p class="page-desc" data-i18n="heroDesc">OWASP Web Security Testing Guide v4.2 tabanlı, tıklanabilir checklist ile her test maddesinin nasıl uygulanacağını adım adım ve örnekli şekilde gösteren pentest çalışma alanı.</p>
+          <h1 class="page-title" data-i18n="libraryTitle">WSTG Rehberi</h1>
+          <p class="page-desc" data-i18n="libraryDesc">OWASP Web Security Testing Guide v4.2 tabanlı, tıklanabilir checklist ile her test maddesinin nasıl uygulanacağını adım adım ve örnekli şekilde gösteren pentest çalışma alanı.</p>
         </div>
         <div class="page-actions">
           <a href="wstg-v4_2.pdf" target="_blank" class="btn btn-secondary"><svg class="i"><use href="#ic-file"/></svg><span data-i18n="openPdf">WSTG PDF'i Aç</span></a>
@@ -399,42 +519,6 @@
           <button type="button" class="btn btn-primary" id="submitProjectBtn" data-i18n="saveBtn">Kaydet</button>
         </div>
       </div>
-    </div>
-  </div>
-</div>
-
-<!-- Project Workspace -->
-<div class="overlay" id="projectWorkspaceOverlay">
-  <div class="panel project-workspace-panel">
-    <div class="panel-header">
-      <div>
-        <h3 id="pwName">-</h3>
-        <p><span id="pwClient" class="import-preview-source"></span> <span id="pwStatusPill" class="session-status-pill active"></span></p>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button type="button" class="btn btn-secondary btn-sm" id="pwEditBtn" data-i18n="editBtn">Düzenle</button>
-        <button class="close-btn" id="closeProjectWorkspace">&times;</button>
-      </div>
-    </div>
-    <div class="panel-body project-workspace-body">
-      <div class="pw-tabs" id="pwTabs">
-        <button class="pw-tab active" data-tab="overview" data-i18n="pwTabOverview">Overview</button>
-        <button class="pw-tab" data-tab="scope" data-i18n="pwTabScope">Scope</button>
-        <button class="pw-tab" data-tab="assets" data-i18n="pwTabAssets">Assets</button>
-        <button class="pw-tab" data-tab="recon" data-i18n="pwTabRecon">Recon</button>
-        <button class="pw-tab" data-tab="tools" data-i18n="pwTabTools">Tools</button>
-        <button class="pw-tab" data-tab="testplan" data-i18n="pwTabTestPlan">Test Plan</button>
-        <button class="pw-tab" data-tab="wstg" data-i18n="pwTabWstg">WSTG Tests</button>
-        <button class="pw-tab" data-tab="authz" data-i18n="pwTabAuthz">Yetki Matrisi</button>
-        <button class="pw-tab" data-tab="findings" data-i18n="pwTabFindings">Findings</button>
-        <button class="pw-tab" data-tab="retest" data-i18n="pwTabRetest">Yeniden Test</button>
-        <button class="pw-tab" data-tab="evidence" data-i18n="pwTabEvidence">Evidence</button>
-        <button class="pw-tab" data-tab="chains" data-i18n="pwTabChains">Attack Chains</button>
-        <button class="pw-tab" data-tab="timeline" data-i18n="pwTabTimeline">Timeline</button>
-        <button class="pw-tab" data-tab="kanban" data-i18n="pwTabKanban">Kanban</button>
-        <button class="pw-tab" data-tab="reports" data-i18n="pwTabReports">Reports</button>
-      </div>
-      <div class="pw-content" id="pwContent"></div>
     </div>
   </div>
 </div>
@@ -949,6 +1033,7 @@
 <script src="js/attack-surface.js"></script>
 <script src="js/notebook.js"></script>
 <script src="js/authz-matrix.js"></script>
+<script src="js/ux-flow.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
