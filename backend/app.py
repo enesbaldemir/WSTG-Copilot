@@ -596,6 +596,8 @@ def create_test_result(session_id):
         
         if existing:
             return jsonify({'error': 'Bu test zaten kaydedilmiş'}), 409
+        if data.get('status', 'pending') not in VALID_RESULT_STATUSES:
+            return jsonify({'error': RESULT_STATUS_ERROR}), 400
         
         result = TestResult(
             session_id=session_id,
@@ -641,6 +643,8 @@ def update_test_result(session_id, test_id):
         old_finding_status = result.finding_status
         
         if 'status' in data:
+            if data['status'] not in VALID_RESULT_STATUSES:
+                return jsonify({'error': RESULT_STATUS_ERROR}), 400
             result.status = data['status']
             if data['status'] in ['passed', 'failed', 'skipped']:
                 result.completed_at = datetime.utcnow()
@@ -966,6 +970,10 @@ def _parse_date(value):
 VALID_PROJECT_STATUSES = {'planning', 'active', 'paused', 'completed', 'archived'}
 VALID_SCOPE_TYPES = {'domain', 'subdomain', 'ip', 'cidr'}
 VALID_FINDING_STATUSES = {'open', 'retesting', 'fixed', 'resolved', 'wont_fix', 'accepted_risk'}
+# Test sonucu: pending (bekliyor), passed (açık yok), failed (açık bulundu), skipped (uygulanamaz)
+VALID_RESULT_STATUSES = {'pending', 'passed', 'failed', 'skipped'}
+RESULT_STATUS_ERROR = 'Geçersiz test durumu (pending, passed, failed, skipped)'
+
 
 
 @app.route('/api/projects', methods=['GET'])
@@ -1137,6 +1145,25 @@ def project_dashboard(project_id):
             cat_name = cat_name or 'Diğer / Kategorisiz'
             findings_by_category[cat_name] = findings_by_category.get(cat_name, 0) + 1
 
+        # Arayüzün kendi dilinde gösterebilmesi için WSTG kategori koduna göre
+        # (ör. WSTG-ATHZ); test ID'si olmayanlar serbest OWASP kategorisiyle.
+        wstg_groups = {}
+        for f in pro_findings:
+            m = re.match(r'^(WSTG-[A-Z]{4})-\d+$', (f.test_id or '').strip().upper())
+            key = ('code', m.group(1)) if m else ('label', (f.owasp_category or '').strip() or None)
+            wstg_groups[key] = wstg_groups.get(key, 0) + 1
+        findings_by_wstg_category = sorted(
+            [{'code': k[1] if k[0] == 'code' else None, 'label': k[1] if k[0] == 'label' else None, 'count': n}
+             for k, n in wstg_groups.items()],
+            key=lambda x: (-x['count'], x['code'] or x['label'] or '~'))
+
+        # Önem dağılımı gerçek bulgulardan (checklist notlarından değil).
+        pro_severity_counts = {'critical': 0, 'high': 0, 'medium': 0, 'low': 0, 'info': 0}
+        for f in pro_findings:
+            sev = (f.severity or 'info').lower()
+            if sev in pro_severity_counts:
+                pro_severity_counts[sev] += 1
+
         # --- Most Tested Endpoints (Finding.endpoint sıklığı) ---
         endpoint_counts = {}
         for f in pro_findings:
@@ -1156,6 +1183,8 @@ def project_dashboard(project_id):
             'recon_run_count': len(recon_runs),
             'coverage': coverage,
             'findings_by_category': findings_by_category,
+            'findings_by_wstg_category': findings_by_wstg_category,
+            'pro_severity_counts': pro_severity_counts,
             'top_endpoints': [{'endpoint': e, 'count': c} for e, c in top_endpoints],
             'pro_finding_count': len(pro_findings),
         }), 200

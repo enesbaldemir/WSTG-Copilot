@@ -1787,6 +1787,20 @@
     pwReportsNoSession: "Test listesi hazırlanıyor; birazdan tekrar dene.",
     promoteFindingBtn: "Bulguya dönüştür",
     pwMobileNavLabel: "Bölüm",
+    result_passed: "Açık yok", result_failed: "Açık bulundu", result_skipped: "Uygulanamaz",
+    resultHint_passed: "Testi uyguladın ve açık bulmadın",
+    resultHint_failed: "Testte bir güvenlik açığı buldun",
+    resultHint_skipped: "Bu test hedefe uygulanamıyor (ör. uygulamada giriş yok)",
+    resultGroupLabel: "Test sonucu",
+    resultToast_passed: "Sonuç: açık yok", resultToast_failed: "Sonuç: açık bulundu. Bulgu olarak kaydetmeyi unutma.",
+    resultToast_skipped: "Sonuç: uygulanamaz", resultToast_pending: "Test beklemeye alındı",
+    recordFindingBtn: "Bulgu kaydet",
+    otherCategory: "Diğer / kategorisiz",
+    notebookDesc: (name) => `"${name}" projesindeki notların. Bir test maddesine bağlayabilir ya da genel not olarak bırakabilirsin.`,
+    reportDefaultTitle: name => `${name} Güvenlik Testi Raporu`,
+    findingTitlePlaceholder: "Örn: Sipariş detayında IDOR (yetkisiz erişim)",
+    findingsLabel: "Notlar",
+    findingsPlaceholder: "Bu testte ne denedin, ne gördün? Notlar rapora girmez; açık bulduysan \"Açık bulundu\" ve ardından \"Bulgu kaydet\" de.",
     plannerEmpty: "Plan, keşif sonuçlarından oluşur. Önce Keşif Çalıştır'ı kullan ve bulunan önerileri uygula. Keşif yapmayacaksan doğrudan WSTG testlerine geçebilirsin.",
     pwHelp: {
       overview: { s: "Projenin beş adımdan hangisinde olduğunu gösterir. \"Sıradaki adım\" kartındaki düğme seni yapman gereken işe götürür." },
@@ -1856,6 +1870,20 @@
     pwReportsNoSession: "The test list is being prepared; try again in a moment.",
     promoteFindingBtn: "Promote to finding",
     pwMobileNavLabel: "Section",
+    result_passed: "No issue", result_failed: "Issue found", result_skipped: "Not applicable",
+    resultHint_passed: "You ran the test and found no issue",
+    resultHint_failed: "You found a security issue in this test",
+    resultHint_skipped: "This test does not apply to the target (e.g. the app has no login)",
+    resultGroupLabel: "Test result",
+    resultToast_passed: "Result: no issue", resultToast_failed: "Result: issue found. Remember to record it as a finding.",
+    resultToast_skipped: "Result: not applicable", resultToast_pending: "Test set back to pending",
+    recordFindingBtn: "Record finding",
+    otherCategory: "Other / uncategorized",
+    notebookDesc: (name) => `Your notes in the "${name}" project. Link them to a test item or keep them as general notes.`,
+    reportDefaultTitle: name => `${name} Security Assessment`,
+    findingTitlePlaceholder: "e.g. IDOR on order details (unauthorized access)",
+    findingsLabel: "Notes",
+    findingsPlaceholder: "What did you try and what did you see? Notes are not in the report; if you found an issue, choose \"Issue found\" and then \"Record finding\".",
     plannerEmpty: "The plan is built from discovery results. Run Discovery first and apply its suggestions. If you are skipping discovery, go straight to the WSTG tests.",
     pwHelp: {
       overview: { s: "Shows which of the five steps the project is in. The button on the \"Next step\" card takes you to what to do next." },
@@ -2270,21 +2298,27 @@
   }
 
   // Liste satırındaki durum etiketi: not varsa önem derecesi, yoksa tamamlandı/bekliyor.
+  const RESULT_BADGE_CLASS = { passed: 'green', failed: 'red', skipped: '' };
+  function resultBadgeHtml(status){
+    if(status === 'pending') return `<span class="badge">${t('statusPendingLabel')}</span>`;
+    return `<span class="badge result-${status} ${RESULT_BADGE_CLASS[status]}">${escapeHtml(t('result_' + status))}</span>`;
+  }
+
+  // Liste satırındaki durum etiketi: sonuç girildiyse sonuç; girilmediyse not varsa önem derecesi.
   function testStatusBadge(test){
+    const status = testResultStatus(test.id);
     const fd = getFindingData(test.id);
-    if(fd.text && fd.text.trim()){
+    if(status === 'pending' && fd.text && fd.text.trim()){
       return `<span class="severity-badge sev-${fd.severity || 'info'}">${t('severity_' + (fd.severity || 'info'))}</span>`;
     }
-    return progress[test.id]
-      ? `<span class="badge green">${t('statusDoneLabel')}</span>`
-      : `<span class="badge">${t('statusPendingLabel')}</span>`;
+    return resultBadgeHtml(status);
   }
 
   function renderTestRow(test){
     const done = !!progress[test.id];
     const rp = reconPriority[test.id];
     const selected = test.id === selectedTestId;
-    return `<div class="test-row-item ${done?'done':''} ${selected?'selected':''}" data-id="${escapeHtml(test.id)}" role="option" aria-selected="${selected}" tabindex="-1">
+    return `<div class="test-row-item ${done?'done':''} res-${testResultStatus(test.id)} ${selected?'selected':''}" data-id="${escapeHtml(test.id)}" role="option" aria-selected="${selected}" tabindex="-1">
       <button type="button" class="test-check ${done?'checked':''}" data-id="${escapeHtml(test.id)}" title="${t('testEditedTitle')}" aria-label="${t('testEditedTitle')}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 6"/></svg>
       </button>
@@ -2396,13 +2430,14 @@
     const foot = document.getElementById('testDetailFoot');
     if(!test){ foot.innerHTML = ''; foot.style.display = 'none'; return; }
     foot.style.display = '';
-    const done = !!progress[test.id];
+    const status = testResultStatus(test.id);
     const updated = parseApiDate(lastUpdatedFor(test.id));
     const idx = visibleTestIds.indexOf(test.id);
+    const canRecordFinding = status === 'failed' && dbOnline && currentProjectId;
     foot.innerHTML = `
       <div class="foot-meta">
         ${updated ? `<span>${t('lastUpdatedLabel')}: ${escapeHtml(updated.toLocaleString(t('dateLocale'), {dateStyle:'medium', timeStyle:'short'}))}</span><span class="foot-sep"></span>` : ''}
-        <span>${t('statusLabel')}: ${done ? t('statusDoneLabel') : t('statusPendingLabel')}</span>
+        <span>${t('statusLabel')}: ${escapeHtml(status === 'pending' ? t('statusPendingLabel') : t('result_' + status))}</span>
         <span class="finding-status" data-id="${escapeHtml(test.id)}"></span>
       </div>
       <div class="foot-actions">
@@ -2410,9 +2445,10 @@
           <button type="button" class="icon-btn sm bordered" data-action="prev" ${idx <= 0 ? 'disabled' : ''} title="${t('prevTest')}">${dIcon('back')}</button>
           <button type="button" class="icon-btn sm bordered" data-action="next" ${idx < 0 || idx >= visibleTestIds.length - 1 ? 'disabled' : ''} title="${t('nextTest')}">${dIcon('chev')}</button>
         </span>
-        <button type="button" class="btn ${done ? 'btn-secondary is-done' : 'btn-primary'}" data-action="toggle-done" data-id="${escapeHtml(test.id)}">
-          ${dIcon('check')}<span>${done ? t('completedUndoBtn') : t('completeTestBtn')}</span>
-        </button>
+        ${canRecordFinding ? `<button type="button" class="btn btn-primary btn-sm" data-action="record-finding" data-id="${escapeHtml(test.id)}">${escapeHtml(t('recordFindingBtn'))}</button>` : ''}
+        <span class="result-seg" role="group" aria-label="${escapeHtml(t('resultGroupLabel'))}">
+          ${RESULT_STATUSES.map(st => `<button type="button" class="result-btn result-${st} ${status === st ? 'active' : ''}" data-action="set-result" data-status="${st}" data-id="${escapeHtml(test.id)}" aria-pressed="${status === st}" title="${escapeHtml(t('resultHint_' + st))}">${escapeHtml(t('result_' + st))}</button>`).join('')}
+        </span>
       </div>`;
   }
 
@@ -2534,18 +2570,26 @@
     }
   }
 
-  function toggleDone(id){
+  // Test sonucu: pending | passed (açık yok) | failed (açık bulundu) | skipped (uygulanamaz).
+  // progress[id] sonucu tutar (eski kayıtlarda true = passed); boşsa bekliyor.
+  const RESULT_STATUSES = ['passed', 'failed', 'skipped'];
+  function testResultStatus(id){
+    const v = progress[id];
+    if(!v) return 'pending';
+    return RESULT_STATUSES.includes(v) ? v : 'passed';
+  }
+
+  function setTestResult(id, status){
     if(saveTimers[id]){ clearTimeout(saveTimers[id]); delete saveTimers[id]; saveFinding(id); }
-    progress[id] = !progress[id];
-    const done = progress[id];
+    const prev = progress[id];
+    if(status === 'pending') delete progress[id]; else progress[id] = status;
     if(currentSession){
-      persistResult(id, done).then(()=>{
+      persistResult(id, status).then(()=>{
         if(currentCategoryId && id === selectedTestId) updateDetailStatus();
-      }).catch(err => {
-        // revert on failure
-        progress[id] = !done;
+      }).catch(() => {
+        if(prev) progress[id] = prev; else delete progress[id];
         renderSidebar(); renderDashboard();
-        if(currentCategoryId) renderTestList();
+        if(currentCategoryId){ renderTestList(); if(id === selectedTestId) updateDetailStatus(); }
         showToast(t('resultSaveError'));
       });
     } else {
@@ -2553,8 +2597,13 @@
     }
     renderSidebar();
     renderDashboard();
-    if(currentCategoryId) renderTestList();
-    showToast(progress[id] ? t('markDoneToast') : t('markPendingToast'));
+    if(currentCategoryId){ renderTestList(); if(id === selectedTestId) updateDetailStatus(); }
+    showToast(t('resultToast_' + status));
+  }
+
+  // Listedeki onay kutusu hızlı kısayoldur: bekleyen testi "Açık yok" yapar, işaretliyse geri alır.
+  function toggleDone(id){
+    setTestResult(id, progress[id] ? 'pending' : 'passed');
   }
 
   function closeSidebar(){
@@ -2966,7 +3015,7 @@
     sessionResults = {};
     (results || []).forEach(r => {
       sessionResults[r.test_id] = r;
-      if(r.status && r.status !== 'pending') p[r.test_id] = true;
+      if(r.status && r.status !== 'pending') p[r.test_id] = r.status;
     });
     return p;
   }
@@ -3229,7 +3278,7 @@
   function openNotebook(){
     if(!dbOnline){ showToast(t('notebookNeedBackend')); return; }
     if(!currentSession){ showToast(t('notebookNeedSession')); openSessionGate(true); return; }
-    document.getElementById('notebookDesc').textContent = t('notebookDesc')(currentSession.name);
+    document.getElementById('notebookDesc').textContent = t('notebookDesc')(currentProjectObj ? currentProjectObj.name : currentSession.name);
     document.getElementById('notebookSearch').value = '';
     document.getElementById('notebookTestFilter').innerHTML =
       `<option value="">${escapeHtml(t('notebookFilterAll'))}</option><option value="__general__">${escapeHtml(t('notebookFilterGeneral'))}</option>` +
@@ -3601,9 +3650,10 @@
     });
   }
 
-  function persistResult(testId, done){
+  function persistResult(testId, status){
     if(!currentSession) return Promise.resolve();
-    const status = done ? 'passed' : 'pending';
+    if(status === true) status = 'passed';
+    if(!status) status = 'pending';
     const existing = sessionResults[testId];
     const req = existing
       ? apiRequest(`/sessions/${currentSession.id}/results/${testId}`, { method: 'PUT', body: JSON.stringify({ status }) })
@@ -3820,13 +3870,15 @@
       (f.testIds || []).forEach(testId => {
         if(!testInfoById(testId)) return;
         const noteLine = `[${f.source || f.tool}] ${f.title}${f.detail ? '\n' + f.detail : ''}`;
-        progress[testId] = true;
+        // Araç bir sorun bildirdiyse test "açık bulundu" olur; yalnızca bilgi ise durum değişmez.
+        const markFailed = (f.severity || 'info') !== 'info';
+        if(markFailed) progress[testId] = 'failed';
         if(currentSession){
           const existing = sessionResults[testId];
           const prevText = existing && existing.finding ? existing.finding + '\n\n' : '';
           const prevSeverity = existing && existing.severity ? existing.severity : 'info';
           persistFinding(testId, prevText + noteLine, maxSeverityLocal(prevSeverity, f.severity));
-          persistResult(testId, true).catch(()=>{});
+          if(markFailed) persistResult(testId, 'failed').catch(()=>{});
         } else {
           const existing = findings[testId];
           const prevText = existing && existing.text ? existing.text + '\n\n' : '';
@@ -4652,7 +4704,7 @@
     const text = a === 'report' ? t('next_report_text')(findingsN) : t('next_' + a + '_text');
     const nextTest = (a === 'firstTest' || a === 'keepTesting') ? window.WSTGFlow.firstPendingTest(getEffectiveCategories(), progress) : null;
     const stepNames = ['stepPrep', 'stepRecon', 'stepTest', 'stepFindings', 'stepReport'];
-    const stepSubs = [t('stepSub_scope')(scopeCount), st.recon || st.assets || st.reconSkipped ? '' : t('stepSub_recon'),
+    const stepSubs = [t('stepSub_scope')(scopeCount), st.recon || st.assets || st.reconSkipped || st.done || findingsN ? '' : t('stepSub_recon'),
       t('stepSub_test')(st.done, st.total), findingsN ? t('stepSub_findings')(findingsN) : '', ''];
     return `
       <ol class="phase-stepper" aria-label="${escapeHtml(t('phaseStepper'))}">
@@ -4688,7 +4740,9 @@
       const scopeCount = (scopeItems || []).filter(x => x.in_scope).length;
       const sevOrder = ['critical','high','medium','low','info'];
       const sevColors = { critical:'#ef4444', high:'#f97316', medium:'#eab308', low:'#22c55e', info:'#94a3b8' };
-      const maxSev = Math.max(1, ...sevOrder.map(k => d.severity_counts[k] || 0));
+      // Önem dağılımı gerçek bulgulardan; eski API'de checklist notlarına düşer.
+      const sevCounts = d.pro_severity_counts || d.severity_counts;
+      const maxSev = Math.max(1, ...sevOrder.map(k => sevCounts[k] || 0));
 
       const coverageHtml = d.coverage ? `
         <h5 class="pw-section-heading">${t('pwCoverageLabel')}</h5>
@@ -4702,14 +4756,18 @@
           }).join('')}
         </div>` : '';
 
-      const catEntries = d.findings_by_category ? Object.entries(d.findings_by_category).sort((a,b)=>b[1]-a[1]) : [];
+      const catNames = {};
+      getEffectiveCategories().forEach(c => { catNames[c.code] = c.name; });
+      const catEntries = d.findings_by_wstg_category
+        ? d.findings_by_wstg_category.map(g => [g.code ? (catNames[g.code] || g.code) : (g.label || t('otherCategory')), g.count])
+        : (d.findings_by_category ? Object.entries(d.findings_by_category).sort((a,b)=>b[1]-a[1]) : []);
       const maxCat = Math.max(1, ...catEntries.map(([,c])=>c));
       const categoryHtml = catEntries.length ? `
         <h5 class="pw-section-heading">${t('pwFindingsByCategoryLabel')}</h5>
         <div class="pw-severity-row" style="margin-bottom:22px">
           ${catEntries.map(([cat,count]) => `
             <div class="pw-severity-item">
-              <span class="sev-label" style="width:180px" title="${escapeHtml(cat)}">${escapeHtml(cat)}</span>
+              <span class="sev-label" style="width:240px" title="${escapeHtml(cat)}">${escapeHtml(cat)}</span>
               <div class="sev-track"><div class="sev-fill" style="width:${Math.round((count/maxCat)*100)}%;background:var(--primary)"></div></div>
               <span class="sev-count">${count}</span>
             </div>`).join('')}
@@ -4747,7 +4805,7 @@
         <h5 class="pw-section-heading">${t('pwSeverityDistLabel')}</h5>
         <div class="pw-severity-row" style="margin-bottom:22px">
           ${sevOrder.map(k => {
-            const count = d.severity_counts[k] || 0;
+            const count = sevCounts[k] || 0;
             const pct = Math.round((count / maxSev) * 100);
             return `<div class="pw-severity-item">
               <span class="sev-label">${t('severity_'+k)}</span>
@@ -7040,7 +7098,9 @@
   }
 
   function renderHtmlReportBuilderHtml(){
-    const defaultTitle = currentProjectObj ? `${currentProjectObj.name} Security Assessment` : '';
+    const defaultTitle = currentProjectObj ? t('reportDefaultTitle')(currentProjectObj.name) : '';
+    const p = currentProjectObj || {};
+    const dateRange = p.start_date ? `${p.start_date}${p.end_date ? ' – ' + p.end_date : ''}` : '';
     return `
       <div class="pro-reports-section">
         <h5>${t('reportBuilderTitle')}</h5>
@@ -7052,7 +7112,7 @@
           </div>
           <div class="finding-form-row">
             <div><label>${t('reportPentesterLabel')}</label><input type="text" id="reportPentesterInput"></div>
-            <div><label>${t('reportDateRangeLabel')}</label><input type="text" id="reportDateRangeInput" placeholder="2026-08-01 – 2026-08-20"></div>
+            <div><label>${t('reportDateRangeLabel')}</label><input type="text" id="reportDateRangeInput" value="${escapeHtml(dateRange)}" placeholder="2026-08-01 – 2026-08-20"></div>
           </div>
           <div class="finding-form-row">
             <div>
@@ -7768,6 +7828,16 @@
       const btn = e.target.closest('[data-action]');
       if(!btn || btn.disabled) return;
       if(btn.dataset.action === 'toggle-done') toggleDone(btn.dataset.id);
+      if(btn.dataset.action === 'set-result'){
+        // Seçili sonuca tekrar basmak sonucu geri alır (bekliyor).
+        const id = btn.dataset.id;
+        setTestResult(id, testResultStatus(id) === btn.dataset.status ? 'pending' : btn.dataset.status);
+      }
+      if(btn.dataset.action === 'record-finding'){
+        const info = testInfoById(btn.dataset.id);
+        const fd = getFindingData(btn.dataset.id);
+        openFindingModal(null, { title: info ? info.title : btn.dataset.id, test_id: btn.dataset.id, description: fd.text || '' });
+      }
       if(btn.dataset.action === 'prev') stepSelection(-1);
       if(btn.dataset.action === 'next') stepSelection(1);
     });

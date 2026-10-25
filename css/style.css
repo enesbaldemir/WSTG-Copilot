@@ -1786,3 +1786,20 @@ body:not(.is-online) .online-only{ display:none !important; }
   .panel.embedded{ border-radius:var(--radius-lg); }
   .panel.embedded > .panel-body{ padding:16px; }
 }
+
+/* Test sonucu: Açık yok / Açık bulundu / Uygulanamaz */
+.result-seg{ display:inline-flex; border:1px solid var(--border-strong); border-radius:var(--radius); overflow:hidden; background:var(--surface); }
+.result-btn{ height:38px; padding:0 14px; font-size:13.5px; font-weight:500; color:var(--text-2); border-right:1px solid var(--border); white-space:nowrap; }
+.result-btn:last-child{ border-right:none; }
+.result-btn:hover{ background:var(--surface-3); }
+.result-btn.result-passed.active{ background:var(--green-soft); color:var(--green); font-weight:650; box-shadow:inset 0 -2px 0 var(--green); }
+.result-btn.result-failed.active{ background:var(--red-soft); color:var(--red); font-weight:650; box-shadow:inset 0 -2px 0 var(--red); }
+.result-btn.result-skipped.active{ background:var(--surface-3); color:var(--text); font-weight:650; box-shadow:inset 0 -2px 0 var(--muted); }
+.badge.result-skipped{ background:var(--surface-3); color:var(--muted); }
+.test-row-item.res-failed .test-check.checked{ background:var(--red); border-color:var(--red); }
+.test-row-item.res-skipped .test-check.checked{ background:var(--muted); border-color:var(--muted); }
+@media (max-width:900px){
+  .foot-actions{ flex-wrap:wrap; }
+  .result-seg{ order:-1; width:100%; }
+  .result-btn{ flex:1; padding:0 6px; font-size:12.5px; }
+}

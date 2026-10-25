@@ -27,6 +27,14 @@ from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 
+# Test sonucu etiketleri (TestResult.status)
+RESULT_STATUS_LABELS = {
+    'pending': 'Bekliyor',
+    'passed': 'Acik yok',
+    'failed': 'Acik bulundu',
+    'skipped': 'Uygulanamaz',
+}
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WSTG_DATA_PATH = os.path.join(BASE_DIR, 'data', 'wstg-checklist.en.json')
 LLM_DATA_PATH = os.path.join(BASE_DIR, 'data', 'llm-security-checklist.en.json')
@@ -330,7 +338,7 @@ def build_technical_report(project, sessions, findings, all_results):
     for r in all_results:
         row = table.add_row().cells
         row[0].text = r.get('test_id', '')
-        row[1].text = r.get('status', '')
+        row[1].text = RESULT_STATUS_LABELS.get(r.get('status'), r.get('status', ''))
         row[2].text = r.get('severity') or '-'
 
     buf = io.BytesIO()
