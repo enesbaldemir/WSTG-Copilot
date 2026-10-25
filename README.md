@@ -39,6 +39,7 @@ The checklist works with only a static file server. Projects, findings, evidence
 - The project is a page, and the sidebar follows the pentest steps: Prepare (scope) · Discover · Test · Findings · Report
 - **Beginner mode** (on by default, one click in the sidebar) hides Kanban, Attack Chains, Tools, Timeline, Study Metrics and the session picker. No data is deleted
 - **WSTG Guide** shows every test without opening a project
+- Guidance: the project overview shows a five-step bar and a **Next step** card (scope → optional discovery → tests → findings → report → retest) with a button that goes straight to the task; each page opens with a short "what is this / how to use it" box; empty pages explain what to do and offer the next action; hovering a WSTG code (e.g. `WSTG-ATHN-03`) explains it
 
 **Checklist**
 - 98 WSTG v4.2 test items in 12 categories; each item has a description, testing steps, an example payload/command and suggested tools
@@ -311,6 +312,7 @@ Checklist yalnızca statik bir dosya sunucusuyla çalışır. Projeler, bulgular
 - Proje bir sayfadır; kenar çubuğu pentest adımlarına göre gruplanır: Hazırlık (kapsam) · Keşif · Test · Bulgular · Rapor
 - **Başlangıç modu** (varsayılan açık, kenar çubuğunda tek tık) Kanban, Saldırı Zincirleri, Araçlar, Zaman Çizelgesi, Çalışma Metrikleri ve oturum seçiciyi gizler. Hiçbir veri silinmez
 - **WSTG Rehberi** tüm testleri proje açmadan gösterir
+- Rehberlik: proje özetinde beş adımlı çubuk ve doğrudan ilgili işe götüren **Sıradaki adım** kartı (kapsam → isteğe bağlı keşif → testler → bulgular → rapor → yeniden test); her sayfanın başında kısa bir "bu ne işe yarar / nasıl kullanılır" kutusu; boş sayfalarda ne yapılacağını anlatan açıklama ve sonraki işe götüren düğmeler; bir WSTG kodunun (ör. `WSTG-ATHN-03`) üzerine gelince açıklaması
 
 **Checklist**
 - 12 kategoride 98 WSTG v4.2 test maddesi; her maddede açıklama, test adımları, örnek payload/komut ve önerilen araçlar
