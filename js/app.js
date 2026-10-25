@@ -1800,6 +1800,26 @@
     reportDefaultTitle: name => `${name} Güvenlik Testi Raporu`,
     findingTitlePlaceholder: "Örn: Sipariş detayında IDOR (yetkisiz erişim)",
     findingsLabel: "Notlar",
+    findingSeverityLabel: "Önem derecesi *",
+    findingSeverityManualHint: "Emin değilsen: veri sızıntısı ya da yetkisiz erişim genellikle Yüksek/Kritik, yapılandırma eksikleri Düşük/Orta.",
+    findingSeverityFromCvss: score => `CVSS puanından belirlendi (${score}). Elle seçmek için puanı kaldır.`,
+    findingSeverityRequired: "Bir önem derecesi seç ya da CVSS ile puanla.",
+    findingTestIdLabel: "İlişkili test",
+    findingDescPlaceholder: "Açık nedir, nerede ve neden önemli?",
+    findingStepsLabel: "Tekrarlama adımları (PoC)",
+    findingStepsPlaceholder: "1. https://hedef/login sayfasını aç\n2. Kullanıcı adı alanına ' OR 1=1-- yaz\n3. Parolasız giriş yapıldığını gör",
+    findingRemediationLabel: "Çözüm önerisi",
+    findingMoreSummary: "Ayrıntılar (isteğe bağlı): parametre, CWE, OWASP, etki, referanslar, durum",
+    findingCvssTitle: "CVSS v3.1 ile puanla",
+    cvssIntroHint: "CVSS, açığın ciddiyetini 0–10 arası puanlar. Puan girersen önem derecesi bu puandan belirlenir.",
+    cvssResetBtn: "Puanı kaldır",
+    findingModalDesc: "Başlık ve önem derecesi yeterli; gerisini sonra ekleyebilirsin. Müşterinin açığı tekrar görebilmesi için tekrarlama adımlarını yazmanı öneririz.",
+    findingSearchPlaceholder: "Başlık, kod, endpoint, test ya da CWE ara…",
+    findingFilterAllSev: "Tüm önem dereceleri", findingFilterAllStatus: "Tüm durumlar",
+    findingSortLabel: "Sıralama", findingSortSeverity: "Önem derecesine göre", findingSortNewest: "En yeni önce",
+    findingCountLabel: (n, total) => n === total ? `${total} bulgu` : `${total} bulgudan ${n} tanesi gösteriliyor`,
+    findingNoMatch: "Bu filtreye uyan bulgu yok.",
+    findingNoSteps: "Tekrarlama adımı yok",
     findingsPlaceholder: "Bu testte ne denedin, ne gördün? Notlar rapora girmez; açık bulduysan \"Açık bulundu\" ve ardından \"Bulgu kaydet\" de.",
     plannerEmpty: "Plan, keşif sonuçlarından oluşur. Önce Keşif Çalıştır'ı kullan ve bulunan önerileri uygula. Keşif yapmayacaksan doğrudan WSTG testlerine geçebilirsin.",
     pwHelp: {
@@ -1883,6 +1903,26 @@
     reportDefaultTitle: name => `${name} Security Assessment`,
     findingTitlePlaceholder: "e.g. IDOR on order details (unauthorized access)",
     findingsLabel: "Notes",
+    findingSeverityLabel: "Severity *",
+    findingSeverityManualHint: "Unsure? Data exposure or unauthorized access is usually High/Critical; configuration gaps are usually Low/Medium.",
+    findingSeverityFromCvss: score => `Set from the CVSS score (${score}). Remove the score to choose manually.`,
+    findingSeverityRequired: "Pick a severity or score it with CVSS.",
+    findingTestIdLabel: "Related test",
+    findingDescPlaceholder: "What is the issue, where is it, and why does it matter?",
+    findingStepsLabel: "Steps to reproduce (PoC)",
+    findingStepsPlaceholder: "1. Open https://target/login\n2. Enter ' OR 1=1-- as the username\n3. Observe that you are logged in without a password",
+    findingRemediationLabel: "Remediation",
+    findingMoreSummary: "More details (optional): parameter, CWE, OWASP, impact, references, status",
+    findingCvssTitle: "Score with CVSS v3.1",
+    cvssIntroHint: "CVSS scores how serious an issue is from 0 to 10. If you enter a score, the severity is taken from it.",
+    cvssResetBtn: "Remove score",
+    findingModalDesc: "A title and a severity are enough; add the rest later. We recommend writing steps to reproduce so the client can see the issue themselves.",
+    findingSearchPlaceholder: "Search title, code, endpoint, test or CWE…",
+    findingFilterAllSev: "All severities", findingFilterAllStatus: "All statuses",
+    findingSortLabel: "Sort", findingSortSeverity: "By severity", findingSortNewest: "Newest first",
+    findingCountLabel: (n, total) => n === total ? `${total} finding${total === 1 ? '' : 's'}` : `Showing ${n} of ${total} findings`,
+    findingNoMatch: "No findings match this filter.",
+    findingNoSteps: "No reproduction steps",
     findingsPlaceholder: "What did you try and what did you see? Notes are not in the report; if you found an issue, choose \"Issue found\" and then \"Record finding\".",
     plannerEmpty: "The plan is built from discovery results. Run Discovery first and apply its suggestions. If you are skipping discovery, go straight to the WSTG tests.",
     pwHelp: {
@@ -5663,6 +5703,26 @@
   const FINDING_MODEL_STATUS_ORDER = ['open','confirmed','fixed','retest_pending','resolved','wont_fix','accepted_risk'];
   let editingFindingId = null;
   let currentCvssMetrics = Object.assign({}, CVSS_DEFAULT_METRICS);
+  let currentFindingSeverity = null; // CVSS girilmediyse kullanıcının seçtiği önem derecesi
+
+  // Önem derecesi: CVSS puanı varsa ondan gelir (kilitli), yoksa elle seçilir.
+  function renderSeverityPicker(){
+    const cvssResult = computeCvss(currentCvssMetrics);
+    const fromCvss = cvssResult.base_score > 0;
+    const active = fromCvss ? cvssResult.severity : currentFindingSeverity;
+    const picker = document.getElementById('findingSeverityPicker');
+    picker.classList.toggle('locked', fromCvss);
+    picker.querySelectorAll('.sev-pick').forEach(btn => {
+      const on = btn.dataset.sev === active;
+      btn.classList.toggle('active', on);
+      btn.setAttribute('aria-checked', on);
+      btn.disabled = fromCvss;
+    });
+    document.getElementById('findingSeverityHint').textContent = fromCvss
+      ? t('findingSeverityFromCvss')(cvssResult.base_score.toFixed(1))
+      : t('findingSeverityManualHint');
+    document.getElementById('cvssResetBtn').hidden = !fromCvss;
+  }
 
   function renderCvssCalculator(){
     const grid = document.getElementById('cvssCalcGrid');
@@ -5697,6 +5757,7 @@
     sevEl.textContent = t('severity_' + result.severity);
     sevEl.className = 'cvss-score-severity sev-' + result.severity;
     vecEl.textContent = result.vector;
+    renderSeverityPicker();
   }
 
   function openFindingModal(finding, prefill){
@@ -5713,6 +5774,7 @@
     document.getElementById('findingDescInput').value = f.description || '';
     document.getElementById('findingImpactInput').value = f.impact || '';
     document.getElementById('findingRemediationInput').value = f.remediation || '';
+    document.getElementById('findingStepsInput').value = f.steps_to_reproduce || '';
     document.getElementById('findingReferencesInput').value = f.references || '';
     document.getElementById('findingStatusInput').value = f.status || 'open';
     document.getElementById('findingAssignedInput').value = f.assigned_to || '';
@@ -5727,7 +5789,13 @@
     }
 
     currentCvssMetrics = (finding && parseCvssVector(finding.cvss_vector)) || Object.assign({}, CVSS_DEFAULT_METRICS);
+    currentFindingSeverity = finding ? (finding.severity || 'info') : (f.severity || null);
     renderCvssCalculator();
+    // Doldurulmuş ya da gelişmiş moddaysa ayrıntılar açık gelir; yeni başlayan için form kısa kalır.
+    const hasDetails = ['parameter', 'cwe', 'owasp_category', 'impact', 'references', 'assigned_to'].some(k => (f[k] || '').toString().trim())
+      || (finding && finding.status && finding.status !== 'open');
+    document.getElementById('findingMoreDetails').open = !!finding || hasDetails || !beginnerMode;
+    document.getElementById('cvssDetails').open = !!(finding && finding.cvss_vector) || !beginnerMode;
 
     document.getElementById('findingModalOverlay').classList.add('open');
     setTimeout(()=> document.getElementById('findingTitleInput').focus(), 50);
@@ -5740,8 +5808,15 @@
     const title = document.getElementById('findingTitleInput').value.trim();
     if(!title){ showToast(t('findingTitleRequired')); return null; }
     const cvssResult = computeCvss(currentCvssMetrics);
+    if(!(cvssResult.base_score > 0) && !currentFindingSeverity){
+      showToast(t('findingSeverityRequired'));
+      document.getElementById('findingSeverityPicker').querySelector('.sev-pick').focus();
+      return null;
+    }
     const payload = {
       title,
+      severity: cvssResult.base_score > 0 ? cvssResult.severity : currentFindingSeverity,
+      steps_to_reproduce: document.getElementById('findingStepsInput').value.trim(),
       test_id: document.getElementById('findingTestIdInput').value.trim() || null,
       endpoint: document.getElementById('findingEndpointInput').value.trim(),
       parameter: document.getElementById('findingParameterInput').value.trim(),
@@ -5881,10 +5956,13 @@
     });
     document.getElementById('aiSuggestCweBtn').addEventListener('click', ()=>{
       runFindingAiAction('analyze', res => {
-        if(res.suggested_cwe_id) document.getElementById('findingCweInput').value = res.suggested_cwe_id;
+        if(res.suggested_cwe_id){
+          document.getElementById('findingCweInput').value = res.suggested_cwe_id;
+          document.getElementById('findingMoreDetails').open = true;
+        }
         if(res.suggested_cvss_vector){
           const parsed = parseCvssVector(res.suggested_cvss_vector);
-          if(parsed){ currentCvssMetrics = parsed; renderCvssCalculator(); }
+          if(parsed){ currentCvssMetrics = parsed; renderCvssCalculator(); document.getElementById('cvssDetails').open = true; }
         }
         showToast(res.rationale || t('aiDone'));
       });
@@ -6238,6 +6316,54 @@
       .catch(err => showToast(err.message || t('resultSaveError')));
   }
 
+  // Bulgu listesi filtreleri bölümler arasında gezerken korunur.
+  const findingFilters = { q: '', severity: '', status: '', sort: 'severity' };
+
+  function findingCardHtml(f){
+    return `
+        <div class="finding-card sev-edge-${escapeHtml(f.severity)}" data-id="${f.id}">
+          <div class="finding-card-top">
+            <span class="finding-code">${escapeHtml(f.finding_code)}</span>
+            <span class="severity-badge sev-${escapeHtml(f.severity)}">${t('severity_'+f.severity)}</span>
+            ${f.cvss_score !== null && f.cvss_score !== undefined ? `<span class="cvss-mini-badge">CVSS ${Number(f.cvss_score).toFixed(1)}</span>` : ''}
+            <span class="finding-status-badge status-${escapeHtml(f.status)}">${t('findingStatus_'+f.status)}</span>
+          </div>
+          <div class="finding-card-title">${escapeHtml(f.title)}</div>
+          <div class="finding-card-meta">
+            ${f.test_id ? `<span>${escapeHtml(f.test_id)}</span>` : ''}
+            ${f.endpoint ? `<span>${escapeHtml(f.endpoint)}</span>` : ''}
+            ${f.assigned_to ? `<span>${escapeHtml(f.assigned_to)}</span>` : ''}
+            ${(f.steps_to_reproduce || '').trim() ? '' : `<span class="finding-missing">${escapeHtml(t('findingNoSteps'))}</span>`}
+          </div>
+          <div class="project-card-actions">
+            <button data-action="edit" data-id="${f.id}">${t('editBtn')}</button>
+            <button data-action="delete" data-id="${f.id}" class="danger">${t('pwEvidenceDelete')}</button>
+          </div>
+        </div>`;
+  }
+
+  function findingToolbarHtml(){
+    const sevs = ['critical', 'high', 'medium', 'low', 'info'];
+    return `
+      <div class="findings-toolbar">
+        <div class="search-input"><svg class="i"><use href="#ic-search"/></svg>
+          <input type="search" id="findingSearchInput" value="${escapeHtml(findingFilters.q)}" placeholder="${escapeHtml(t('findingSearchPlaceholder'))}" aria-label="${escapeHtml(t('findingSearchPlaceholder'))}"></div>
+        <select id="findingSevFilter" aria-label="${escapeHtml(t('findingSeverityLabel'))}">
+          <option value="">${escapeHtml(t('findingFilterAllSev'))}</option>
+          ${sevs.map(v => `<option value="${v}" ${findingFilters.severity === v ? 'selected' : ''}>${escapeHtml(t('severity_' + v))}</option>`).join('')}
+        </select>
+        <select id="findingStatusFilter" aria-label="${escapeHtml(t('findingStatusLabel'))}">
+          <option value="">${escapeHtml(t('findingFilterAllStatus'))}</option>
+          ${FINDING_MODEL_STATUS_ORDER.map(v => `<option value="${v}" ${findingFilters.status === v ? 'selected' : ''}>${escapeHtml(t('findingStatus_' + v))}</option>`).join('')}
+        </select>
+        <select id="findingSortSelect" aria-label="${escapeHtml(t('findingSortLabel'))}">
+          <option value="severity" ${findingFilters.sort === 'severity' ? 'selected' : ''}>${escapeHtml(t('findingSortSeverity'))}</option>
+          <option value="newest" ${findingFilters.sort === 'newest' ? 'selected' : ''}>${escapeHtml(t('findingSortNewest'))}</option>
+        </select>
+      </div>
+      <div class="findings-count hint" id="findingCount"></div>`;
+  }
+
   function renderPwFindings(){
     const content = document.getElementById('pwContent');
     content.innerHTML = `<div class="search-empty">${t('loadingSessions')}</div>`;
@@ -6265,25 +6391,7 @@
           <h5 style="margin:0">${t('pwFindingsProLabel')}</h5>
           <button type="button" class="btn btn-primary btn-sm" id="newFindingBtn">${t('newFindingBtn')}</button>
         </div>`;
-      const proListHtml = proFindings.length ? proFindings.map(f => `
-        <div class="finding-card" data-id="${f.id}">
-          <div class="finding-card-top">
-            <span class="finding-code">${f.finding_code}</span>
-            <span class="severity-badge sev-${f.severity}">${t('severity_'+f.severity)}</span>
-            ${f.cvss_score !== null && f.cvss_score !== undefined ? `<span class="cvss-mini-badge">CVSS ${f.cvss_score.toFixed(1)}</span>` : ''}
-            <span class="finding-status-badge status-${f.status}">${t('findingStatus_'+f.status)}</span>
-          </div>
-          <div class="finding-card-title">${escapeHtml(f.title)}</div>
-          <div class="finding-card-meta">
-            ${f.test_id ? `<span>${escapeHtml(f.test_id)}</span>` : ''}
-            ${f.endpoint ? `<span>${escapeHtml(f.endpoint)}</span>` : ''}
-            ${f.assigned_to ? `<span>${escapeHtml(f.assigned_to)}</span>` : ''}
-          </div>
-          <div class="project-card-actions">
-            <button data-action="edit" data-id="${f.id}">${t('editBtn')}</button>
-            <button data-action="delete" data-id="${f.id}" class="danger">${t('pwEvidenceDelete')}</button>
-          </div>
-        </div>`).join('') : emptyStateHtml('ic-alert', t('emptyFindingsTitle'), t('emptyFindingsText'), [
+      const proListHtml = proFindings.length ? '' : emptyStateHtml('ic-alert', t('emptyFindingsTitle'), t('emptyFindingsText'), [
           { action: 'newFinding', label: t('newFindingBtn'), primary: true },
           { action: 'wstg', label: t('emptyFindingsGoTests') },
           { action: 'import', label: t('navImport') }
@@ -6335,13 +6443,14 @@
                 title: btn.dataset.promoteTest,
                 test_id: btn.dataset.promoteTest,
                 description: btn.dataset.promoteDesc,
+                severity: btn.dataset.promoteSeverity,
               });
             });
           });
         }).catch(()=>{});
       }
 
-      content.innerHTML = (proFindings.length ? summaryHtml + proHeaderHtml : '') + `<div id="pwProFindingsList">${proListHtml}</div>` +
+      content.innerHTML = (proFindings.length ? summaryHtml + proHeaderHtml + findingToolbarHtml() : '') + `<div id="pwProFindingsList">${proListHtml}</div>` +
         `<div id="pwQuickSection"${sessions.length ? '' : ' hidden'}>` +
         `<div class="filter-bar" style="padding:20px 0 4px"><h5 style="margin:0">${t('pwFindingsQuickLabel')}</h5></div>` +
         `<p class="hint" style="margin:0 0 10px">${escapeHtml(t('pwFindingsQuickHint'))}</p>` +
@@ -6349,6 +6458,25 @@
 
       const newFindingBtn = document.getElementById('newFindingBtn');
       if(newFindingBtn) newFindingBtn.addEventListener('click', ()=> openFindingModal(null, null));
+
+      // Arama/filtre/sıralama: yalnızca liste yeniden çizilir.
+      const drawList = ()=>{
+        if(!proFindings.length) return;
+        const shown = window.WSTGFlow.filterFindings(proFindings, findingFilters);
+        document.getElementById('pwProFindingsList').innerHTML = shown.length
+          ? shown.map(findingCardHtml).join('')
+          : `<div class="search-empty">${escapeHtml(t('findingNoMatch'))}</div>`;
+        document.getElementById('findingCount').textContent = t('findingCountLabel')(shown.length, proFindings.length);
+      };
+      const bindFilter = (id, key, evt) => {
+        const el = document.getElementById(id);
+        if(el) el.addEventListener(evt, ()=>{ findingFilters[key] = el.value; drawList(); });
+      };
+      bindFilter('findingSearchInput', 'q', 'input');
+      bindFilter('findingSevFilter', 'severity', 'change');
+      bindFilter('findingStatusFilter', 'status', 'change');
+      bindFilter('findingSortSelect', 'sort', 'change');
+      drawList();
       document.getElementById('pwProFindingsList').addEventListener('click', e=>{
         const btn = e.target.closest('button[data-action]');
         if(!btn) return;
@@ -7726,6 +7854,19 @@
       if(e.target.id === 'findingModalOverlay') closeFindingModal();
     });
     document.getElementById('submitFindingBtn').addEventListener('click', submitFindingForm);
+    document.getElementById('findingSeverityPicker').addEventListener('click', e=>{
+      const btn = e.target.closest('.sev-pick');
+      if(!btn || btn.disabled) return;
+      currentFindingSeverity = btn.dataset.sev;
+      renderSeverityPicker();
+    });
+    document.getElementById('cvssResetBtn').addEventListener('click', ()=>{
+      // Puan kaldırılınca önem derecesi elle seçilebilir olur; CVSS'in son derecesi korunur.
+      const prev = computeCvss(currentCvssMetrics);
+      if(prev.base_score > 0) currentFindingSeverity = prev.severity;
+      currentCvssMetrics = Object.assign({}, CVSS_DEFAULT_METRICS);
+      renderCvssCalculator();
+    });
     initAiAssistantButtons();
     wireAiSettingsModal();
     wireByokModal();
@@ -7836,7 +7977,8 @@
       if(btn.dataset.action === 'record-finding'){
         const info = testInfoById(btn.dataset.id);
         const fd = getFindingData(btn.dataset.id);
-        openFindingModal(null, { title: info ? info.title : btn.dataset.id, test_id: btn.dataset.id, description: fd.text || '' });
+        openFindingModal(null, { title: info ? info.title : btn.dataset.id, test_id: btn.dataset.id, description: fd.text || '',
+          severity: fd.text && fd.text.trim() && fd.severity !== 'info' ? fd.severity : undefined });
       }
       if(btn.dataset.action === 'prev') stepSelection(-1);
       if(btn.dataset.action === 'next') stepSelection(1);

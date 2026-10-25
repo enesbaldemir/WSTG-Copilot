@@ -125,6 +125,9 @@ def _render_findings_pdf(sorted_findings, lang, template):
         if template != 'executive':
             if f.get('endpoint'):
                 body_blocks.append(f'<p><b>{"Endpoint" if lang=="tr" else "Endpoint"}:</b> {_esc(f["endpoint"])}</p>')
+            if (f.get('steps_to_reproduce') or '').strip():
+                steps = '<br/>'.join(_esc(line) for line in f['steps_to_reproduce'].strip().splitlines())
+                body_blocks.append(f'<p><b>{"Tekrarlama adımları" if lang=="tr" else "Steps to reproduce"}:</b><br/>{steps}</p>')
             if f.get('impact'):
                 body_blocks.append(f'<p><b>{"Etki" if lang=="tr" else "Impact"}:</b> {_esc(f["impact"])}</p>')
             if f.get('remediation'):

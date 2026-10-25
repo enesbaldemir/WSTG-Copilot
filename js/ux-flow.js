@@ -148,5 +148,31 @@
     return parts.join(' · ');
   }
 
-  return { SECTIONS, isBeginner, isAdvancedTab, resolveTab, parseTarget, projectSteps, nextAction, firstPendingTest, explainCode };
+  // ---- Bulgu listesi: arama, filtre, sıralama ----
+  const SEVERITY_RANK = { critical: 5, high: 4, medium: 3, low: 2, info: 1 };
+
+  function normalize(text){
+    // Türkçe küçük harf + aksansız karşılaştırma; 'INPV' → 'ınpv' olmasın diye ı → i.
+    return String(text == null ? '' : text).toLocaleLowerCase('tr').replace(/ı/g, 'i').normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
+  }
+
+  // opts: { q, severity ('' = hepsi), status ('' = hepsi), sort: 'severity' | 'newest' }
+  function filterFindings(list, opts){
+    const o = Object.assign({ q: '', severity: '', status: '', sort: 'severity' }, opts || {});
+    const q = normalize(o.q).trim();
+    const out = (list || []).filter(f => {
+      if(o.severity && f.severity !== o.severity) return false;
+      if(o.status && f.status !== o.status) return false;
+      if(!q) return true;
+      return [f.title, f.finding_code, f.endpoint, f.test_id, f.cwe, f.parameter].some(v => normalize(v).includes(q));
+    });
+    const byNewest = (a, b) => (b.id || 0) - (a.id || 0);
+    if(o.sort === 'newest') return out.sort(byNewest);
+    return out.sort((a, b) =>
+      (SEVERITY_RANK[b.severity] || 0) - (SEVERITY_RANK[a.severity] || 0)
+      || (b.cvss_score || 0) - (a.cvss_score || 0)
+      || byNewest(a, b));
+  }
+
+  return { SECTIONS, isBeginner, isAdvancedTab, resolveTab, parseTarget, projectSteps, nextAction, firstPendingTest, explainCode, filterFindings };
 });

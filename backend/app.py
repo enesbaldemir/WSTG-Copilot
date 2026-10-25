@@ -338,6 +338,14 @@ def ensure_schema():
         db.session.rollback()
 
     try:
+        cols = [row[1] for row in db.session.execute(text("PRAGMA table_info(findings)")).fetchall()]
+        if cols and 'steps_to_reproduce' not in cols:
+            db.session.execute(text("ALTER TABLE findings ADD COLUMN steps_to_reproduce TEXT"))
+            db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+    try:
         cols = [row[1] for row in db.session.execute(text("PRAGMA table_info(evidence)")).fetchall()]
         if 'linked_finding_id' not in cols:
             db.session.execute(text("ALTER TABLE evidence ADD COLUMN linked_finding_id INTEGER"))
@@ -973,6 +981,8 @@ VALID_FINDING_STATUSES = {'open', 'retesting', 'fixed', 'resolved', 'wont_fix', 
 # Test sonucu: pending (bekliyor), passed (açık yok), failed (açık bulundu), skipped (uygulanamaz)
 VALID_RESULT_STATUSES = {'pending', 'passed', 'failed', 'skipped'}
 RESULT_STATUS_ERROR = 'Geçersiz test durumu (pending, passed, failed, skipped)'
+FINDING_SEVERITIES = {'critical', 'high', 'medium', 'low', 'info'}
+FINDING_SEVERITY_ERROR = 'Geçersiz önem derecesi (critical, high, medium, low, info)'
 
 
 
@@ -1892,7 +1902,9 @@ def create_finding(project_id):
         if not title:
             return jsonify({'error': 'Başlık zorunludur'}), 400
 
-        severity = data.get('severity', 'info')
+        severity = data.get('severity') or 'info'
+        if severity not in FINDING_SEVERITIES:
+            return jsonify({'error': FINDING_SEVERITY_ERROR}), 400
         cvss_score = data.get('cvss_score')
         # CVSS skoru varsa severity'yi ondan türet (tutarlılık için)
         if cvss_score is not None:
@@ -1916,6 +1928,7 @@ def create_finding(project_id):
             description=data.get('description', ''),
             impact=data.get('impact'),
             remediation=data.get('remediation'),
+            steps_to_reproduce=data.get('steps_to_reproduce'),
             references=data.get('references'),
             status=data.get('status', 'open') if data.get('status') in VALID_FINDING_STATUS_VALUES else 'open',
             assigned_to=data.get('assigned_to'),
@@ -1961,7 +1974,7 @@ def update_finding(project_id, finding_id):
 
         simple_fields = ['test_id', 'session_id', 'cvss_vector', 'cwe', 'owasp_category',
                           'endpoint', 'parameter', 'description', 'impact', 'remediation',
-                          'references', 'assigned_to', 'retest_notes']
+                          'steps_to_reproduce', 'references', 'assigned_to', 'retest_notes']
         for field in simple_fields:
             if field in data:
                 setattr(finding, field, data[field])
@@ -1980,6 +1993,8 @@ def update_finding(project_id, finding_id):
                 except Exception:
                     pass
         if 'severity' in data and data.get('cvss_score') is None:
+            if data['severity'] not in FINDING_SEVERITIES:
+                return jsonify({'error': FINDING_SEVERITY_ERROR}), 400
             finding.severity = data['severity']
 
         if 'status' in data:
@@ -2160,6 +2175,7 @@ def merge_findings(project_id):
             primary.description = _longest(primary.description, other.description)
             primary.impact = _longest(primary.impact, other.impact)
             primary.remediation = _longest(primary.remediation, other.remediation)
+            primary.steps_to_reproduce = _longest(primary.steps_to_reproduce, other.steps_to_reproduce)
             primary.references = _union_csv(primary.references, other.references)
 
             Evidence.query.filter_by(linked_finding_id=other.id).update({'linked_finding_id': primary.id})
