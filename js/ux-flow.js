@@ -75,5 +75,78 @@
     return { url: parsed.href, host, scopeType: 'domain' };
   }
 
-  return { SECTIONS, isBeginner, isAdvancedTab, resolveTab, parseTarget };
+  // ---- Proje ilerlemesi: beş adım ve "sıradaki adım" ----
+  // st: { scope, recon, assets, done, total, findings, reported, reconSkipped }
+  // Keşif isteğe bağlıdır: atlanınca ya da teste başlanınca geçilmiş sayılır.
+  function projectSteps(st){
+    const s = Object.assign({ scope: 0, recon: 0, assets: 0, done: 0, total: 0, findings: 0, reported: false, reconSkipped: false }, st || {});
+    const action = nextAction(s);
+    const currentStep = { scope: 1, recon: 2, firstTest: 3, keepTesting: 3, report: 5, retest: 5 }[action];
+    const doneFlags = [
+      s.scope > 0,
+      s.recon > 0 || s.assets > 0 || s.done > 0 || !!s.reconSkipped,
+      s.total > 0 && s.done >= s.total,
+      s.findings > 0,
+      !!s.reported
+    ];
+    const steps = doneFlags.map((isDone, i) => ({
+      step: i + 1,
+      state: isDone ? 'done' : (i + 1 === currentStep ? 'current' : 'todo')
+    }));
+    // Sıradaki adım tamamlanmış görünse bile (ör. rapor yeniden alınabilir) vurgulanır.
+    steps[currentStep - 1].current = true;
+    return { action, currentStep, steps };
+  }
+
+  function nextAction(s){
+    if(!(s.scope > 0)) return 'scope';
+    if(!(s.recon > 0 || s.assets > 0) && !(s.done > 0) && !s.reconSkipped) return 'recon';
+    if(!(s.done > 0)) return 'firstTest';
+    if(!(s.findings > 0)) return 'keepTesting';
+    if(!s.reported) return 'report';
+    return 'retest';
+  }
+
+  // Resmi sıraya göre ilk tamamlanmamış test.
+  function firstPendingTest(categories, progress){
+    const done = progress || {};
+    for(const c of categories || []){
+      for(const test of c.tests || []){
+        if(!done[test.id]) return { catId: c.id, testId: test.id, title: test.title };
+      }
+    }
+    return null;
+  }
+
+  // ---- WSTG kodlarının açıklaması ----
+  const WSTG_CATEGORIES = {
+    INFO: { en: 'Information Gathering', tr: 'Bilgi Toplama' },
+    CONF: { en: 'Configuration and Deployment Management', tr: 'Yapılandırma ve Dağıtım Yönetimi' },
+    IDNT: { en: 'Identity Management', tr: 'Kimlik Yönetimi' },
+    ATHN: { en: 'Authentication', tr: 'Kimlik Doğrulama' },
+    ATHZ: { en: 'Authorization', tr: 'Yetkilendirme' },
+    SESS: { en: 'Session Management', tr: 'Oturum Yönetimi' },
+    INPV: { en: 'Input Validation', tr: 'Girdi Doğrulama' },
+    ERRH: { en: 'Error Handling', tr: 'Hata Yönetimi' },
+    CRYP: { en: 'Cryptography', tr: 'Kriptografi' },
+    BUSL: { en: 'Business Logic', tr: 'İş Mantığı' },
+    CLNT: { en: 'Client-side', tr: 'İstemci Tarafı' },
+    APIT: { en: 'API Testing', tr: 'API Testleri' }
+  };
+
+  // "WSTG-ATHN" ya da "WSTG-ATHN-03" için okunabilir açıklama; tanınmayan kodda null.
+  function explainCode(code, lang){
+    const m = /^WSTG-([A-Z]{4})(?:-(\d{1,3}))?$/.exec(String(code || '').trim().toUpperCase());
+    if(!m || !WSTG_CATEGORIES[m[1]]) return null;
+    const cat = WSTG_CATEGORIES[m[1]];
+    const tr = lang !== 'en';
+    const parts = [
+      tr ? 'WSTG = OWASP Web Güvenliği Test Rehberi' : 'WSTG = OWASP Web Security Testing Guide',
+      tr ? `${m[1]} = ${cat.en} (${cat.tr})` : `${m[1]} = ${cat.en}`
+    ];
+    if(m[2]) parts.push(tr ? `${m[2]} = bu kategorideki ${Number(m[2])}. test` : `${m[2]} = test number ${Number(m[2])} in this category`);
+    return parts.join(' · ');
+  }
+
+  return { SECTIONS, isBeginner, isAdvancedTab, resolveTab, parseTarget, projectSteps, nextAction, firstPendingTest, explainCode };
 });

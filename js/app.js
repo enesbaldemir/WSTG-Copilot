@@ -9,6 +9,8 @@
   const SKIP_SESSION_KEY = "wstg_skip_session_v1";
   const LAST_PROJECT_KEY = "wstg_last_project_v1";
   const BEGINNER_KEY = "wstg_beginner_v1";
+  const HELP_SEEN_KEY = "wstg_help_seen_v1"; // yardım kutusu her bölümde ilk ziyarette açık gelir
+  const PROJECT_FLAGS_KEY = "wstg_project_flags_v1"; // proje başına {reported, reconSkipped}; yalnızca "sıradaki adım" ipucu için
   const RECON_PRIORITY_KEY = "wstg_recon_priority_v1";
   const RECON_CACHE_KEY = "wstg_recon_cache_v1";
   // Sayfanın açıldığı host'a göre (127.0.0.1:8000 -> 127.0.0.1:5000); oturum
@@ -1684,7 +1686,6 @@
     libraryDesc: "OWASP Web Security Testing Guide v4.2'deki tüm testler: her birinin ne olduğu, nasıl uygulanacağı ve örnekleri. Bir proje açıksa işaretlediğin testler o projeye kaydedilir.",
     startNeedProject: "Teste başlamak için önce bir proje oluştur ya da aç.",
     lastProjectMissing: "Son açtığın proje bulunamadı; listeden seçebilirsin.",
-    pwWstgIntro: "Testler OWASP WSTG kategorilerine ayrılmıştır. Bir kategori seç: her testin amacını, nasıl uygulanacağını ve örneklerini göreceksin. Bitirdiğin testleri işaretle; ilerlemen bu projeye kaydedilir.",
     pwWstgProgress: (d, n) => `${n} testten ${d} tanesi tamamlandı`,
     pwWstgSessionError: "Test listesi hazırlanamadı. Sayfayı yenileyip tekrar dene."
   });
@@ -1729,9 +1730,142 @@
     libraryDesc: "Every test in the OWASP Web Security Testing Guide v4.2: what it is, how to run it, with examples. When a project is open, the tests you tick are saved to that project.",
     startNeedProject: "Create or open a project before you start testing.",
     lastProjectMissing: "Your last project was not found; pick one from the list.",
-    pwWstgIntro: "Tests are grouped into OWASP WSTG categories. Pick a category to see each test's goal, how to run it and examples. Tick the tests you finish; your progress is saved to this project.",
     pwWstgProgress: (d, n) => `${d} of ${n} tests done`,
     pwWstgSessionError: "Could not prepare the test list. Reload the page and try again."
+  });
+
+  // Rehberlik: sıradaki adım, sayfa yardımları, boş durumlar
+  Object.assign(I18N.tr, {
+    nextStepLabel: "Sıradaki adım",
+    phaseStepper: "Proje adımları",
+    next_scope_title: "Kapsamı belirle",
+    next_scope_text: "Test etmene izin verilen adresleri yaz. Kapsam, neyi test edip neyi etmeyeceğini belirler; dışına çıkmak yasal sorun doğurabilir.",
+    next_scope_btn: "Kapsama git",
+    next_recon_title: "Hedefi tanı (isteğe bağlı)",
+    next_recon_text: "Keşif; hedefin alt alan adlarını, sayfalarını ve kullandığı teknolojileri çıkarır. Yerel bir laboratuvar (ör. DVWA) test ediyorsan bu adımı atlayabilirsin.",
+    next_recon_btn: "Keşif Çalıştır", next_recon_skip: "Atla, teste geç",
+    next_firstTest_title: "İlk testi yap",
+    next_firstTest_text: "WSTG testlerine resmi sırayla başlamak en kolayı. İlk test, hedef hakkında açık kaynaklardan bilgi toplamayı anlatır.",
+    next_firstTest_btn: "İlk teste başla",
+    next_keepTesting_title: "Testlere devam et",
+    next_keepTesting_text: "Bir açık bulduğunda onu Bulgular'a kaydet; raporun tamamı bulgulardan oluşur.",
+    next_keepTesting_btn: "Sıradaki teste geç", next_keepTesting_alt: "+ Bulgu kaydet",
+    next_report_title: "Raporu hazırla",
+    next_report_text: n => `${n} bulgu kaydettin. Raporu şimdi alabilir ya da testlere devam edip sonra güncelleyebilirsin.`,
+    next_report_btn: "Raporlara git", next_report_alt: "Testlere devam et",
+    next_retest_title: "Düzeltmeleri doğrula",
+    next_retest_text: "Müşteri açıkları düzelttiğini bildirince Yeniden Test ile her birini tekrar dene ve sonucu kaydet.",
+    next_retest_btn: "Yeniden Test", next_retest_alt: "Testlere devam et",
+    nextUpTest: (id, title) => `Sıradaki: ${id} — ${title}`,
+    stepSub_scope: n => n ? `${n} kayıt` : "Boş",
+    stepSub_recon: "İsteğe bağlı",
+    stepSub_test: (d, n) => `${d}/${n}`,
+    stepSub_findings: n => `${n} bulgu`,
+    stepSub_report: "",
+    helpHowTo: "Nasıl kullanılır?",
+    wstgCodeQ: "Kodlar nasıl okunur?",
+    wstgCodeA: "WSTG-ATHN-03 → WSTG: rehberin adı · ATHN: kategori (Authentication) · 03: kategorideki test numarası. Bir kodun üzerine gelince açıklaması görünür.",
+    wstgStartQ: "Nereden başlamalı?",
+    wstgStartA: "Bilgi Toplama (WSTG-INFO) ile başla; sonraki kategoriler bu bilgilere dayanır.",
+    emptyScopeTitle: "Henüz kapsam eklenmedi",
+    emptyScopeText: "Test etmene izin verilen adresi yukarıdaki kutuya yaz ve Ekle'ye bas. Örnek: test.example.com",
+    emptyFindingsTitle: "Henüz bulgu yok",
+    emptyFindingsText: "Testlerde bir güvenlik açığı bulduğunda buraya kaydet. Başlık ve önem derecesi yeterli; ayrıntıları sonra ekleyebilirsin.",
+    emptyFindingsGoTests: "WSTG testlerine git",
+    emptyEvidenceTitle: "Henüz kanıt yok",
+    emptyEvidenceText: "Bir açığın gerçekten var olduğunu gösteren ekran görüntüsünü ya da HTTP isteği/yanıtını yükle ve ilgili bulguya bağla.",
+    emptyEvidenceGoFindings: "Bulgulara git",
+    reportsNoFindingsTitle: "Raporda gösterilecek bulgu yok",
+    reportsNoFindingsText: "Rapor, kaydettiğin bulgulardan oluşur. Önce testleri yapıp bulgularını kaydet.",
+    pwFindingsProLabel: "Bulgular",
+    pwFindingsProEmpty: "Henüz kayıtlı bulgu yok.",
+    pwFindingsQuickLabel: "Test notların",
+    pwFindingsQuickHint: "Checklist'te yazdığın notlar. Rapora girmesi için \"Bulguya dönüştür\" de.",
+    pwFindingsNoSession: "Test listesi hazırlanıyor; birazdan tekrar dene.",
+    pwReportsNoSession: "Test listesi hazırlanıyor; birazdan tekrar dene.",
+    promoteFindingBtn: "Bulguya dönüştür",
+    pwHelp: {
+      overview: { s: "Projenin beş adımdan hangisinde olduğunu gösterir. \"Sıradaki adım\" kartındaki düğme seni yapman gereken işe götürür." },
+      scope: { s: "Kapsam, test etmene yazılı olarak izin verilen adreslerdir.", steps: ["Alan adı (ör. test.example.com), alt alan adı, IP ya da IP aralığı (CIDR) ekle.", "İzin verilmeyen adresleri \"Kapsam Dışı\" olarak işaretle.", "Keşif ve bağlantılar bu listeye bakarak seni uyarır."] },
+      assets: { s: "Saldırı yüzeyi: uygulamanın dışarıya açık, test edilebilecek bütün noktaları (alt alan adları, sayfalar, formlar, teknolojiler).", steps: ["Veri yoksa önce soldaki \"Keşif Çalıştır\" ile keşif yap.", "Bir endpoint'in yanındaki testlere tıklayarak ilgili WSTG testine geç.", "Bu sayfa kendisi tarama başlatmaz; yalnızca kayıtlı sonuçları gösterir."] },
+      wstg: { s: "OWASP WSTG, web uygulamalarında neyin, nasıl test edileceğini anlatan açık bir rehberdir.", steps: ["Bir kategori seç, soldaki listeden bir teste tıkla.", "Testin adımlarını uygula; gözlemlerini not alanına yaz.", "Bitirince \"Tamamlandı\" olarak işaretle. Açık bulduysan Bulgular'a kaydet."] },
+      authz: { s: "Yetki matrisi, her rolün hangi uç noktaya erişmesi gerektiğini ve gerçekte erişip erişemediğini karşılaştırır.", steps: ["Rolleri (Anonim, Kullanıcı, Yönetici) ve endpoint'leri ekle.", "Her hücrede beklenen ve gözlenen sonucu seç.", "İzinsiz bir erişim görürsen tek tıkla bulgu oluştur."] },
+      findings: { s: "Bulgu, testte tespit ettiğin güvenlik açığıdır. Rapordaki her şey buradan gelir.", steps: ["\"+ Yeni Bulgu\" ile başlık, önem derecesi ve açıklama gir.", "CVSS, açığın ciddiyetini puanlar; emin değilsen yalnızca önem derecesini seç.", "Checklist notlarını \"Bulguya dönüştür\" ile buraya taşıyabilirsin."] },
+      evidence: { s: "Kanıt; bir açığın gerçekten var olduğunu gösteren ekran görüntüsü ya da HTTP isteği/yanıtıdır.", steps: ["Dosyayı yükle ya da HTTP isteğini yapıştır, ilgili bulguya bağla.", "Parola, token gibi hassas bilgileri yüklemeden önce gizle.", "Bulguya bağlı kanıtlar rapora eklenir."] },
+      reports: { s: "Bulgularından müşteriye verilecek raporu üretir.", steps: ["Teknik rapor güvenlik ekibi, yönetici raporu karar vericiler, geliştirici raporu düzeltecek ekip içindir.", "PDF/HTML raporda başlığı, müşteriyi ve yönetici özetini düzenleyebilirsin.", "AI'ın yazdığı özet bir taslaktır; göndermeden önce oku."] },
+      retest: { s: "Müşteri açıkları düzelttiğini söyleyince düzeltmenin gerçekten işe yarayıp yaramadığını tekrar test edersin.", steps: ["Bir bulgunun durumunu \"Düzeltildi\" yap; burada listelenir.", "Tekrar dene ve \"Düzeldi\" ya da \"Hâlâ açık\" işaretle; not ve kanıt ekle.", "Yeniden Test Raporu'nu indir."] },
+      timeline: { s: "Projede yapılan her işlemin tarih sırasıyla kaydı." },
+      kanban: { s: "Testleri Yapılacak → Tamamlandı sütunlarında izlemeni sağlar; ekip çalışması için." },
+      chains: { s: "Birden fazla bulgunun birleşip daha ciddi bir saldırıya dönüşebileceği durumları kurallarla gösterir." },
+      tools: { s: "nmap, httpx gibi araçları sabit komutlarla kendi bilgisayarında çalıştırır. Yalnızca izinli hedeflerde kullan." },
+      recon: { s: "Keşif aracını açar." }, testplan: { s: "Test planını açar." }
+    }
+  });
+  Object.assign(I18N.en, {
+    nextStepLabel: "Next step",
+    phaseStepper: "Project steps",
+    next_scope_title: "Define the scope",
+    next_scope_text: "Write down the addresses you are allowed to test. The scope decides what you test and what you leave alone; going outside it can cause legal trouble.",
+    next_scope_btn: "Go to scope",
+    next_recon_title: "Get to know the target (optional)",
+    next_recon_text: "Discovery lists the target's subdomains, pages and technologies. If you are testing a local lab (e.g. DVWA) you can skip this step.",
+    next_recon_btn: "Run Discovery", next_recon_skip: "Skip, start testing",
+    next_firstTest_title: "Run your first test",
+    next_firstTest_text: "Starting the WSTG tests in their official order is the easiest path. The first test is about gathering information on the target from public sources.",
+    next_firstTest_btn: "Start the first test",
+    next_keepTesting_title: "Keep testing",
+    next_keepTesting_text: "When you find an issue, record it under Findings; the whole report is built from findings.",
+    next_keepTesting_btn: "Go to the next test", next_keepTesting_alt: "+ Record a finding",
+    next_report_title: "Prepare the report",
+    next_report_text: n => `You have recorded ${n} finding${n === 1 ? '' : 's'}. Get the report now, or keep testing and update it later.`,
+    next_report_btn: "Go to reports", next_report_alt: "Keep testing",
+    next_retest_title: "Verify the fixes",
+    next_retest_text: "When the client reports fixes, use Retest to try each finding again and record the result.",
+    next_retest_btn: "Retest", next_retest_alt: "Keep testing",
+    nextUpTest: (id, title) => `Next: ${id} — ${title}`,
+    stepSub_scope: n => n ? `${n} entr${n === 1 ? 'y' : 'ies'}` : "Empty",
+    stepSub_recon: "Optional",
+    stepSub_test: (d, n) => `${d}/${n}`,
+    stepSub_findings: n => `${n} finding${n === 1 ? '' : 's'}`,
+    stepSub_report: "",
+    helpHowTo: "How to use",
+    wstgCodeQ: "How to read the codes?",
+    wstgCodeA: "WSTG-ATHN-03 → WSTG: the guide · ATHN: category (Authentication) · 03: test number in the category. Hover a code to see what it means.",
+    wstgStartQ: "Where to start?",
+    wstgStartA: "Begin with Information Gathering (WSTG-INFO); later categories build on it.",
+    emptyScopeTitle: "No scope yet",
+    emptyScopeText: "Type an address you are allowed to test into the box above and press Add. Example: test.example.com",
+    emptyFindingsTitle: "No findings yet",
+    emptyFindingsText: "When a test reveals a security issue, record it here. A title and a severity are enough; add details later.",
+    emptyFindingsGoTests: "Go to WSTG tests",
+    emptyEvidenceTitle: "No evidence yet",
+    emptyEvidenceText: "Upload a screenshot or an HTTP request/response that proves an issue, and link it to the finding.",
+    emptyEvidenceGoFindings: "Go to findings",
+    reportsNoFindingsTitle: "No findings to report",
+    reportsNoFindingsText: "The report is built from your findings. Run the tests and record what you find first.",
+    pwFindingsProLabel: "Findings",
+    pwFindingsProEmpty: "No findings recorded yet.",
+    pwFindingsQuickLabel: "Your test notes",
+    pwFindingsQuickHint: "Notes you wrote in the checklist. Use \"Promote to finding\" to put one in the report.",
+    pwFindingsNoSession: "The test list is being prepared; try again in a moment.",
+    pwReportsNoSession: "The test list is being prepared; try again in a moment.",
+    promoteFindingBtn: "Promote to finding",
+    pwHelp: {
+      overview: { s: "Shows which of the five steps the project is in. The button on the \"Next step\" card takes you to what to do next." },
+      scope: { s: "The scope is the set of addresses you have written permission to test.", steps: ["Add a domain (e.g. test.example.com), subdomain, IP or IP range (CIDR).", "Mark addresses you may not touch as \"Out of scope\".", "Discovery and links check this list and warn you."] },
+      assets: { s: "The attack surface: every exposed, testable part of the application (subdomains, pages, forms, technologies).", steps: ["If it is empty, run discovery first with \"Run Discovery\" in the sidebar.", "Click the tests next to an endpoint to jump to the related WSTG test.", "This page never starts a scan; it only shows saved results."] },
+      wstg: { s: "OWASP WSTG is an open guide describing what to test in web applications and how.", steps: ["Pick a category, then click a test in the list on the left.", "Follow the test's steps and write what you observe in the notes.", "Mark it Done when finished. If you found an issue, record it under Findings."] },
+      authz: { s: "The authorization matrix compares which endpoints each role should reach with what it actually reaches.", steps: ["Add roles (Anonymous, User, Admin) and endpoints.", "Pick the expected and observed result in each cell.", "If you see unauthorized access, create a finding in one click."] },
+      findings: { s: "A finding is a security issue you discovered. Everything in the report comes from here.", steps: ["Use \"+ New Finding\" to enter a title, severity and description.", "CVSS scores how serious an issue is; if unsure, just pick a severity.", "Use \"Promote to finding\" to move checklist notes here."] },
+      evidence: { s: "Evidence is a screenshot or HTTP request/response proving an issue is real.", steps: ["Upload a file or paste the HTTP exchange and link it to the finding.", "Hide sensitive data such as passwords or tokens before uploading.", "Evidence linked to a finding is included in the report."] },
+      reports: { s: "Builds the report you hand to the client from your findings.", steps: ["The technical report is for the security team, the executive report for decision makers, the developer report for the team fixing the issues.", "In the PDF/HTML report you can edit the title, client and executive summary.", "An AI-written summary is a draft; read it before sending."] },
+      retest: { s: "When the client says issues are fixed, you test again to confirm the fix works.", steps: ["Set a finding's status to \"Fixed\"; it then appears here.", "Try again and mark it \"Fixed\" or \"Still open\", with a note and evidence.", "Download the Retest Report."] },
+      timeline: { s: "A dated record of everything done in the project." },
+      kanban: { s: "Tracks tests across To do → Done columns; useful for teams." },
+      chains: { s: "Uses rules to show where several findings could combine into a more serious attack." },
+      tools: { s: "Runs tools such as nmap and httpx on your own machine with fixed commands. Use only on authorized targets." },
+      recon: { s: "Opens the discovery tool." }, testplan: { s: "Opens the test plan." }
+    }
   });
 
   let DATA = null;
@@ -1995,7 +2129,7 @@
     updateProjectChip();
     applyBeginnerMode();
     const sectionTitle = document.getElementById('pwSectionTitle');
-    if(sectionTitle && currentProjectId) sectionTitle.textContent = pwSectionLabel(activePwTab);
+    if(sectionTitle && currentProjectId){ sectionTitle.textContent = pwSectionLabel(activePwTab); renderPwHelp(); }
     const langSelect = document.getElementById('langSelect');
     if(langSelect) langSelect.value = currentLang;
     const authLangSelect = document.getElementById('authLangSelect');
@@ -2078,7 +2212,7 @@
       return `<div class="category-card ${pct===100?'done-all':''}" data-cat="${c.id}" tabindex="0" role="button">
         <div class="cc-top">
           <span class="cc-ico">${icon(c.icon)}</span>
-          <span class="badge">${escapeHtml(c.code)}</span>
+          <span class="badge" title="${escapeHtml(window.WSTGFlow.explainCode(c.code, currentLang) || '')}">${escapeHtml(c.code)}</span>
         </div>
         <h4>${escapeHtml(c.name)}</h4>
         <p>${escapeHtml(c.description || '')}</p>
@@ -2148,7 +2282,7 @@
       </button>
       <div class="tri-body">
         <div class="tri-top">
-          <span class="test-item-code">${escapeHtml(test.id)}</span>
+          <span class="test-item-code" title="${escapeHtml(window.WSTGFlow.explainCode(test.id, currentLang) || '')}">${escapeHtml(test.id)}</span>
           <span class="tri-badges">
             ${rp ? `<span class="recon-priority-badge prio-${rp.level}" title="${escapeHtml((rp.reasons||[]).join(' · '))}">${t('reconPriorityBadge_'+rp.level)}</span>` : ''}
             ${testStatusBadge(test)}
@@ -2194,7 +2328,7 @@
       <button type="button" class="btn btn-ghost btn-sm detail-back" data-action="back">${dIcon('back')}<span>${t('backToTests')}</span></button>
       <div class="detail-head">
         <div class="detail-head-text">
-          <div class="detail-code">${escapeHtml(test.id)}</div>
+          <div class="detail-code" title="${escapeHtml(window.WSTGFlow.explainCode(test.id, currentLang) || '')}">${escapeHtml(test.id)}</div>
           <h2 class="detail-title">${escapeHtml(test.title)}</h2>
         </div>
         <div class="detail-badges" id="detailBadges"></div>
@@ -4286,9 +4420,78 @@
     activePwTab = window.WSTGFlow.resolveTab(tabName, beginnerMode);
     const title = document.getElementById('pwSectionTitle');
     if(title) title.textContent = pwSectionLabel(activePwTab);
+    renderPwHelp();
     updateNavActive();
     renderPwTab();
   }
+
+  // Her bölümün başında "bu ne işe yarar / nasıl kullanılır" kutusu.
+  // Başlangıç modunda açık gelir; gelişmiş modda kapalı.
+  function renderPwHelp(){
+    const box = document.getElementById('pwHelp');
+    if(!box) return;
+    const help = (t('pwHelp') || {})[activePwTab];
+    if(!help){ box.innerHTML = ''; return; }
+    const steps = help.steps || [];
+    let seen = {};
+    try{ seen = JSON.parse(readStored(HELP_SEEN_KEY) || '{}') || {}; }catch(e){ seen = {}; }
+    const open = beginnerMode && !seen[activePwTab];
+    if(steps.length && !seen[activePwTab]){ seen[activePwTab] = 1; writeStored(HELP_SEEN_KEY, JSON.stringify(seen)); }
+    box.innerHTML = steps.length
+      ? `<details class="pw-help"${open ? ' open' : ''}>
+          <summary><svg class="i"><use href="#ic-info"/></svg><span class="pw-help-text">${escapeHtml(help.s)}</span><span class="pw-help-toggle">${escapeHtml(t('helpHowTo'))}</span></summary>
+          <ol>${steps.map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ol>
+        </details>`
+      : `<div class="pw-help pw-help-plain"><svg class="i"><use href="#ic-info"/></svg><span class="pw-help-text">${escapeHtml(help.s)}</span></div>`;
+  }
+
+  // Boş sayfalar ne yapılacağını söyler ve bir sonraki işe götüren düğmeler sunar.
+  // actions: [{ action, label, primary }]; tıklamalar data-empty-action ile yakalanır.
+  function emptyStateHtml(iconId, title, text, actions){
+    return `<div class="empty-state">
+      <span class="empty-state-icon"><svg class="i"><use href="#${iconId}"/></svg></span>
+      <div class="empty-state-title">${escapeHtml(title)}</div>
+      <p class="empty-state-text">${escapeHtml(text)}</p>
+      ${(actions || []).length ? `<div class="empty-state-actions">${actions.map(a =>
+        `<button type="button" class="btn btn-sm ${a.primary ? 'btn-primary' : 'btn-secondary'}" data-empty-action="${escapeHtml(a.action)}">${escapeHtml(a.label)}</button>`).join('')}</div>` : ''}
+    </div>`;
+  }
+
+  // Boş durum ve "sıradaki adım" düğmelerinin ortak eylemleri.
+  function runGuideAction(action){
+    switch(action){
+      case 'scope': case 'findings': case 'reports': case 'retest': case 'wstg': case 'evidence':
+        switchPwTab(action); break;
+      case 'recon': openReconModal(); break;
+      case 'skipRecon': setProjectFlag('reconSkipped'); switchPwTab('wstg'); break;
+      case 'import': openImportModal(); break;
+      case 'newFinding': switchPwTab('findings'); openFindingModal(null, null); break;
+      case 'nextTest': {
+        const next = window.WSTGFlow.firstPendingTest(getEffectiveCategories(), progress);
+        if(!next){ switchPwTab('wstg'); break; }
+        ensureProjectSessionOpen(currentProjectObj).then(sess => { if(sess) openCategory(next.catId, next.testId); });
+        break;
+      }
+    }
+  }
+
+  function projectFlags(){
+    try{
+      const map = JSON.parse(readStored(PROJECT_FLAGS_KEY) || '{}');
+      return (map && typeof map === 'object' && map[currentProjectId]) || {};
+    }catch(e){ return {}; }
+  }
+  function setProjectFlag(name){
+    if(!currentProjectId) return;
+    let map = {};
+    try{ map = JSON.parse(readStored(PROJECT_FLAGS_KEY) || '{}') || {}; }catch(e){ map = {}; }
+    const flags = map[currentProjectId] || {};
+    if(flags[name]) return;
+    flags[name] = true;
+    map[currentProjectId] = flags;
+    writeStored(PROJECT_FLAGS_KEY, JSON.stringify(map));
+  }
+  function markProjectReported(){ setProjectFlag('reported'); }
 
   function pwSectionLabel(tab){
     const keys = { overview: 'navProjectOverview', scope: 'navScope', assets: 'navAttackSurface', wstg: 'navWstgTests',
@@ -4337,6 +4540,7 @@
     writeStored(BEGINNER_KEY, beginnerMode ? '1' : '0');
     applyBeginnerMode();
     if(beginnerMode && currentView === 'project' && window.WSTGFlow.isAdvancedTab(activePwTab)) switchPwTab('overview');
+    else renderPwHelp();
     showToast(t(beginnerMode ? 'beginnerOnToast' : 'beginnerOffToast'));
   }
 
@@ -4426,10 +4630,56 @@
     if(fn) fn();
   }
 
+  function nextStepCardHtml(d, scopeCount){
+    const wstgCov = d.coverage && d.coverage.wstg;
+    const findingsN = d.pro_finding_count !== undefined ? d.pro_finding_count : d.finding_count;
+    const st = {
+      scope: scopeCount, recon: d.recon_run_count || 0, assets: d.asset_count || 0,
+      done: wstgCov ? wstgCov.completed : d.completed_tests, total: wstgCov ? wstgCov.total : d.total_tests,
+      findings: findingsN, reported: !!projectFlags().reported, reconSkipped: !!projectFlags().reconSkipped
+    };
+    const flow = window.WSTGFlow.projectSteps(st);
+    const a = flow.action;
+    const primary = { scope: 'scope', recon: 'recon', firstTest: 'nextTest', keepTesting: 'nextTest', report: 'reports', retest: 'retest' }[a];
+    const secondary = { recon: ['skipRecon', t('next_recon_skip')], keepTesting: ['newFinding', t('next_keepTesting_alt')],
+      report: ['nextTest', t('next_report_alt')], retest: ['nextTest', t('next_retest_alt')] }[a];
+    const text = a === 'report' ? t('next_report_text')(findingsN) : t('next_' + a + '_text');
+    const nextTest = (a === 'firstTest' || a === 'keepTesting') ? window.WSTGFlow.firstPendingTest(getEffectiveCategories(), progress) : null;
+    const stepNames = ['stepPrep', 'stepRecon', 'stepTest', 'stepFindings', 'stepReport'];
+    const stepSubs = [t('stepSub_scope')(scopeCount), st.recon || st.assets || st.reconSkipped ? '' : t('stepSub_recon'),
+      t('stepSub_test')(st.done, st.total), findingsN ? t('stepSub_findings')(findingsN) : '', ''];
+    return `
+      <ol class="phase-stepper" aria-label="${escapeHtml(t('phaseStepper'))}">
+        ${flow.steps.map((x, i) => `<li class="phase ${x.state}${x.current ? ' is-current' : ''}">
+          <span class="phase-dot">${x.state === 'done' ? '<svg class="i"><use href="#ic-check"/></svg>' : x.step}</span>
+          <span class="phase-name">${escapeHtml(t(stepNames[i]))}</span>
+          ${stepSubs[i] ? `<span class="phase-sub">${escapeHtml(stepSubs[i])}</span>` : ''}
+        </li>`).join('')}
+      </ol>
+      <section class="next-step-card">
+        <div class="next-step-body">
+          <span class="next-step-label">${escapeHtml(t('nextStepLabel'))} · ${flow.currentStep}/5</span>
+          <h3 class="next-step-title">${escapeHtml(t('next_' + a + '_title'))}</h3>
+          <p class="next-step-text">${escapeHtml(text)}</p>
+          ${nextTest ? `<p class="next-step-test">${escapeHtml(t('nextUpTest')(nextTest.testId, nextTest.title))}</p>` : ''}
+        </div>
+        <div class="next-step-actions">
+          <button type="button" class="btn btn-primary" data-empty-action="${primary}">${escapeHtml(t('next_' + a + '_btn'))}</button>
+          ${secondary ? `<button type="button" class="btn btn-secondary" data-empty-action="${secondary[0]}">${escapeHtml(secondary[1])}</button>` : ''}
+        </div>
+      </section>`;
+  }
+
   function renderPwOverview(){
     const content = document.getElementById('pwContent');
     content.innerHTML = `<div class="search-empty">${t('loadingSessions')}</div>`;
-    apiRequest(`/projects/${currentProjectId}/dashboard`).then(d => {
+    const forProject = currentProjectId;
+    Promise.all([
+      apiRequest(`/projects/${currentProjectId}/dashboard`),
+      apiRequest(`/projects/${currentProjectId}/scope`).catch(() => [])
+    ]).then(([d, scopeItems]) => {
+      if(forProject !== currentProjectId || activePwTab !== 'overview') return;
+      const scopeCount = (scopeItems || []).filter(x => x.in_scope).length;
       const sevOrder = ['critical','high','medium','low','info'];
       const sevColors = { critical:'#ef4444', high:'#f97316', medium:'#eab308', low:'#22c55e', info:'#94a3b8' };
       const maxSev = Math.max(1, ...sevOrder.map(k => d.severity_counts[k] || 0));
@@ -4439,7 +4689,7 @@
         <div class="pw-coverage-row">
           ${['wstg','llm','custom'].map(fw => {
             const cov = d.coverage[fw];
-            return `<div class="pw-coverage-item">
+            return `<div class="pw-coverage-item${fw === 'wstg' ? '' : ' adv-only'}">
               <div class="pw-coverage-top"><span>${t('pwCoverage_'+fw)}</span><span>${cov.completed}/${cov.total}</span></div>
               <div class="cat-progress-bar"><div class="cat-progress-fill" style="width:${cov.pct}%"></div></div>
             </div>`;
@@ -4476,7 +4726,7 @@
       const totalTests = wstgCov ? wstgCov.total : d.total_tests;
       const doneTests = wstgCov ? wstgCov.completed : d.completed_tests;
       const progressPct = wstgCov ? wstgCov.pct : d.progress_pct;
-      content.innerHTML = `
+      content.innerHTML = nextStepCardHtml(d, scopeCount) + `
         <div class="pw-stats-grid">
           <div class="pw-stat-card"><div class="label">${t('pwStatAssets')}</div><div class="value">${d.asset_count}</div></div>
           <div class="pw-stat-card"><div class="label">${t('pwStatTests')}</div><div class="value">${totalTests}</div></div>
@@ -4546,7 +4796,7 @@
     const list = document.getElementById('pwScopeList');
     apiRequest(`/projects/${currentProjectId}/scope`).then(items => {
       if(!items.length){
-        list.innerHTML = `<div class="search-empty">${t('pwScopeEmpty')}</div>`;
+        list.innerHTML = emptyStateHtml('ic-target', t('emptyScopeTitle'), t('emptyScopeText'), []);
         return;
       }
       list.innerHTML = items.map(i => `
@@ -5238,7 +5488,10 @@
     const s = stats();
     const cats = getEffectiveCategories();
     document.getElementById('pwContent').innerHTML = `
-      <p class="pw-intro">${escapeHtml(t('pwWstgIntro'))}</p>
+      ${currentFramework === 'wstg' ? `<div class="pw-tips">
+        <p><b>${escapeHtml(t('wstgStartQ'))}</b> ${escapeHtml(t('wstgStartA'))}</p>
+        <p><b>${escapeHtml(t('wstgCodeQ'))}</b> ${escapeHtml(t('wstgCodeA'))}</p>
+      </div>` : ''}
       <div class="pw-wstg-progress">
         <div class="cat-progress-bar" style="flex:1"><div class="cat-progress-fill" style="width:${s.pct}%"></div></div>
         <span class="cat-progress-text">${escapeHtml(t('pwWstgProgress')(s.done, s.total))}</span>
@@ -5248,7 +5501,7 @@
           const done = c.tests.filter(x => progress[x.id]).length;
           const pct = c.tests.length ? Math.round((done / c.tests.length) * 100) : 0;
           return `<div class="category-card ${pct === 100 ? 'done-all' : ''}" data-cat="${escapeHtml(c.id)}" tabindex="0" role="button">
-            <div class="cc-top"><span class="cc-ico">${icon(c.icon)}</span><span class="badge">${escapeHtml(c.code)}</span></div>
+            <div class="cc-top"><span class="cc-ico">${icon(c.icon)}</span><span class="badge" title="${escapeHtml(window.WSTGFlow.explainCode(c.code, currentLang) || '')}">${escapeHtml(c.code)}</span></div>
             <h4>${escapeHtml(c.name)}</h4>
             <p>${escapeHtml(c.description || '')}</p>
             <div class="cat-progress-row">
@@ -5947,7 +6200,11 @@
             <button data-action="edit" data-id="${f.id}">${t('editBtn')}</button>
             <button data-action="delete" data-id="${f.id}" class="danger">${t('pwEvidenceDelete')}</button>
           </div>
-        </div>`).join('') : `<div class="search-empty">${t('pwFindingsProEmpty')}</div>`;
+        </div>`).join('') : emptyStateHtml('ic-alert', t('emptyFindingsTitle'), t('emptyFindingsText'), [
+          { action: 'newFinding', label: t('newFindingBtn'), primary: true },
+          { action: 'wstg', label: t('emptyFindingsGoTests') },
+          { action: 'import', label: t('navImport') }
+        ]);
 
       // --- Quick Findings (checklist text notes) ---
       let quickHtml = '';
@@ -5958,7 +6215,9 @@
           const quickListEl = document.getElementById('pwQuickFindingsList');
           if(!quickListEl) return;
           if(!withFindings.length){
-            quickListEl.innerHTML = `<div class="search-empty">${t('pwFindingsEmpty')}</div>`;
+            // Not yoksa bölüm hiç gösterilmez; yeni başlayan biri iki ayrı "boş" liste görmesin.
+            const section = document.getElementById('pwQuickSection');
+            if(section) section.hidden = true;
             return;
           }
           quickListEl.innerHTML = withFindings.map(r => {
@@ -5999,12 +6258,14 @@
         }).catch(()=>{});
       }
 
-      content.innerHTML = summaryHtml + proHeaderHtml + `<div id="pwProFindingsList">${proListHtml}</div>` +
-        `<div class="filter-bar" style="padding:20px 0 10px"><h5 style="margin:0">${t('pwFindingsQuickLabel')}</h5></div>` +
-        (sessions.length ? `<div id="pwQuickFindingsList"><div class="search-empty">${t('loadingSessions')}</div></div>`
-                          : `<div class="search-empty">${t('pwFindingsNoSession')}</div>`);
+      content.innerHTML = (proFindings.length ? summaryHtml + proHeaderHtml : '') + `<div id="pwProFindingsList">${proListHtml}</div>` +
+        `<div id="pwQuickSection"${sessions.length ? '' : ' hidden'}>` +
+        `<div class="filter-bar" style="padding:20px 0 4px"><h5 style="margin:0">${t('pwFindingsQuickLabel')}</h5></div>` +
+        `<p class="hint" style="margin:0 0 10px">${escapeHtml(t('pwFindingsQuickHint'))}</p>` +
+        `<div id="pwQuickFindingsList"><div class="search-empty">${t('loadingSessions')}</div></div></div>`;
 
-      document.getElementById('newFindingBtn').addEventListener('click', ()=> openFindingModal(null, null));
+      const newFindingBtn = document.getElementById('newFindingBtn');
+      if(newFindingBtn) newFindingBtn.addEventListener('click', ()=> openFindingModal(null, null));
       document.getElementById('pwProFindingsList').addEventListener('click', e=>{
         const btn = e.target.closest('button[data-action]');
         if(!btn) return;
@@ -6935,8 +7196,15 @@
   function renderPwReports(){
     const content = document.getElementById('pwContent');
     content.innerHTML = `<div class="search-empty">${t('loadingSessions')}</div>`;
-    apiRequest(`/sessions?project_id=${currentProjectId}`).then(sessions => {
-      const proReportsHtml = `
+    Promise.all([
+      apiRequest(`/sessions?project_id=${currentProjectId}`),
+      apiRequest(`/projects/${currentProjectId}/findings`).catch(() => null)
+    ]).then(([sessions, proFindings]) => {
+      const noFindings = Array.isArray(proFindings) && !proFindings.length;
+      const proReportsHtml = (noFindings ? emptyStateHtml('ic-file', t('reportsNoFindingsTitle'), t('reportsNoFindingsText'), [
+          { action: 'nextTest', label: t('next_keepTesting_btn'), primary: true },
+          { action: 'newFinding', label: t('newFindingBtn') }
+        ]) : '') + `
         <div class="pro-reports-section">
           <h5>${t('pwProReportsLabel')}</h5>
           <p class="import-preview-source" style="margin-bottom:14px">${t('pwProReportsDesc')}</p>
@@ -6964,7 +7232,7 @@
         wireHtmlReportBuilder();
         return;
       }
-      content.innerHTML = proReportsHtml +
+      content.innerHTML = proReportsHtml + `<div class="adv-only">` +
         `<h5 style="margin-top:24px">${t('pwReportsSessionExportLabel')}</h5>` +
         sessions.map(s => `
         <div class="session-card" data-id="${s.id}">
@@ -6981,7 +7249,7 @@
           <div class="project-card-actions">
             <button data-action="report" data-id="${s.id}">${t('pwReportsOpenBtn')}</button>
           </div>
-        </div>`).join('');
+        </div>`).join('') + `</div>`;
       content.querySelectorAll('button[data-action="report"]').forEach(btn=>{
         btn.addEventListener('click', ()=>{
           openSessionById(btn.dataset.id).then(()=>{
@@ -7081,7 +7349,8 @@
       apiRequest(`/projects/${currentProjectId}/findings`)
     ]).then(([items, findings])=>{
       if(!items.length){
-        gallery.innerHTML = `<div class="search-empty">${t('pwEvidenceEmpty')}</div>`;
+        gallery.innerHTML = emptyStateHtml('ic-image', t('emptyEvidenceTitle'), t('emptyEvidenceText'),
+          [{ action: 'findings', label: t('emptyEvidenceGoFindings') }]);
         return;
       }
       const findingOptions = findings.map(f => `<option value="${f.id}">${f.finding_code} — ${escapeHtml(f.title)}</option>`).join('');
@@ -7244,6 +7513,11 @@
       switchPwTab(link.dataset.pwTab);
     });
     document.getElementById('beginnerModeToggle').addEventListener('change', e=> setBeginnerMode(e.target.checked));
+    document.getElementById('pwContent').addEventListener('click', e=>{
+      const guide = e.target.closest('[data-empty-action]');
+      if(guide){ runGuideAction(guide.dataset.emptyAction); return; }
+      if(e.target.closest('.pro-report-card, #openHtmlReportBtn, #downloadPdfReportBtn')) markProjectReported();
+    });
     document.getElementById('quickProjectForm').addEventListener('submit', submitQuickProject);
     document.getElementById('homeLibraryBtn').addEventListener('click', ()=> showView('library'));
     document.getElementById('pwBackHome').addEventListener('click', ()=> showView('home'));

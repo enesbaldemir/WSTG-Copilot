@@ -44,3 +44,44 @@ test('geçersiz hedefler reddedilir', () => {
     assert.strictEqual(flow.parseTarget(bad), null, String(bad).slice(0, 40));
   }
 });
+
+test('sıradaki adım proje durumuna göre seçilir', () => {
+  const base = { scope: 0, recon: 0, assets: 0, done: 0, total: 98, findings: 0, reported: false };
+  const cases = [
+    [{}, 'scope', 1],
+    [{ scope: 1 }, 'recon', 2],
+    [{ scope: 1, recon: 1 }, 'firstTest', 3],
+    [{ scope: 1, done: 3 }, 'keepTesting', 3],            // keşif yapılmadan teste geçildi
+    [{ scope: 1, reconSkipped: true }, 'firstTest', 3],   // keşif atlandı
+    [{ scope: 1, done: 3, findings: 2 }, 'report', 5],
+    [{ scope: 1, done: 3, findings: 2, reported: true }, 'retest', 5],
+    [{ done: 5, findings: 1 }, 'scope', 1]                // kapsam her zaman önce
+  ];
+  for(const [st, action, step] of cases){
+    const r = flow.projectSteps(Object.assign({}, base, st));
+    assert.strictEqual(r.action, action, JSON.stringify(st));
+    assert.strictEqual(r.currentStep, step, JSON.stringify(st));
+    assert.strictEqual(r.steps.filter(s => s.current).length, 1);
+  }
+});
+
+test('adım durumları', () => {
+  const r = flow.projectSteps({ scope: 1, done: 98, total: 98, findings: 1 });
+  assert.deepStrictEqual(r.steps.map(s => s.state), ['done', 'done', 'done', 'done', 'current']);
+  const empty = flow.projectSteps(null);
+  assert.deepStrictEqual(empty.steps.map(s => s.state), ['current', 'todo', 'todo', 'todo', 'todo']);
+});
+
+test('ilk tamamlanmamış test', () => {
+  const cats = [{ id: 'a', tests: [{ id: 'T1', title: 'Bir' }, { id: 'T2', title: 'İki' }] }, { id: 'b', tests: [{ id: 'T3', title: 'Üç' }] }];
+  assert.deepStrictEqual(flow.firstPendingTest(cats, { T1: true }), { catId: 'a', testId: 'T2', title: 'İki' });
+  assert.deepStrictEqual(flow.firstPendingTest(cats, { T1: true, T2: true }).testId, 'T3');
+  assert.strictEqual(flow.firstPendingTest(cats, { T1: 1, T2: 1, T3: 1 }), null);
+  assert.strictEqual(flow.firstPendingTest(null, null), null);
+});
+
+test('WSTG kodları açıklanır', () => {
+  assert.match(flow.explainCode('WSTG-ATHN-03', 'tr'), /ATHN = Authentication \(Kimlik Doğrulama\) · 03 = bu kategorideki 3\. test/);
+  assert.match(flow.explainCode('wstg-inpv', 'en'), /^WSTG = OWASP Web Security Testing Guide · INPV = Input Validation$/);
+  for(const bad of ['LLM01', 'WSTG-XXXX-01', '', null, 'WSTG-ATHN-03<script>']) assert.strictEqual(flow.explainCode(bad, 'tr'), null);
+});
