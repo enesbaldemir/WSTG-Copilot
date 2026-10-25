@@ -4,6 +4,7 @@ from datetime import datetime
 import getpass
 import os
 import sys
+import io
 import json
 import re
 import time
@@ -18,6 +19,7 @@ import auth
 import retest as retest_lib
 import authz_matrix
 import image_types
+import project_backup
 import mapping as mapping_lib
 import notes as notes_lib
 import study_metrics
@@ -1478,6 +1480,50 @@ def _evidence_dir(project_id):
     path = os.path.join(app.config['UPLOAD_FOLDER'], 'evidence', project_id)
     os.makedirs(path, exist_ok=True)
     return path
+
+
+# ========================
+# PROJE YEDEKLEME (dışa aktar / yeni proje olarak geri yükle)
+# ========================
+
+@app.route('/api/projects/<project_id>/export', methods=['GET'])
+def export_project_backup(project_id):
+    try:
+        project = _project_or_404(project_id)
+        data = project_backup.export_project(project, _evidence_dir(project_id))
+        buf = io.BytesIO(json.dumps(data, ensure_ascii=False, indent=1).encode('utf-8'))
+        safe_name = ''.join(c if c.isalnum() or c in ' -_' else '_' for c in project.name)[:60].strip() or 'proje'
+        return send_file(buf, as_attachment=True, mimetype='application/json',
+                         download_name=f"{safe_name}-yedek-{datetime.utcnow().strftime('%Y%m%d')}.json")
+    except NotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        return _error_response(e)
+
+
+@app.route('/api/projects/import', methods=['POST'])
+def import_project_backup():
+    data = request.get_json(silent=True)
+    if data is None:
+        return jsonify({'error': 'Geçerli bir JSON yedek dosyası gönderin'}), 400
+    enums = {
+        'project_status': VALID_PROJECT_STATUSES, 'scope_type': VALID_SCOPE_TYPES,
+        'finding_severity': FINDING_SEVERITIES, 'finding_status': VALID_FINDING_STATUS_VALUES,
+        'result_status': VALID_RESULT_STATUSES, 'test_finding_status': VALID_FINDING_STATUSES,
+    }
+    try:
+        project = project_backup.import_project(
+            data, db, _evidence_dir, enums,
+            lambda name: Project.query.filter_by(name=name).first() is not None)
+        db.session.commit()
+    except project_backup.BackupError as e:
+        db.session.rollback()
+        return jsonify({'error': f'Yedek geri yüklenemedi: {e}'}), 400
+    except Exception as e:
+        db.session.rollback()
+        return _error_response(e)
+    log_event(project.id, 'project_imported', 'Proje yedekten geri yüklendi')
+    return jsonify(project.to_dict()), 201
 
 
 @app.route('/api/projects/<project_id>/evidence', methods=['GET'])

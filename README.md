@@ -51,6 +51,7 @@ The checklist works with only a static file server. Projects, findings, evidence
 - Bundled original WSTG v4.2 PDF (`wstg-v4_2.pdf`)
 
 **Projects and sessions** (backend required)
+- Project backup: "Back up" downloads the whole project (scope, sessions and results, notes, findings, evidence files, authorization matrix, discovery and tool runs, timeline) as one JSON file; "Restore from backup" on My Projects creates a **new** project from it. Every field is validated by type, length and allowed values, IDs are regenerated and relationships re-mapped, and image contents are checked by magic bytes; a rejected file leaves nothing behind. Backups up to 16 MB (the server request limit) can be restored
 - Projects with client, description, status and start/end dates; each project has a timeline of events
 - Scope management: in-scope / out-of-scope domains, subdomains, IPs and CIDR ranges
 - Named test sessions (name, tester, target URL); checklist progress is stored in SQLite and can be resumed. If the backend is unreachable, the app falls back to `localStorage`
@@ -246,6 +247,7 @@ WSTG-Copilot/
 │   ├── study_metrics.py        # A/B study metrics
 │   ├── cvss.py                 # CVSS v3.1 scoring
 │   ├── report_builder.py       # DOCX project reports
+│   ├── project_backup.py       # Project backup export / restore
 │   ├── report_html.py          # HTML report
 │   ├── report_pdf.py           # PDF report
 │   ├── report_generator.py     # Session-level reports
@@ -330,6 +332,7 @@ Checklist yalnızca statik bir dosya sunucusuyla çalışır. Projeler, bulgular
 - Orijinal WSTG v4.2 PDF'i (`wstg-v4_2.pdf`)
 
 **Projeler ve oturumlar** (backend gerekir)
+- Proje yedekleme: "Yedekle", projenin tamamını (kapsam, oturumlar ve sonuçlar, notlar, bulgular, kanıt dosyaları, yetki matrisi, keşif ve araç çalıştırmaları, zaman çizelgesi) tek bir JSON dosyası olarak indirir; Projelerim'deki "Yedekten geri yükle" bundan **yeni** bir proje oluşturur. Her alan tür, uzunluk ve izin verilen değerlere göre doğrulanır, kimlikler yeniden üretilip ilişkiler eşlenir, görsel içerikleri magic byte ile kontrol edilir; reddedilen dosya geride hiçbir şey bırakmaz. 16 MB'a kadar (sunucunun istek sınırı) yedekler geri yüklenebilir
 - Müşteri, açıklama, durum ve başlangıç/bitiş tarihi içeren projeler; her projenin olay zaman çizelgesi
 - Kapsam yönetimi: kapsam içi/dışı domain, subdomain, IP ve CIDR aralıkları
 - İsimli test oturumları (isim, test uzmanı, hedef URL); checklist ilerlemesi SQLite'a kaydedilir ve devam ettirilebilir. Backend'e erişilemezse uygulama `localStorage` moduna geçer
@@ -525,6 +528,7 @@ WSTG-Copilot/
 │   ├── study_metrics.py        # A/B çalışma metrikleri
 │   ├── cvss.py                 # CVSS v3.1 skorlama
 │   ├── report_builder.py       # Proje DOCX raporları
+│   ├── project_backup.py       # Proje yedeği dışa aktarma / geri yükleme
 │   ├── report_html.py          # HTML rapor
 │   ├── report_pdf.py           # PDF rapor
 │   ├── report_generator.py     # Oturum bazlı raporlar

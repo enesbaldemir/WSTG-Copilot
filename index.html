@@ -244,7 +244,8 @@
         <section class="home-projects" id="homeProjectsSection" hidden>
           <div class="section-head">
             <h2 class="section-title" data-i18n="homeProjectsTitle">Projelerin</h2>
-            <span class="section-sub" id="homeProjectsCount"></span>
+            <span class="section-head-actions"><span class="section-sub" id="homeProjectsCount"></span>
+              <button type="button" class="btn btn-ghost btn-sm" id="restoreBackupBtn2" data-i18n="restoreBtn">Yedekten geri yükle</button></span>
           </div>
           <div class="home-project-list" id="homeProjectList"></div>
         </section>
@@ -262,6 +263,11 @@
             <p class="quick-project-note" data-i18n="qpAuthNote">Yalnızca test etmek için yazılı izin aldığın sistemleri ekle.</p>
             <p class="form-error" id="qpError" role="alert"></p>
             <button type="submit" class="btn btn-primary" id="qpSubmit"><svg class="i"><use href="#ic-play"/></svg><span data-i18n="qpSubmit">Projeyi oluştur ve başla</span></button>
+            <div class="restore-row">
+              <span class="hint" data-i18n="restoreHint">Bir yedeğin mi var?</span>
+              <button type="button" class="btn btn-ghost btn-sm" id="restoreBackupBtn" data-i18n="restoreBtn">Yedekten geri yükle</button>
+              <input type="file" id="restoreBackupInput" accept="application/json,.json" hidden>
+            </div>
           </form>
 
           <section class="card how-it-works">
@@ -288,6 +294,7 @@
           <label class="pw-mobile-nav"><span class="sr-only" data-i18n="pwMobileNavLabel">Bölüm</span><select id="pwMobileNav"></select></label>
         </div>
         <div class="page-actions">
+          <button type="button" class="btn btn-secondary btn-sm" id="pwBackupBtn" data-i18n-title="backupBtnTitle" title=""><svg class="i"><use href="#ic-upload"/></svg><span data-i18n="backupBtn">Yedekle</span></button>
           <button type="button" class="btn btn-secondary btn-sm" id="pwEditBtn" data-i18n="editBtn">Düzenle</button>
         </div>
       </div>
