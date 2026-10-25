@@ -13,7 +13,7 @@ from werkzeug.utils import secure_filename
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from config import DevelopmentConfig, ProductionConfig
-from models import db, Session, TestResult, Note, AuthzMatrix, Project, ScopeItem, TimelineEvent, ReconRun, Evidence, CustomTest, ToolRun, Finding, AIInteractionLog, AIProviderSetting, AuthSettings
+from models import db, Session, TestResult, Note, AuthzMatrix, Project, ScopeItem, TimelineEvent, ReconRun, Evidence, CustomTest, ToolRun, Finding, AIInteractionLog, AIProviderSetting, AuthSettings, FindingTemplate
 import auth
 import retest as retest_lib
 import authz_matrix
@@ -1898,6 +1898,68 @@ def list_findings(project_id):
     except NotFoundError as e:
         return jsonify({'error': str(e)}), 404
     except Exception as e:
+        return _error_response(e)
+
+
+# ========================
+# KULLANICI BULGU ŞABLONLARI
+# ========================
+# Hazır şablonlar istemcide (js/finding-templates.js); burada yalnızca
+# kullanıcının "şablon olarak kaydet" dedikleri tutulur.
+TEMPLATE_TEXT_LIMITS = {'title': 300, 'test_id': 50, 'cwe': 50, 'owasp_category': 100,
+                        'description': 20000, 'impact': 20000, 'remediation': 20000, 'references': 5000}
+MAX_FINDING_TEMPLATES = 500
+
+
+@app.route('/api/finding-templates', methods=['GET'])
+def list_finding_templates():
+    try:
+        items = FindingTemplate.query.order_by(FindingTemplate.title.asc()).all()
+        return jsonify([t.to_dict() for t in items]), 200
+    except Exception as e:
+        return _error_response(e)
+
+
+@app.route('/api/finding-templates', methods=['POST'])
+def create_finding_template():
+    try:
+        data = request.json or {}
+        values = {}
+        for key, limit in TEMPLATE_TEXT_LIMITS.items():
+            raw = data.get(key)
+            if raw is not None and not isinstance(raw, str):
+                return jsonify({'error': f'{key} metin olmalıdır'}), 400
+            value = (raw or '').strip()
+            if len(value) > limit:
+                return jsonify({'error': f'{key} en fazla {limit} karakter olabilir'}), 400
+            values[key] = value or None
+        if not values['title']:
+            return jsonify({'error': 'Başlık zorunludur'}), 400
+        severity = data.get('severity') or 'medium'
+        if severity not in FINDING_SEVERITIES:
+            return jsonify({'error': FINDING_SEVERITY_ERROR}), 400
+        if FindingTemplate.query.count() >= MAX_FINDING_TEMPLATES:
+            return jsonify({'error': f'En fazla {MAX_FINDING_TEMPLATES} şablon saklanabilir'}), 400
+        item = FindingTemplate(severity=severity, **values)
+        db.session.add(item)
+        db.session.commit()
+        return jsonify(item.to_dict()), 201
+    except Exception as e:
+        db.session.rollback()
+        return _error_response(e)
+
+
+@app.route('/api/finding-templates/<int:template_id>', methods=['DELETE'])
+def delete_finding_template(template_id):
+    try:
+        item = db.session.get(FindingTemplate, template_id)
+        if not item:
+            return jsonify({'error': 'Şablon bulunamadı'}), 404
+        db.session.delete(item)
+        db.session.commit()
+        return jsonify({'deleted': template_id}), 200
+    except Exception as e:
+        db.session.rollback()
         return _error_response(e)
 
 

@@ -1787,6 +1787,23 @@
     pwReportsNoSession: "Test listesi hazırlanıyor; birazdan tekrar dene.",
     promoteFindingBtn: "Bulguya dönüştür",
     pwMobileNavLabel: "Bölüm",
+    reportQuickTitle: "Raporu indir",
+    reportQuickSummary: (n, bits) => `${n} bulgu${bits ? ' (' + bits + ')' : ''}. Rapor, Bulgular sayfasındaki kayıtlardan oluşur; test ettiğin kapsam ve sonuçlar da eklenir.`,
+    reportQuickPdf: "PDF indir", reportQuickWord: "Word (.docx)", reportQuickHtml: "Tarayıcıda aç",
+    reportCustomizeSummary: "Raporu özelleştir: başlık, test uzmanı, tarih, yönetici özeti, şablon",
+    reportWordSummary: "Diğer Word raporları: yönetici özeti ve geliştirici çözüm raporu",
+    evidencePasteHint: "İpucu: ekran görüntüsünü bu sayfadayken Ctrl+V ile yapıştırabilir ya da dosyayı buraya sürükleyip bırakabilirsin.",
+    evidenceLinkOnUpload: "Bağlanacak bulgu", evidenceLinkNone: "— Bulguya bağlama —",
+    evidenceUploaded: "Kanıt yüklendi", evidenceNotImage: "Yalnızca görsel dosyalar (PNG, JPEG, GIF, WebP) yüklenebilir.",
+    findingTemplateLabel: "Şablondan başla (isteğe bağlı)",
+    findingTemplateHint: "Sık görülen açıklar için hazır açıklama, etki ve çözüm önerisi. Yalnızca boş alanlar doldurulur.",
+    templatePlaceholder: "— Şablon seç —", templateCustomGroup: "Kendi şablonların",
+    templateApplied: "Şablon uygulandı. Endpoint ve tekrarlama adımlarını kendi testine göre yaz.",
+    templateNothingToFill: "Doldurulacak boş alan yok; yazdıkların korunuyor.",
+    saveAsTemplateBtn: "Şablon olarak kaydet",
+    templateSaved: "Şablon kaydedildi. Sonraki projelerde \"Kendi şablonların\" altında.",
+    templateDeleteBtn: "Şablonu sil", templateDeleteConfirm: "Bu şablon silinsin mi? Bu şablondan oluşturulmuş bulgular etkilenmez.",
+    templateDeleted: "Şablon silindi",
     aiNotConfiguredNotice: "AI henüz kurulu değil. Bir sağlayıcı (Anthropic, OpenAI, Gemini ya da Ollama) ekleyince öneri alabilirsin.",
     aiOpenSettingsBtn: "AI Ayarları'nı aç",
     pwProReportsLabel: "Word raporları",
@@ -1894,6 +1911,23 @@
     pwReportsNoSession: "The test list is being prepared; try again in a moment.",
     promoteFindingBtn: "Promote to finding",
     pwMobileNavLabel: "Section",
+    reportQuickTitle: "Download the report",
+    reportQuickSummary: (n, bits) => `${n} finding${n === 1 ? '' : 's'}${bits ? ' (' + bits + ')' : ''}. The report is built from the records on the Findings page, together with the tested scope and results.`,
+    reportQuickPdf: "Download PDF", reportQuickWord: "Word (.docx)", reportQuickHtml: "Open in browser",
+    reportCustomizeSummary: "Customize the report: title, tester, dates, executive summary, template",
+    reportWordSummary: "Other Word reports: executive summary and developer remediation report",
+    evidencePasteHint: "Tip: while on this page you can paste a screenshot with Ctrl+V or drag a file here.",
+    evidenceLinkOnUpload: "Link to finding", evidenceLinkNone: "— Don't link —",
+    evidenceUploaded: "Evidence uploaded", evidenceNotImage: "Only image files (PNG, JPEG, GIF, WebP) can be uploaded.",
+    findingTemplateLabel: "Start from a template (optional)",
+    findingTemplateHint: "Ready-made description, impact and remediation for common issues. Only empty fields are filled.",
+    templatePlaceholder: "— Choose a template —", templateCustomGroup: "Your templates",
+    templateApplied: "Template applied. Write the endpoint and reproduction steps for your own test.",
+    templateNothingToFill: "No empty fields to fill; your text is kept.",
+    saveAsTemplateBtn: "Save as template",
+    templateSaved: "Template saved. It appears under \"Your templates\" in later projects.",
+    templateDeleteBtn: "Delete template", templateDeleteConfirm: "Delete this template? Findings created from it are not affected.",
+    templateDeleted: "Template deleted",
     aiNotConfiguredNotice: "AI is not set up yet. Add a provider (Anthropic, OpenAI, Gemini or Ollama) to get suggestions.",
     aiOpenSettingsBtn: "Open AI Settings",
     pwProReportsLabel: "Word reports",
@@ -5785,6 +5819,82 @@
     renderSeverityPicker();
   }
 
+  // ---- Bulgu şablonları: hazır (js/finding-templates.js) + kullanıcının kaydettikleri ----
+  let customTemplates = [];
+
+  function loadCustomTemplates(){
+    if(!dbOnline) return Promise.resolve([]);
+    return apiRequest('/finding-templates').then(items => { customTemplates = items || []; return customTemplates; })
+      .catch(() => customTemplates);
+  }
+
+  function renderTemplateSelect(){
+    const sel = document.getElementById('findingTemplateSelect');
+    const T = window.WSTGTemplates;
+    const builtin = T.list(currentLang);
+    let html = `<option value="">${escapeHtml(t('templatePlaceholder'))}</option>`;
+    T.GROUPS.forEach(g => {
+      const items = builtin.filter(x => x.group === g);
+      if(!items.length) return;
+      html += `<optgroup label="${escapeHtml(T.groupLabel(g, currentLang))}">` +
+        items.map(x => `<option value="builtin:${escapeHtml(x.id)}">${escapeHtml(x.title)}</option>`).join('') + '</optgroup>';
+    });
+    if(customTemplates.length){
+      html += `<optgroup label="${escapeHtml(t('templateCustomGroup'))}">` +
+        customTemplates.map(x => `<option value="custom:${x.id}">${escapeHtml(x.title)}</option>`).join('') + '</optgroup>';
+    }
+    sel.innerHTML = html;
+    document.getElementById('deleteTemplateBtn').hidden = true;
+  }
+
+  const TEMPLATE_INPUTS = { title: 'findingTitleInput', test_id: 'findingTestIdInput', cwe: 'findingCweInput',
+    owasp_category: 'findingOwaspCatInput', description: 'findingDescInput', impact: 'findingImpactInput',
+    remediation: 'findingRemediationInput', references: 'findingReferencesInput' };
+
+  function selectedTemplate(value){
+    if(!value) return null;
+    const [kind, id] = value.split(':');
+    if(kind === 'builtin') return window.WSTGTemplates.get(id, currentLang);
+    return customTemplates.find(x => String(x.id) === id) || null;
+  }
+
+  function applySelectedTemplate(){
+    const sel = document.getElementById('findingTemplateSelect');
+    const tpl = selectedTemplate(sel.value);
+    document.getElementById('deleteTemplateBtn').hidden = !sel.value.startsWith('custom:');
+    if(!tpl) return;
+    const cvssOn = computeCvss(currentCvssMetrics).base_score > 0;
+    const current = { severity: cvssOn ? 'cvss' : currentFindingSeverity };
+    Object.entries(TEMPLATE_INPUTS).forEach(([k, id]) => { current[k] = document.getElementById(id).value; });
+    const r = window.WSTGTemplates.applyToForm(current, tpl);
+    Object.entries(TEMPLATE_INPUTS).forEach(([k, id]) => { document.getElementById(id).value = r.values[k] || ''; });
+    if(r.filled.includes('severity')){ currentFindingSeverity = r.values.severity; renderSeverityPicker(); }
+    if(['cwe', 'owasp_category', 'impact', 'references'].some(k => r.filled.includes(k))) document.getElementById('findingMoreDetails').open = true;
+    showToast(r.filled.length ? t('templateApplied') : t('templateNothingToFill'));
+  }
+
+  function saveCurrentAsTemplate(){
+    const title = document.getElementById('findingTitleInput').value.trim();
+    if(!title){ showToast(t('findingTitleRequired')); return; }
+    const cvssResult = computeCvss(currentCvssMetrics);
+    const payload = { severity: cvssResult.base_score > 0 ? cvssResult.severity : (currentFindingSeverity || 'medium') };
+    Object.entries(TEMPLATE_INPUTS).forEach(([k, id]) => { payload[k] = document.getElementById(id).value.trim(); });
+    apiRequest('/finding-templates', { method: 'POST', body: JSON.stringify(payload) })
+      .then(() => loadCustomTemplates())
+      .then(() => { renderTemplateSelect(); showToast(t('templateSaved')); })
+      .catch(err => showToast(err.message || t('resultSaveError')));
+  }
+
+  function deleteSelectedTemplate(){
+    const sel = document.getElementById('findingTemplateSelect');
+    if(!sel.value.startsWith('custom:')) return;
+    if(!confirm(t('templateDeleteConfirm'))) return;
+    apiRequest(`/finding-templates/${sel.value.split(':')[1]}`, { method: 'DELETE' })
+      .then(() => loadCustomTemplates())
+      .then(() => { renderTemplateSelect(); showToast(t('templateDeleted')); })
+      .catch(err => showToast(err.message || t('resultSaveError')));
+  }
+
   function openFindingModal(finding, prefill){
     editingFindingId = finding ? finding.id : null;
     document.getElementById('findingModalTitle').textContent = finding ? t('findingModalTitleEdit') : t('findingModalTitleNew');
@@ -5821,6 +5931,11 @@
       || (finding && finding.status && finding.status !== 'open');
     document.getElementById('findingMoreDetails').open = !!finding || hasDetails || !beginnerMode;
     document.getElementById('cvssDetails').open = !!(finding && finding.cvss_vector) || !beginnerMode;
+
+    // Şablon seçici yalnızca yeni bulguda; düzenlemede mevcut metni bozmasın.
+    document.getElementById('findingTemplateRow').hidden = !!finding;
+    renderTemplateSelect();
+    if(!finding) loadCustomTemplates().then(renderTemplateSelect);
 
     document.getElementById('findingModalOverlay').classList.add('open');
     setTimeout(()=> document.getElementById('findingTitleInput').focus(), 50);
@@ -7374,61 +7489,72 @@
         });
     });
 
-    document.getElementById('openHtmlReportBtn').addEventListener('click', ()=>{
-      const payload = currentReportOptions();
-      // Yeni sekme kullanici tiklamasiyla AYNI ANDA acilir (popup engelleyiciyi
-      // atlamak icin) -- icerik fetch tamamlaninca dolduruluyor.
-      const reportWindow = window.open('', '_blank');
-      apiFetch(`/projects/${currentProjectId}/reports/html`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      }).then(res => {
-        if(!res.ok) throw new Error('report generation failed');
-        return res.text();
-      }).then(html => {
-        if(reportWindow){
-          reportWindow.document.open();
-          reportWindow.document.write(html);
-          reportWindow.document.close();
-        }
-      }).catch(()=>{
-        if(reportWindow) reportWindow.close();
-        showToast(t('resultSaveError'));
-      });
-    });
-
+    document.getElementById('openHtmlReportBtn').addEventListener('click', openHtmlReport);
     document.getElementById('downloadPdfReportBtn').addEventListener('click', ()=>{
-      const btn = document.getElementById('downloadPdfReportBtn');
-      const statusEl = document.getElementById('reportBuilderStatus');
-      const payload = currentReportOptions();
-      btn.disabled = true;
-      statusEl.textContent = t('reportPdfGenerating');
-      apiFetch(`/projects/${currentProjectId}/reports/pdf`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      }).then(async res => {
-        if(!res.ok){
-          const body = await res.json().catch(()=>({}));
-          throw new Error(body.error || 'PDF generation failed');
-        }
-        return res.blob();
-      }).then(blob => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${(currentProjectObj && currentProjectObj.name) || 'report'}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(()=> URL.revokeObjectURL(url), 4000);
-        statusEl.textContent = '';
-      }).catch(err => {
-        statusEl.textContent = '';
-        showToast(err.message || t('resultSaveError'));
-      }).finally(()=>{ btn.disabled = false; });
+      downloadPdfReport(document.getElementById('downloadPdfReportBtn'), document.getElementById('reportBuilderStatus'));
     });
+  }
+
+  function wireQuickReport(){
+    const pdf = document.getElementById('quickPdfBtn');
+    if(pdf) pdf.addEventListener('click', ()=> downloadPdfReport(pdf, document.getElementById('reportQuickStatus')));
+    const html = document.getElementById('quickHtmlBtn');
+    if(html) html.addEventListener('click', openHtmlReport);
+  }
+
+  function openHtmlReport(){
+    const payload = currentReportOptions();
+    // Yeni sekme kullanici tiklamasiyla AYNI ANDA acilir (popup engelleyiciyi
+    // atlamak icin) -- icerik fetch tamamlaninca dolduruluyor.
+    const reportWindow = window.open('', '_blank');
+    apiFetch(`/projects/${currentProjectId}/reports/html`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(res => {
+      if(!res.ok) throw new Error('report generation failed');
+      return res.text();
+    }).then(html => {
+      if(reportWindow){
+        reportWindow.document.open();
+        reportWindow.document.write(html);
+        reportWindow.document.close();
+      }
+    }).catch(()=>{
+      if(reportWindow) reportWindow.close();
+      showToast(t('resultSaveError'));
+    });
+  }
+
+  // "Raporu özelleştir" alanındaki seçeneklerle PDF indirir; hızlı düğme de aynı yolu kullanır.
+  function downloadPdfReport(btn, statusEl){
+    const payload = currentReportOptions();
+    btn.disabled = true;
+    statusEl.textContent = t('reportPdfGenerating');
+    apiFetch(`/projects/${currentProjectId}/reports/pdf`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(async res => {
+      if(!res.ok){
+        const body = await res.json().catch(()=>({}));
+        throw new Error(body.error || 'PDF generation failed');
+      }
+      return res.blob();
+    }).then(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(currentProjectObj && currentProjectObj.name) || 'report'}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(()=> URL.revokeObjectURL(url), 4000);
+      statusEl.textContent = '';
+    }).catch(err => {
+      statusEl.textContent = '';
+      showToast(err.message || t('resultSaveError'));
+    }).finally(()=>{ btn.disabled = false; });
   }
 
   function renderPwReports(){
@@ -7439,10 +7565,31 @@
       apiRequest(`/projects/${currentProjectId}/findings`).catch(() => null)
     ]).then(([sessions, proFindings]) => {
       const noFindings = Array.isArray(proFindings) && !proFindings.length;
+      const sevCount = k => (proFindings || []).filter(f => f.severity === k).length;
+      const summaryBits = ['critical', 'high', 'medium', 'low'].filter(k => sevCount(k)).map(k => `${sevCount(k)} ${t('severity_' + k).toLocaleLowerCase(t('dateLocale'))}`);
+      const quickHtml = `
+        <section class="report-quick">
+          <div class="report-quick-text">
+            <h3>${escapeHtml(t('reportQuickTitle'))}</h3>
+            <p>${escapeHtml(t('reportQuickSummary')((proFindings || []).length, summaryBits.join(', ')))}</p>
+          </div>
+          <div class="report-quick-actions">
+            <button type="button" class="btn btn-primary" id="quickPdfBtn"><svg class="i"><use href="#ic-file"/></svg><span>${escapeHtml(t('reportQuickPdf'))}</span></button>
+            <a class="btn btn-secondary" id="quickWordLink" href="${API_BASE}/projects/${currentProjectId}/reports/technical" target="_blank">${escapeHtml(t('reportQuickWord'))}</a>
+            <button type="button" class="btn btn-ghost" id="quickHtmlBtn">${escapeHtml(t('reportQuickHtml'))}</button>
+          </div>
+          <span class="import-status" id="reportQuickStatus"></span>
+        </section>`;
       const proReportsHtml = (noFindings ? emptyStateHtml('ic-file', t('reportsNoFindingsTitle'), t('reportsNoFindingsText'), [
           { action: 'nextTest', label: t('next_keepTesting_btn'), primary: true },
           { action: 'newFinding', label: t('newFindingBtn') }
-        ]) : '') + `
+        ]) : quickHtml) + `
+        <details class="report-more" id="reportCustomizeDetails"${beginnerMode ? '' : ' open'}>
+          <summary>${escapeHtml(t('reportCustomizeSummary'))}</summary>
+          ${renderHtmlReportBuilderHtml()}
+        </details>
+        <details class="report-more"${beginnerMode ? '' : ' open'}>
+          <summary>${escapeHtml(t('reportWordSummary'))}</summary>
         <div class="pro-reports-section">
           <h5>${t('pwProReportsLabel')}</h5>
           <p class="import-preview-source" style="margin-bottom:14px">${t('pwProReportsDesc')}</p>
@@ -7463,11 +7610,13 @@
               <div class="pro-report-desc">${t('pwReportTypeDeveloperDesc')}</div>
             </a>
           </div>
-        </div>` + renderHtmlReportBuilderHtml();
+        </div>
+        </details>`;
 
       if(!sessions.length){
         content.innerHTML = proReportsHtml + `<div class="search-empty">${t('pwReportsNoSession')}</div>`;
         wireHtmlReportBuilder();
+      wireQuickReport();
         return;
       }
       content.innerHTML = proReportsHtml + `<div class="adv-only">` +
@@ -7496,17 +7645,69 @@
         });
       });
       wireHtmlReportBuilder();
+      wireQuickReport();
     });
+  }
+
+  function hasFiles(e){
+    return e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files');
+  }
+
+  // Kanıt yükleme (dosya seçici, sürükle-bırak ve Ctrl+V ortak yolu). Seçiliyse
+  // kanıt doğrudan bulguya bağlanır; sunucu dosya türünü içerikten doğrular.
+  function uploadEvidenceFile(file){
+    const statusEl = document.getElementById('evidenceUploadStatus');
+    if(statusEl){ statusEl.textContent = t('pwEvidenceUploading'); statusEl.classList.remove('error'); }
+    const formData = new FormData();
+    formData.append('file', file, file.name || 'ekran-goruntusu.png');
+    const link = document.getElementById('evidenceUploadLink');
+    if(link && link.value) formData.append('linked_finding_id', link.value);
+    return apiFetch(`/projects/${currentProjectId}/evidence`, { method: 'POST', body: formData })
+      .then(async res => {
+        if(!res.ok){ const j = await res.json().catch(()=>({})); throw new Error(j.error || res.statusText); }
+        return res.json();
+      })
+      .then(()=>{
+        if(statusEl) statusEl.textContent = '';
+        showToast(t('evidenceUploaded'));
+        loadEvidenceGallery();
+      })
+      .catch(err => {
+        if(statusEl){ statusEl.textContent = t('pwEvidenceUploadError') + ': ' + (err.message || err); statusEl.classList.add('error'); }
+      });
+  }
+
+  // Kanıtlar bölümündeyken panodaki ekran görüntüsü Ctrl+V ile yüklenir
+  // (bir yazı alanına yapıştırılıyorsa karışılmaz).
+  function handleEvidencePaste(e){
+    if(currentView !== 'project' || activePwTab !== 'evidence') return;
+    if(document.querySelector('.overlay.open')) return;
+    if(e.target && e.target.matches && e.target.matches('input, textarea, [contenteditable]')) return;
+    const items = Array.from((e.clipboardData && e.clipboardData.items) || []);
+    const item = items.find(i => i.kind === 'file' && /^image\//.test(i.type));
+    if(!item) return;
+    const blob = item.getAsFile();
+    if(!blob) return;
+    e.preventDefault();
+    const stamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '-').slice(0, 15);
+    const ext = (blob.type.split('/')[1] || 'png').replace('jpeg', 'jpg');
+    const file = new File([blob], `ekran-goruntusu-${stamp}.${ext}`, { type: blob.type });
+    uploadEvidenceFile(file);
   }
 
   function renderPwEvidence(){
     const content = document.getElementById('pwContent');
     content.innerHTML = `
-      <div class="evidence-upload-row">
-        <label class="evidence-upload-btn" for="evidenceFileInput">${t('pwEvidenceUploadLabel')}</label>
-        <input type="file" id="evidenceFileInput" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none">
-        <button type="button" class="evidence-upload-btn" id="toggleHttpEvidenceBtn">${t('pwEvidenceAddHttpLabel')}</button>
-        <span class="import-status" id="evidenceUploadStatus"></span>
+      <div class="evidence-dropzone" id="evidenceDropzone">
+        <div class="evidence-upload-row">
+          <label class="evidence-upload-btn" for="evidenceFileInput">${t('pwEvidenceUploadLabel')}</label>
+          <input type="file" id="evidenceFileInput" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none">
+          <button type="button" class="evidence-upload-btn" id="toggleHttpEvidenceBtn">${t('pwEvidenceAddHttpLabel')}</button>
+          <label class="evidence-link-pick"><span>${escapeHtml(t('evidenceLinkOnUpload'))}</span>
+            <select id="evidenceUploadLink"><option value="">${escapeHtml(t('evidenceLinkNone'))}</option></select></label>
+          <span class="import-status" id="evidenceUploadStatus"></span>
+        </div>
+        <p class="hint evidence-paste-hint">${escapeHtml(t('evidencePasteHint'))}</p>
       </div>
       <div id="httpEvidenceForm" class="http-evidence-form" style="display:none">
         <label>${t('pwEvidenceHttpLabelField')}</label>
@@ -7531,26 +7732,25 @@
     document.getElementById('evidenceFileInput').addEventListener('change', (e)=>{
       const file = e.target.files[0];
       if(!file) return;
-      const statusEl = document.getElementById('evidenceUploadStatus');
-      statusEl.textContent = t('pwEvidenceUploading');
-      statusEl.classList.remove('error');
-      const formData = new FormData();
-      formData.append('file', file);
-      apiFetch(`/projects/${currentProjectId}/evidence`, { method: 'POST', body: formData })
-        .then(async res => {
-          if(!res.ok){ const j = await res.json().catch(()=>({})); throw new Error(j.error || res.statusText); }
-          return res.json();
-        })
-        .then(()=>{
-          statusEl.textContent = '';
-          e.target.value = '';
-          loadEvidenceGallery();
-        })
-        .catch(err => {
-          statusEl.textContent = t('pwEvidenceUploadError') + ': ' + (err.message || err);
-          statusEl.classList.add('error');
-        });
+      uploadEvidenceFile(file).then(()=>{ e.target.value = ''; });
     });
+    // Sürükle-bırak: dosya bölgenin üstüne bırakılınca yüklenir.
+    const dz = document.getElementById('evidenceDropzone');
+    dz.addEventListener('dragover', e => { if(hasFiles(e)){ e.preventDefault(); dz.classList.add('dragging'); } });
+    dz.addEventListener('dragleave', () => dz.classList.remove('dragging'));
+    dz.addEventListener('drop', e => {
+      if(!hasFiles(e)) return;
+      e.preventDefault();
+      dz.classList.remove('dragging');
+      const file = Array.from(e.dataTransfer.files).find(f => /^image\//.test(f.type));
+      if(file) uploadEvidenceFile(file); else showToast(t('evidenceNotImage'));
+    });
+    apiRequest(`/projects/${currentProjectId}/findings`).then(items => {
+      const sel = document.getElementById('evidenceUploadLink');
+      if(!sel) return;
+      sel.innerHTML = `<option value="">${escapeHtml(t('evidenceLinkNone'))}</option>` +
+        window.WSTGFlow.filterFindings(items, {}).map(f => `<option value="${f.id}">${escapeHtml(f.finding_code)} — ${escapeHtml(f.title)}</option>`).join('');
+    }).catch(()=>{});
 
     document.getElementById('toggleHttpEvidenceBtn').addEventListener('click', ()=>{
       const form = document.getElementById('httpEvidenceForm');
@@ -7763,7 +7963,7 @@
     document.getElementById('projectPage').addEventListener('click', e=>{
       const guide = e.target.closest('[data-empty-action]');
       if(guide){ runGuideAction(guide.dataset.emptyAction); return; }
-      if(e.target.closest('.pro-report-card, #openHtmlReportBtn, #downloadPdfReportBtn')) markProjectReported();
+      if(e.target.closest('.pro-report-card, #openHtmlReportBtn, #downloadPdfReportBtn, #quickPdfBtn, #quickWordLink, #quickHtmlBtn')) markProjectReported();
     });
     document.getElementById('quickProjectForm').addEventListener('submit', submitQuickProject);
     document.getElementById('homeLibraryBtn').addEventListener('click', ()=> showView('library'));
@@ -7879,6 +8079,10 @@
       if(e.target.id === 'findingModalOverlay') closeFindingModal();
     });
     document.getElementById('submitFindingBtn').addEventListener('click', submitFindingForm);
+    document.addEventListener('paste', handleEvidencePaste);
+    document.getElementById('findingTemplateSelect').addEventListener('change', applySelectedTemplate);
+    document.getElementById('saveAsTemplateBtn').addEventListener('click', saveCurrentAsTemplate);
+    document.getElementById('deleteTemplateBtn').addEventListener('click', deleteSelectedTemplate);
     document.getElementById('findingSeverityPicker').addEventListener('click', e=>{
       const btn = e.target.closest('.sev-pick');
       if(!btn || btn.disabled) return;

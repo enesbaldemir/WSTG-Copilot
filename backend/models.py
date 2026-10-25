@@ -634,3 +634,31 @@ class AuthzMatrix(db.Model):
     project_id = db.Column(db.String(36), db.ForeignKey('projects.id'), nullable=False, unique=True)
     data = db.Column(db.Text, nullable=False, default='{}')
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class FindingTemplate(db.Model):
+    """Kullanıcının kendi bulgu şablonu. Projeden bağımsızdır: bir projede
+    yazılan açıklama/çözüm metni sonraki projelerde yeniden kullanılır.
+    Hedefe özel alanlar (endpoint, parametre, tekrarlama adımları, CVSS)
+    bilerek saklanmaz."""
+    __tablename__ = 'finding_templates'
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(300), nullable=False)
+    severity = db.Column(db.String(20), default='medium')
+    test_id = db.Column(db.String(50))
+    cwe = db.Column(db.String(50))
+    owasp_category = db.Column(db.String(100))
+    description = db.Column(db.Text)
+    impact = db.Column(db.Text)
+    remediation = db.Column(db.Text)
+    references = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id, 'title': self.title, 'severity': self.severity, 'test_id': self.test_id,
+            'cwe': self.cwe, 'owasp_category': self.owasp_category, 'description': self.description,
+            'impact': self.impact, 'remediation': self.remediation, 'references': self.references,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+        }
