@@ -77,14 +77,14 @@
 
   // ---- Proje ilerlemesi: beş adım ve "sıradaki adım" ----
   // st: { scope, recon, assets, done, total, findings, reported, reconSkipped }
-  // Keşif isteğe bağlıdır: atlanınca ya da teste başlanınca geçilmiş sayılır.
+  // Keşif isteğe bağlıdır: atlanınca, teste başlanınca ya da bulgu kaydedilince geçilmiş sayılır.
   function projectSteps(st){
     const s = Object.assign({ scope: 0, recon: 0, assets: 0, done: 0, total: 0, findings: 0, reported: false, reconSkipped: false }, st || {});
     const action = nextAction(s);
     const currentStep = { scope: 1, recon: 2, firstTest: 3, keepTesting: 3, report: 5, retest: 5 }[action];
     const doneFlags = [
       s.scope > 0,
-      s.recon > 0 || s.assets > 0 || s.done > 0 || !!s.reconSkipped,
+      s.recon > 0 || s.assets > 0 || s.done > 0 || s.findings > 0 || !!s.reconSkipped,
       s.total > 0 && s.done >= s.total,
       s.findings > 0,
       !!s.reported
@@ -100,9 +100,9 @@
 
   function nextAction(s){
     if(!(s.scope > 0)) return 'scope';
-    if(!(s.recon > 0 || s.assets > 0) && !(s.done > 0) && !s.reconSkipped) return 'recon';
-    if(!(s.done > 0)) return 'firstTest';
-    if(!(s.findings > 0)) return 'keepTesting';
+    // Teste başlanmış ya da bulgu kaydedilmişse keşif geride kalmıştır.
+    if(!(s.recon > 0 || s.assets > 0 || s.done > 0 || s.findings > 0 || s.reconSkipped)) return 'recon';
+    if(!(s.findings > 0)) return s.done > 0 ? 'keepTesting' : 'firstTest';
     if(!s.reported) return 'report';
     return 'retest';
   }

@@ -43,6 +43,7 @@ The checklist works with only a static file server. Projects, findings, evidence
 
 **Checklist**
 - 98 WSTG v4.2 test items in 12 categories; each item has a description, testing steps, an example payload/command and suggested tools
+- Each test gets a result: **No issue**, **Issue found** or **Not applicable** (stored as `passed`, `failed`, `skipped`; the API rejects other values). "Issue found" offers a **Record finding** button that opens the finding form pre-filled with the test ID and title; the technical report lists the results in plain words
 - Alternate checklist: OWASP LLM Top 10 (10 categories, 21 test items) for LLM-based targets
 - OWASP Top 10:2025 reference module (10 categories) cross-linked to WSTG items
 - Project-specific custom test items
@@ -316,6 +317,7 @@ Checklist yalnızca statik bir dosya sunucusuyla çalışır. Projeler, bulgular
 
 **Checklist**
 - 12 kategoride 98 WSTG v4.2 test maddesi; her maddede açıklama, test adımları, örnek payload/komut ve önerilen araçlar
+- Her testin sonucu girilir: **Açık yok**, **Açık bulundu** ya da **Uygulanamaz** (`passed`, `failed`, `skipped` olarak saklanır; API başka değer kabul etmez). "Açık bulundu" seçilince test ID'si ve başlığı dolu bulgu formunu açan **Bulgu kaydet** düğmesi çıkar; teknik rapor sonuçları okunur biçimde listeler
 - Alternatif checklist: LLM tabanlı hedefler için OWASP LLM Top 10 (10 kategori, 21 test maddesi)
 - WSTG maddelerine bağlantılı OWASP Top 10:2025 referans modülü (10 kategori)
 - Projeye özel test maddeleri

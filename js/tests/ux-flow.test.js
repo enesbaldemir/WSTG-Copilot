@@ -54,6 +54,7 @@ test('sıradaki adım proje durumuna göre seçilir', () => {
     [{ scope: 1, done: 3 }, 'keepTesting', 3],            // keşif yapılmadan teste geçildi
     [{ scope: 1, reconSkipped: true }, 'firstTest', 3],   // keşif atlandı
     [{ scope: 1, done: 3, findings: 2 }, 'report', 5],
+    [{ scope: 1, findings: 4 }, 'report', 5],             // bulgu var: keşif önerilmez
     [{ scope: 1, done: 3, findings: 2, reported: true }, 'retest', 5],
     [{ done: 5, findings: 1 }, 'scope', 1]                // kapsam her zaman önce
   ];
