@@ -262,15 +262,92 @@ def _sorted_findings(findings):
     return sorted(findings, key=lambda f: rank.get((f.get('severity') or 'info').lower(), 99))
 
 
+FINDING_STATUS_LABELS = {
+    'open': 'Acik', 'confirmed': 'Dogrulandi', 'fixed': 'Duzeltildi',
+    'retest_pending': 'Yeniden test bekliyor', 'retesting': 'Yeniden test ediliyor',
+    'resolved': 'Kapatildi', 'wont_fix': 'Duzeltilmeyecek', 'accepted_risk': 'Kabul edilen risk',
+}
+
+WSTG_TOTAL = len([k for k in WSTG_INDEX if k.startswith('WSTG-')])
+
+
+def normalize_finding(f):
+    """Bulgular sayfasindaki kayit (models.Finding.to_dict) -> rapor ogesi."""
+    return {
+        'code': f.get('finding_code') or '',
+        'test_id': f.get('test_id') or '',
+        'title': f.get('title') or '',
+        'severity': (f.get('severity') or 'info').lower(),
+        'status': f.get('status') or 'open',
+        'description': f.get('description') or '',
+        'steps': f.get('steps_to_reproduce') or '',
+        'impact': f.get('impact') or '',
+        'remediation': f.get('remediation') or '',
+        'endpoint': f.get('endpoint') or '',
+        'parameter': f.get('parameter') or '',
+        'cwe': f.get('cwe') or '',
+        'cvss_score': f.get('cvss_score'),
+        'cvss_vector': f.get('cvss_vector') or '',
+        'references': f.get('references') or '',
+    }
+
+
+def normalize_note(r):
+    """Checklist notu (models.TestResult.to_dict) -> rapor ogesi. Yalnizca
+    projede Bulgular sayfasinda hic kayit yoksa (eski projeler) kullanilir."""
+    meta = WSTG_INDEX.get(r.get('test_id'), {})
+    return {
+        'code': '', 'test_id': r.get('test_id') or '', 'title': meta.get('title', ''),
+        'severity': (r.get('severity') or 'info').lower(), 'status': r.get('finding_status') or 'open',
+        'description': r.get('finding') or '', 'steps': '', 'impact': '', 'remediation': '',
+        'endpoint': '', 'parameter': '', 'cwe': '', 'cvss_score': None, 'cvss_vector': '', 'references': '',
+    }
+
+
 def _finding_title(f):
-    meta = WSTG_INDEX.get(f['test_id'], {})
-    return "%s - %s" % (f['test_id'], meta.get('title', '')) if meta.get('title') else f['test_id']
+    if f.get('code'):
+        return "%s - %s" % (f['code'], f['title'])
+    if f.get('title'):
+        return "%s - %s" % (f['test_id'], f['title']) if f.get('test_id') else f['title']
+    return f.get('test_id') or '-'
 
 
-def build_technical_report(project, sessions, findings, all_results):
+def _status_label(status):
+    return FINDING_STATUS_LABELS.get(status, status or '-')
+
+
+def _remediation_text(f):
+    """Bulgunun kendi cozum onerisi; yoksa WSTG kategorisinin genel onerisi."""
+    if f.get('remediation'):
+        return f['remediation'], None
+    rem = CATEGORY_REMEDIATION.get(_category_prefix(f.get('test_id') or ''))
+    if rem:
+        return rem['summary'], rem['cwe']
+    return '', None
+
+
+def _add_multiline(doc, text):
+    for line in (text or '').strip().splitlines():
+        doc.add_paragraph(line)
+
+
+def _completed_count(all_results):
+    return len({r.get('test_id') for r in all_results
+                if r.get('status') and r.get('status') != 'pending' and (r.get('test_id') or '').startswith('WSTG-')})
+
+
+def _source_note(doc, source):
+    if source == 'notes':
+        p = doc.add_paragraph()
+        p.add_run('Not: Bu projede Bulgular sayfasinda kayit olmadigi icin checklist notlari '
+                  'bulgu olarak kullanilmistir.').italic = True
+
+
+def build_technical_report(project, sessions, findings, all_results, source='findings'):
     doc = Document()
     _cover_page(doc, 'Technical Penetration Test Report', project, subtitle='Detayli Teknik Rapor')
     _add_page_number_footer(doc)
+    completed = _completed_count(all_results)
 
     doc.add_heading('1. Proje Bilgileri', level=1)
     info_table = doc.add_table(rows=0, cols=2)
@@ -280,7 +357,6 @@ def build_technical_report(project, sessions, findings, all_results):
         ('Durum', project.get('status', '')),
         ('Baslangic', project.get('start_date') or '-'),
         ('Bitis', project.get('end_date') or '-'),
-        ('Test Oturumu Sayisi', str(len(sessions))),
     ]:
         row = info_table.add_row().cells
         row[0].text = label
@@ -288,58 +364,78 @@ def build_technical_report(project, sessions, findings, all_results):
         row[1].text = str(value)
 
     doc.add_heading('2. Yonetici Ozeti', level=1)
-    sev_counts = _severity_counts(findings)
     doc.add_paragraph(
-        "Bu degerlendirme kapsaminda toplam %d WSTG testi calistirilmis, %d bulgu tespit edilmistir." % (
-            len(all_results), len(findings)
-        )
-    )
-    _add_severity_table(doc, sev_counts)
+        "Bu degerlendirme kapsaminda %d/%d WSTG testi tamamlanmis, %d bulgu kaydedilmistir." % (
+            completed, WSTG_TOTAL, len(findings)))
+    _add_severity_table(doc, _severity_counts(findings))
     doc.add_paragraph()
 
     doc.add_heading('3. Test Kapsami', level=1)
-    completed = len([r for r in all_results if r.get('status') != 'pending'])
-    doc.add_paragraph("Toplam planlanan test: %d" % len(all_results))
+    by_status = {}
+    for r in all_results:
+        by_status[r.get('status')] = by_status.get(r.get('status'), 0) + 1
+    doc.add_paragraph("WSTG test sayisi: %d" % WSTG_TOTAL)
     doc.add_paragraph("Tamamlanan test: %d" % completed)
+    for key in ('passed', 'failed', 'skipped'):
+        doc.add_paragraph("%s: %d" % (RESULT_STATUS_LABELS[key], by_status.get(key, 0)), style='List Bullet')
 
     doc.add_heading('4. Detayli Bulgular', level=1)
+    _source_note(doc, source)
     if not findings:
         doc.add_paragraph('Bu degerlendirmede bulgu tespit edilmemistir.')
     for f in _sorted_findings(findings):
-        meta = WSTG_INDEX.get(f['test_id'], {})
+        sev = f['severity']
         h = doc.add_heading(_finding_title(f), level=2)
-        sev = (f.get('severity') or 'info').lower()
         for run in h.runs:
             run.font.color.rgb = SEVERITY_COLORS.get(sev, SEVERITY_COLORS['info'])
 
-        meta_p = doc.add_paragraph()
-        meta_p.add_run(
-            "Severity: %s   |   WSTG Kategori: %s   |   Durum: %s" % (
-                sev.upper(), meta.get('category_name', ''), f.get('finding_status', 'open')
-            )
-        ).italic = True
+        meta = WSTG_INDEX.get(f['test_id'], {})
+        bits = ["Onem: %s" % sev.upper()]
+        if f.get('cvss_score') is not None:
+            bits.append("CVSS %s" % f['cvss_score'])
+        if f.get('test_id'):
+            bits.append("Test: %s" % f['test_id'])
+        if meta.get('category_name'):
+            bits.append("Kategori: %s" % meta['category_name'])
+        if f.get('cwe'):
+            bits.append(f['cwe'])
+        bits.append("Durum: %s" % _status_label(f['status']))
+        doc.add_paragraph().add_run('   |   '.join(bits)).italic = True
+        if f.get('cvss_vector'):
+            doc.add_paragraph().add_run(f['cvss_vector']).italic = True
+        if f.get('endpoint'):
+            p = doc.add_paragraph()
+            p.add_run('Konum: ').bold = True
+            p.add_run(f['endpoint'] + (" (parametre: %s)" % f['parameter'] if f.get('parameter') else ''))
 
         doc.add_paragraph('Bulgu Detayi:').runs[0].bold = True
-        doc.add_paragraph(f.get('finding', ''))
-
-        cat_prefix = _category_prefix(f['test_id'])
-        remediation = CATEGORY_REMEDIATION.get(cat_prefix)
-        if remediation:
+        _add_multiline(doc, f['description'] or '-')
+        if f.get('steps'):
+            doc.add_paragraph('Tekrarlama Adimlari:').runs[0].bold = True
+            _add_multiline(doc, f['steps'])
+        if f.get('impact'):
+            doc.add_paragraph('Etki:').runs[0].bold = True
+            _add_multiline(doc, f['impact'])
+        rem_text, rem_cwe = _remediation_text(f)
+        if rem_text:
             doc.add_paragraph('Onerilen Aksiyon:').runs[0].bold = True
-            doc.add_paragraph(remediation['summary'])
-            ref_p = doc.add_paragraph()
-            ref_p.add_run("Referans: %s" % remediation['cwe']).italic = True
+            _add_multiline(doc, rem_text)
+            if rem_cwe:
+                doc.add_paragraph().add_run("Referans: %s" % rem_cwe).italic = True
+        if f.get('references'):
+            doc.add_paragraph('Referanslar:').runs[0].bold = True
+            _add_multiline(doc, f['references'])
 
     doc.add_heading('5. Tamamlanan Tum Testler', level=1)
     table = doc.add_table(rows=1, cols=3)
     table.style = 'Light Grid Accent 1'
     hdr = table.rows[0].cells
-    hdr[0].text, hdr[1].text, hdr[2].text = 'WSTG ID', 'Durum', 'Severity'
-    for r in all_results:
+    hdr[0].text, hdr[1].text, hdr[2].text = 'WSTG ID', 'Sonuc', 'Test'
+    for r in sorted([r for r in all_results if r.get('status') != 'pending'], key=lambda r: r.get('test_id') or ''):
         row = table.add_row().cells
         row[0].text = r.get('test_id', '')
         row[1].text = RESULT_STATUS_LABELS.get(r.get('status'), r.get('status', ''))
-        row[2].text = r.get('severity') or '-'
+        row[2].text = WSTG_INDEX.get(r.get('test_id'), {}).get('title', '')
 
     buf = io.BytesIO()
     doc.save(buf)
@@ -347,14 +443,14 @@ def build_technical_report(project, sessions, findings, all_results):
     return buf
 
 
-def build_executive_report(project, sessions, findings, all_results):
+def build_executive_report(project, sessions, findings, all_results, source='findings'):
     doc = Document()
     _cover_page(doc, 'Executive Summary', project, subtitle='Yonetici Ozeti')
     _add_page_number_footer(doc)
 
     sev_counts = _severity_counts(findings)
-    completed = len([r for r in all_results if r.get('status') != 'pending'])
-    progress = round((completed / len(all_results)) * 100, 1) if all_results else 0
+    completed = _completed_count(all_results)
+    progress = round((completed / WSTG_TOTAL) * 100, 1) if WSTG_TOTAL else 0
     critical_high = sev_counts['critical'] + sev_counts['high']
 
     doc.add_heading('Genel Risk Posturu', level=1)
@@ -375,20 +471,21 @@ def build_executive_report(project, sessions, findings, all_results):
 
     doc.add_heading('Test Kapsami Ozeti', level=1)
     p = doc.add_paragraph()
-    p.add_run("Test Tamamlanma Orani: ").bold = True
-    p.add_run("%%%s" % progress)
+    p.add_run("WSTG Kapsami: ").bold = True
+    p.add_run("%d/%d test (%%%s)" % (completed, WSTG_TOTAL, progress))
     p2 = doc.add_paragraph()
     p2.add_run("Toplam Bulgu: ").bold = True
     p2.add_run(str(len(findings)))
 
     doc.add_heading('One Cikan Bulgular', level=1)
-    top = [f for f in _sorted_findings(findings) if (f.get('severity') or 'info').lower() in ('critical', 'high')][:5]
+    _source_note(doc, source)
+    top = [f for f in _sorted_findings(findings) if f['severity'] in ('critical', 'high')][:5]
     if not top:
         doc.add_paragraph('Kritik/Yuksek seviyeli bulgu bulunmamaktadir.')
     for f in top:
         bullet = doc.add_paragraph(style='List Bullet')
         bullet.add_run("%s " % _finding_title(f)).bold = True
-        bullet.add_run("(%s)" % (f.get('severity') or 'info').upper())
+        bullet.add_run("(%s, %s)" % (f['severity'].upper(), _status_label(f['status'])))
 
     doc.add_heading('Sonuc', level=1)
     doc.add_paragraph(
@@ -403,7 +500,7 @@ def build_executive_report(project, sessions, findings, all_results):
     return buf
 
 
-def build_developer_report(project, sessions, findings, all_results):
+def build_developer_report(project, sessions, findings, all_results, source='findings'):
     doc = Document()
     _cover_page(doc, 'Developer Remediation Report', project, subtitle='Gelistirici Aksiyon Rehberi')
     _add_page_number_footer(doc)
@@ -412,9 +509,12 @@ def build_developer_report(project, sessions, findings, all_results):
         'Bu rapor, tespit edilen her bulgu icin "Problem", "Neden Onemli" ve "Nasil Duzeltilir" '
         'formatinda somut, uygulanabilir rehberlik saglar. Oncelik sirasi severity\'e goredir.'
     )
+    _source_note(doc, source)
     doc.add_paragraph()
 
-    if not findings:
+    # Kapatilmis / kabul edilmis bulgular gelistiriciden aksiyon beklemez.
+    actionable = [f for f in findings if f['status'] not in ('resolved', 'accepted_risk', 'wont_fix')]
+    if not actionable:
         doc.add_paragraph('Giderilmesi gereken bir bulgu bulunmamaktadir.')
 
     importance_map = {
@@ -425,29 +525,33 @@ def build_developer_report(project, sessions, findings, all_results):
         'info': 'Bilgilendirme amaclidir, dogrudan bir risk teskil etmeyebilir ancak gozden gecirilmelidir.',
     }
 
-    for f in _sorted_findings(findings):
-        sev = (f.get('severity') or 'info').lower()
+    for f in _sorted_findings(actionable):
+        sev = f['severity']
         h = doc.add_heading(_finding_title(f), level=2)
         for run in h.runs:
             run.font.color.rgb = SEVERITY_COLORS.get(sev, SEVERITY_COLORS['info'])
 
         badge_p = doc.add_paragraph()
-        badge_p.add_run("Severity: %s" % sev.upper()).bold = True
-        badge_p.add_run("   |   Konum/Test: %s   |   Durum: %s" % (f['test_id'], f.get('finding_status', 'open')))
+        badge_p.add_run("Onem: %s" % sev.upper()).bold = True
+        where = f.get('endpoint') or f.get('test_id') or '-'
+        badge_p.add_run("   |   Konum: %s   |   Durum: %s" % (where, _status_label(f['status'])))
 
         doc.add_paragraph('Problem:').runs[0].bold = True
-        doc.add_paragraph(f.get('finding', ''))
+        _add_multiline(doc, f['description'] or '-')
+        if f.get('steps'):
+            doc.add_paragraph('Nasil Tekrarlanir:').runs[0].bold = True
+            _add_multiline(doc, f['steps'])
 
         doc.add_paragraph('Neden Onemli:').runs[0].bold = True
-        doc.add_paragraph(importance_map.get(sev, ''))
+        _add_multiline(doc, f.get('impact') or importance_map.get(sev, ''))
 
         doc.add_paragraph('Nasil Duzeltilir:').runs[0].bold = True
-        cat_prefix = _category_prefix(f['test_id'])
-        remediation = CATEGORY_REMEDIATION.get(cat_prefix)
-        if remediation:
-            doc.add_paragraph(remediation['summary'])
-            ref_p = doc.add_paragraph()
-            ref_p.add_run("Referans: %s  |  %s" % (remediation['cwe'], f['test_id'])).italic = True
+        rem_text, rem_cwe = _remediation_text(f)
+        if rem_text:
+            _add_multiline(doc, rem_text)
+            refs = [x for x in (rem_cwe or f.get('cwe'), f.get('test_id')) if x]
+            if refs:
+                doc.add_paragraph().add_run("Referans: %s" % '  |  '.join(refs)).italic = True
         else:
             doc.add_paragraph('Ilgili WSTG kategorisinin best-practice rehberine basvurun.')
 

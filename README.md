@@ -78,7 +78,7 @@ The checklist works with only a static file server. Projects, findings, evidence
 - Optional AI vision analysis of screenshots (Anthropic Claude, enabled only when `ANTHROPIC_API_KEY` is set) that suggests WSTG test IDs validated against the real dataset; suggestions are only attached after the user accepts them
 
 **Reporting**
-- DOCX reports in three templates: Technical, Executive and Developer
+- DOCX reports in three templates: Technical, Executive and Developer. Like the HTML/PDF report, they are built from the records on the Findings page (description, steps to reproduce, impact, the finding's own remediation, CVSS, status); projects with no records fall back to checklist notes. Coverage is reported against all WSTG tests, broken down into No issue / Issue found / Not applicable, and the Developer report leaves out closed or accepted findings
 - Self-contained HTML report (single file, no external dependencies) with a print / save-as-PDF button
 - Server-side PDF report generated with `xhtml2pdf` (cover page, executive summary, risk breakdown, per-finding details, appendices, page numbers) with an embedded font for Turkish characters
 - Finding selection for HTML/PDF reports: all, critical + high only, or hand-picked
@@ -354,7 +354,7 @@ Checklist yalnızca statik bir dosya sunucusuyla çalışır. Projeler, bulgular
 - Ekran görüntüleri için opsiyonel AI görsel analizi (Anthropic Claude, yalnızca `ANTHROPIC_API_KEY` tanımlıysa etkin): gerçek veri setine göre doğrulanmış WSTG test ID'leri önerir; öneriler kullanıcı onaylamadan bağlanmaz
 
 **Raporlama**
-- Üç şablonlu DOCX rapor: Technical, Executive ve Developer
+- Üç şablonlu DOCX rapor: Technical, Executive ve Developer. HTML/PDF rapor gibi Bulgular sayfasındaki kayıtlardan oluşur (açıklama, tekrarlama adımları, etki, bulgunun kendi çözüm önerisi, CVSS, durum); hiç kaydı olmayan projelerde checklist notları kullanılır. Kapsam tüm WSTG testlerine göre ve Açık yok / Açık bulundu / Uygulanamaz kırılımıyla verilir; Developer raporu kapatılmış ya da kabul edilmiş bulguları içermez
 - Yazdır / PDF olarak kaydet butonlu, harici bağımlılığı olmayan tek dosyalık HTML rapor
 - `xhtml2pdf` ile sunucu tarafında üretilen PDF rapor (kapak, yönetici özeti, risk dağılımı, bulgu detayları, ekler, sayfa numaraları); Türkçe karakterler için gömülü font
 - HTML/PDF raporlarında bulgu seçimi: tümü, yalnızca kritik + yüksek ya da tek tek seçim

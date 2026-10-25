@@ -1787,6 +1787,10 @@
     pwReportsNoSession: "Test listesi hazırlanıyor; birazdan tekrar dene.",
     promoteFindingBtn: "Bulguya dönüştür",
     pwMobileNavLabel: "Bölüm",
+    aiNotConfiguredNotice: "AI henüz kurulu değil. Bir sağlayıcı (Anthropic, OpenAI, Gemini ya da Ollama) ekleyince öneri alabilirsin.",
+    aiOpenSettingsBtn: "AI Ayarları'nı aç",
+    pwProReportsLabel: "Word raporları",
+    pwProReportsDesc: "Bulgular sayfasındaki kayıtlardan ve test sonuçlarından oluşturulan, indirilebilir Word (.docx) raporları.",
     result_passed: "Açık yok", result_failed: "Açık bulundu", result_skipped: "Uygulanamaz",
     resultHint_passed: "Testi uyguladın ve açık bulmadın",
     resultHint_failed: "Testte bir güvenlik açığı buldun",
@@ -1890,6 +1894,10 @@
     pwReportsNoSession: "The test list is being prepared; try again in a moment.",
     promoteFindingBtn: "Promote to finding",
     pwMobileNavLabel: "Section",
+    aiNotConfiguredNotice: "AI is not set up yet. Add a provider (Anthropic, OpenAI, Gemini or Ollama) to get suggestions.",
+    aiOpenSettingsBtn: "Open AI Settings",
+    pwProReportsLabel: "Word reports",
+    pwProReportsDesc: "Downloadable Word (.docx) reports built from the records on the Findings page and the test results.",
     result_passed: "No issue", result_failed: "Issue found", result_skipped: "Not applicable",
     resultHint_passed: "You ran the test and found no issue",
     resultHint_failed: "You found a security issue in this test",
@@ -4253,7 +4261,24 @@
     document.getElementById('aiNextTestResult').innerHTML = '';
     document.getElementById('aiNextTestStatus').textContent = '';
     document.getElementById('aiNextTestStatus').className = 'ai-provider-status';
+    const askBtn = document.getElementById('aiNextTestAskBtn');
+    askBtn.disabled = false;
     document.getElementById('aiNextTestOverlay').classList.add('open');
+    // AI kurulu değilse "Öner"e basıp hata almak yerine baştan söylenir.
+    aiReady().then(ready => {
+      if(ready) return;
+      askBtn.disabled = true;
+      const status = document.getElementById('aiNextTestStatus');
+      status.className = 'ai-provider-status failure';
+      status.innerHTML = `${escapeHtml(t('aiNotConfiguredNotice'))} <button type="button" class="btn btn-secondary btn-xs" id="aiNextTestSetupBtn">${escapeHtml(t('aiOpenSettingsBtn'))}</button>`;
+      document.getElementById('aiNextTestSetupBtn').addEventListener('click', ()=>{ closeAiNextTestModal(); openAiSettingsModal(); });
+    });
+  }
+
+  // Bu sekmede kendi anahtarı (BYOK) ya da sunucuda kayıtlı bir AI sağlayıcısı var mı?
+  function aiReady(){
+    if(Object.keys(byokHeaders()).length) return Promise.resolve(true);
+    return apiRequest('/ai/status').then(res => !!(res && res.configured)).catch(() => true);
   }
   function closeAiNextTestModal(){
     document.getElementById('aiNextTestOverlay').classList.remove('open');

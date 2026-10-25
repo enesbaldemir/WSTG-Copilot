@@ -1431,11 +1431,19 @@ def generate_project_report(project_id, report_type):
         for s in sessions:
             all_results.extend(s.results)
 
-        findings = [r.to_dict() for r in all_results if r.finding and r.finding.strip()]
+        # Raporun bulguları Bulgular sayfasındaki kayıtlardır (HTML/PDF raporla aynı).
+        # Projede hiç kayıt yoksa (eski projeler) checklist notlarına düşülür.
+        pro = Finding.query.filter_by(project_id=project_id).order_by(Finding.id.asc()).all()
+        if pro:
+            findings = [report_builder.normalize_finding(f.to_dict()) for f in pro]
+            source = 'findings'
+        else:
+            findings = [report_builder.normalize_note(r.to_dict()) for r in all_results if r.finding and r.finding.strip()]
+            source = 'notes'
         results_dicts = [r.to_dict() for r in all_results]
 
         builder = report_builder.REPORT_BUILDERS[report_type]
-        buf = builder(project.to_dict(), [s.to_dict() for s in sessions], findings, results_dicts)
+        buf = builder(project.to_dict(), [s.to_dict() for s in sessions], findings, results_dicts, source=source)
 
         safe_name = ''.join(c if c.isalnum() or c in ' -_' else '_' for c in project.name)[:60]
         filename = f"{safe_name}_{report_type}_report.docx"
