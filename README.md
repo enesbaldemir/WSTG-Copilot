@@ -64,6 +64,7 @@ The checklist works with only a static file server. Projects, findings, evidence
 - Study metrics (A/B): sessions can be assigned to an "AI-assisted" or "control" group. While a control session is open the AI buttons are hidden. The Study Metrics panel compares the groups (completion time, completion rate, findings, false-positive rate, AI calls and latency) and copies per-session data as CSV. Completion time is measured for sessions closed with "Complete" in the session list
 
 **Findings**
+- Finding templates: 24 built-in templates for common web issues (TR/EN description, impact, remediation, WSTG test, CWE, OWASP Top 10:2025, references) and your own templates via "Save as template" (stored without target-specific fields). Applying a template fills only empty fields
 - Short finding form: a title and a severity are enough; **steps to reproduce (PoC)** has its own field and appears in the HTML/PDF report. Parameter, CWE, OWASP, impact, references and status sit under "More details", and the CVSS calculator is optional. When a CVSS score is entered the severity comes from it (the API enforces the same rule and rejects unknown severities)
 - The findings list is sorted by severity (then CVSS), with search (title, code, endpoint, test ID, CWE) and severity/status filters; findings without reproduction steps are flagged
 - Title, description, affected endpoint, remediation, CWE, severity and a CVSS v3.1 calculator with live scoring (client and server side)
@@ -73,11 +74,13 @@ The checklist works with only a static file server. Projects, findings, evidence
 - Authorization matrix (project tab): roles as columns, endpoints as rows (added by hand or taken from the Attack Surface). For each cell you mark the expected access (allowed / denied) and what your own test showed; cells expected "denied" but accessible are highlighted and can be turned into WSTG-ATHZ-02/03 findings with one click. Exportable as CSV. The app never sends requests to the target
 
 **Evidence**
+- Screenshots can be pasted with Ctrl+V or dragged onto the Evidence page, and linked to a finding while uploading
 - Screenshot upload (PNG/JPEG/WebP/GIF), stored under server-generated UUID file names
 - Raw HTTP request/response evidence with automatic redaction of secrets and PII (Authorization headers, cookies, JWTs, common API key formats, private keys, e-mail addresses, card-like numbers); the unredacted text is only returned on explicit request
 - Optional AI vision analysis of screenshots (Anthropic Claude, enabled only when `ANTHROPIC_API_KEY` is set) that suggests WSTG test IDs validated against the real dataset; suggestions are only attached after the user accepts them
 
 **Reporting**
+- The Reports page leads with one "Download PDF" button (plus Word and browser view); customization and the other Word templates sit in collapsible sections
 - DOCX reports in three templates: Technical, Executive and Developer. Like the HTML/PDF report, they are built from the records on the Findings page (description, steps to reproduce, impact, the finding's own remediation, CVSS, status); projects with no records fall back to checklist notes. Coverage is reported against all WSTG tests, broken down into No issue / Issue found / Not applicable, and the Developer report leaves out closed or accepted findings
 - Self-contained HTML report (single file, no external dependencies) with a print / save-as-PDF button
 - Server-side PDF report generated with `xhtml2pdf` (cover page, executive summary, risk breakdown, per-finding details, appendices, page numbers) with an embedded font for Turkish characters
@@ -340,6 +343,7 @@ Checklist yalnızca statik bir dosya sunucusuyla çalışır. Projeler, bulgular
 - Çalışma metrikleri (A/B): oturumlar "AI destekli" veya "kontrol" grubuna atanabilir; kontrol oturumu açıkken AI düğmeleri gizlenir. Çalışma Metrikleri paneli grupları karşılaştırır (tamamlama süresi, tamamlanma oranı, bulgu sayısı, false-positive oranı, AI çağrısı ve gecikmesi) ve oturum verisini CSV olarak kopyalar. Süre, oturum listesinden "Tamamla" ile kapatılan oturumlar için ölçülür
 
 **Bulgular**
+- Bulgu şablonları: sık görülen web açıkları için 24 hazır şablon (TR/EN açıklama, etki, çözüm, WSTG testi, CWE, OWASP Top 10:2025, referanslar) ve "Şablon olarak kaydet" ile kendi şablonların (hedefe özel alanlar saklanmaz). Şablon yalnızca boş alanları doldurur
 - Kısa bulgu formu: başlık ve önem derecesi yeterli; **tekrarlama adımları (PoC)** ayrı bir alandır ve HTML/PDF raporda yer alır. Parametre, CWE, OWASP, etki, referanslar ve durum "Ayrıntılar" altındadır; CVSS hesaplayıcı isteğe bağlıdır. CVSS puanı girilirse önem derecesi puandan gelir (API de aynı kuralı uygular ve bilinmeyen önem derecelerini reddeder)
 - Bulgu listesi önem derecesine (sonra CVSS'e) göre sıralanır; başlık, kod, endpoint, test ID ve CWE ile aranabilir, önem derecesi ve duruma göre filtrelenebilir; tekrarlama adımı olmayan bulgular işaretlenir
 - Başlık, açıklama, etkilenen endpoint, remediation, CWE, önem derecesi ve canlı skor hesaplayan CVSS v3.1 hesaplayıcı (istemci ve sunucu tarafı)
@@ -349,11 +353,13 @@ Checklist yalnızca statik bir dosya sunucusuyla çalışır. Projeler, bulgular
 - Yetkilendirme matrisi (proje sekmesi): roller sütun, endpoint'ler satır (elle ya da Saldırı Yüzeyi'nden eklenir). Her hücrede beklenen erişimi (izinli / yasak) ve kendi denemenizin sonucunu işaretlersiniz; beklenen "yasak" iken erişilebilen hücreler vurgulanır ve tek tıkla WSTG-ATHZ-02/03 bulgusuna dönüştürülebilir. CSV olarak dışa aktarılabilir. Uygulama hedefe istek göndermez
 
 **Kanıtlar**
+- Ekran görüntüsü Kanıtlar sayfasında Ctrl+V ile yapıştırılabilir ya da sürükleyip bırakılabilir; yüklerken bir bulguya bağlanabilir
 - Ekran görüntüsü yükleme (PNG/JPEG/WebP/GIF); dosyalar sunucu tarafında üretilen UUID adlarıyla saklanır
 - Gizli bilgi ve kişisel verilerin otomatik maskelendiği ham HTTP request/response kanıtı (Authorization header'ları, cookie'ler, JWT'ler, yaygın API key formatları, private key'ler, e-posta adresleri, kart benzeri numaralar); maskelenmemiş metin yalnızca açık istek üzerine döner
 - Ekran görüntüleri için opsiyonel AI görsel analizi (Anthropic Claude, yalnızca `ANTHROPIC_API_KEY` tanımlıysa etkin): gerçek veri setine göre doğrulanmış WSTG test ID'leri önerir; öneriler kullanıcı onaylamadan bağlanmaz
 
 **Raporlama**
+- Raporlar sayfası tek bir "PDF indir" düğmesiyle (yanında Word ve tarayıcıda aç) başlar; özelleştirme ve diğer Word şablonları katlanır bölümlerdedir
 - Üç şablonlu DOCX rapor: Technical, Executive ve Developer. HTML/PDF rapor gibi Bulgular sayfasındaki kayıtlardan oluşur (açıklama, tekrarlama adımları, etki, bulgunun kendi çözüm önerisi, CVSS, durum); hiç kaydı olmayan projelerde checklist notları kullanılır. Kapsam tüm WSTG testlerine göre ve Açık yok / Açık bulundu / Uygulanamaz kırılımıyla verilir; Developer raporu kapatılmış ya da kabul edilmiş bulguları içermez
 - Yazdır / PDF olarak kaydet butonlu, harici bağımlılığı olmayan tek dosyalık HTML rapor
 - `xhtml2pdf` ile sunucu tarafında üretilen PDF rapor (kapak, yönetici özeti, risk dağılımı, bulgu detayları, ekler, sayfa numaraları); Türkçe karakterler için gömülü font

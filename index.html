@@ -557,6 +557,14 @@
     </div>
     <div class="panel-body finding-modal-body">
       <div class="finding-form-col">
+        <div class="finding-template-row" id="findingTemplateRow">
+          <label for="findingTemplateSelect" data-i18n="findingTemplateLabel">Şablondan başla (isteğe bağlı)</label>
+          <div class="finding-template-controls">
+            <select id="findingTemplateSelect"></select>
+            <button type="button" class="btn btn-ghost btn-xs" id="deleteTemplateBtn" hidden data-i18n="templateDeleteBtn">Şablonu sil</button>
+          </div>
+          <p class="hint" data-i18n="findingTemplateHint">Sık görülen açıklar için hazır açıklama, etki ve çözüm önerisi. Yalnızca boş alanlar doldurulur.</p>
+        </div>
         <label for="findingTitleInput" data-i18n="findingTitleLabel">Başlık *</label>
         <input type="text" id="findingTitleInput" data-i18n-placeholder="findingTitlePlaceholder" placeholder="Örn: Sipariş detayında IDOR (yetkisiz erişim)">
         <label id="findingSeverityLabel" data-i18n="findingSeverityLabel">Önem derecesi *</label>
@@ -662,6 +670,7 @@
 
         <div class="hero-actions" style="margin-top:16px">
           <button type="button" class="btn btn-primary" id="submitFindingBtn" data-i18n="saveBtn">Kaydet</button>
+          <button type="button" class="btn btn-secondary" id="saveAsTemplateBtn" data-i18n="saveAsTemplateBtn">Şablon olarak kaydet</button>
         </div>
       </div>
     </div>
@@ -1039,6 +1048,7 @@
 <script src="js/notebook.js"></script>
 <script src="js/authz-matrix.js"></script>
 <script src="js/ux-flow.js"></script>
+<script src="js/finding-templates.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

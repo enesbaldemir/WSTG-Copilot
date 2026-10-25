@@ -1844,3 +1844,32 @@ body:not(.is-online) .online-only{ display:none !important; }
 @media (max-width:900px){
   .findings-toolbar select{ flex:1 1 140px; }
 }
+
+/* Raporlar: tek düğmeli hızlı rapor + katlanır ayrıntılar */
+.report-quick{ display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px; padding:20px 22px; margin-bottom:16px;
+  border:1px solid var(--accent-border); border-radius:var(--radius-lg); background:linear-gradient(135deg, var(--accent-soft), var(--surface) 70%); }
+.report-quick-text{ flex:1 1 360px; min-width:0; }
+.report-quick-text h3{ font-size:18px; font-weight:650; margin:0 0 4px; }
+.report-quick-text p{ margin:0; color:var(--text-2); font-size:14px; line-height:1.5; }
+.report-quick-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+.report-quick .import-status:empty{ display:none; }
+.report-more{ border:1px solid var(--border); border-radius:var(--radius-lg); background:var(--surface); margin-bottom:12px; }
+.report-more > summary{ cursor:pointer; padding:12px 16px; font-size:14px; font-weight:600; color:var(--text-2); }
+.report-more[open] > summary{ border-bottom:1px solid var(--border); }
+.report-more > .pro-reports-section{ padding:14px 16px 16px; margin:0; }
+
+/* Kanıtlar: sürükle-bırak bölgesi */
+.evidence-dropzone{ border:1px dashed var(--border-strong); border-radius:var(--radius-lg); padding:12px 14px; margin-bottom:16px; transition:background var(--ease), border-color var(--ease); }
+.evidence-dropzone.dragging{ border-color:var(--accent); background:var(--accent-soft); }
+.evidence-dropzone .evidence-upload-row{ margin-bottom:6px; flex-wrap:wrap; }
+.evidence-link-pick{ display:inline-flex; align-items:center; gap:8px; font-size:13px; }
+.evidence-link-pick select{ max-width:320px; min-height:34px; padding-top:4px; padding-bottom:4px; }
+.evidence-paste-hint{ margin:0; }
+
+/* Bulgu formu: şablon seçici */
+.finding-template-row{ display:flex; flex-direction:column; gap:6px; padding:12px 14px; margin-bottom:6px; border:1px solid var(--border); border-radius:var(--radius); background:var(--surface-2); }
+.finding-template-row[hidden]{ display:none; }
+.finding-template-controls{ display:flex; gap:8px; align-items:center; }
+.finding-template-controls select{ flex:1; min-width:0; }
+.finding-template-row .hint{ margin:0; }
+.finding-template-controls [hidden], #cvssResetBtn[hidden]{ display:none !important; }
