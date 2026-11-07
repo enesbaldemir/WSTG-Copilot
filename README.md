@@ -7,6 +7,8 @@
 
 **[English](#english)** · **[Türkçe](#türkçe)**
 
+![A short tour: WSTG tests, a test's steps, findings and the report page](docs/images/demo.gif)
+
 ---
 
 ## English
@@ -14,6 +16,7 @@
 ### Table of Contents
 
 - [Overview](#overview)
+- [Screenshots](#screenshots)
 - [Features](#features)
 - [Tech Stack](#tech-stack)
 - [Architecture](#architecture)
@@ -31,6 +34,17 @@
 Pentest Workspace is a web application for running penetration tests based on the **OWASP Web Security Testing Guide (WSTG) v4.2**. It combines the WSTG checklist with engagement management: scope definition, attack surface discovery, CVSS-scored findings, evidence collection, rule-based attack-chain correlation, a Kanban board and DOCX/HTML/PDF reporting. AI assistance (Anthropic, OpenAI, Google Gemini or Ollama) is optional and every AI output is a draft that the user reviews.
 
 The checklist works with only a static file server. Projects, findings, evidence, reports and AI features require the Flask + SQLite backend.
+
+### Screenshots
+
+The screenshots use a demo project with example data.
+
+| | |
+|---|---|
+| ![Project overview with the five steps and the next step card](docs/images/project-overview.png) | ![A WSTG test with its steps, example command, tools and result buttons](docs/images/wstg-test.png) |
+| **Project overview:** the five steps, the next step and progress | **WSTG test:** steps, example command, tools and the result |
+| ![Findings list sorted by severity with filters](docs/images/findings.png) | ![HTML report with the executive summary, risk summary and findings](docs/images/report.png) |
+| **Findings:** sorted by severity, with search and filters | **Report:** generated from the findings, also as PDF and Word |
 
 ### Features
 
@@ -295,6 +309,7 @@ Test content is based on the [OWASP Web Security Testing Guide v4.2](https://owa
 ### İçindekiler
 
 - [Genel Bakış](#genel-bakış)
+- [Ekran Görüntüleri](#ekran-görüntüleri)
 - [Özellikler](#özellikler)
 - [Kullanılan Teknolojiler](#kullanılan-teknolojiler)
 - [Mimari](#mimari)
@@ -312,6 +327,17 @@ Test content is based on the [OWASP Web Security Testing Guide v4.2](https://owa
 Pentest Workspace, **OWASP Web Security Testing Guide (WSTG) v4.2** temelli sızma testleri yürütmek için geliştirilmiş bir web uygulamasıdır. WSTG checklist'ini engagement yönetimiyle birleştirir: kapsam tanımı, saldırı yüzeyi keşfi, CVSS puanlı bulgular, kanıt toplama, kural tabanlı saldırı zinciri korelasyonu, Kanban panosu ve DOCX/HTML/PDF raporlama. AI desteği (Anthropic, OpenAI, Google Gemini veya Ollama) opsiyoneldir ve üretilen her çıktı kullanıcının gözden geçirdiği bir taslaktır.
 
 Checklist yalnızca statik bir dosya sunucusuyla çalışır. Projeler, bulgular, kanıtlar, raporlar ve AI özellikleri için Flask + SQLite backend'i gerekir.
+
+### Ekran Görüntüleri
+
+Ekran görüntülerinde örnek verilerle hazırlanmış bir demo proje kullanılmıştır.
+
+| | |
+|---|---|
+| ![Beş adımı ve sıradaki adım kartını gösteren proje genel bakışı](docs/images/project-overview.png) | ![Adımları, örnek komutu, araçları ve sonuç düğmeleriyle bir WSTG testi](docs/images/wstg-test.png) |
+| **Proje genel bakışı:** beş adım, sıradaki adım ve ilerleme | **WSTG testi:** adımlar, örnek komut, araçlar ve sonuç |
+| ![Önem derecesine göre sıralanmış, filtreli bulgu listesi](docs/images/findings.png) | ![Yönetici özeti, risk özeti ve bulgularla HTML rapor](docs/images/report.png) |
+| **Bulgular:** önem derecesine göre sıralı, arama ve filtrelerle | **Rapor:** bulgulardan üretilir; PDF ve Word olarak da alınabilir |
 
 ### Özellikler
 
