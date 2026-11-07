@@ -15,9 +15,10 @@ The files in this folder are released under the
 
 ## Changes
 
-The original texts were selected, summarized, restructured into JSON and translated into
-Turkish, and test steps, examples and tool lists were added. The original works have not
-been modified; read them at the links above.
+The test IDs, titles and category structure follow the original works. The descriptions are
+summaries written for this project in English and Turkish, and the test steps, examples and
+tool lists were added for this project. The original works have not been modified; read them
+at the links above.
 
 ## Trademark
 
