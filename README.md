@@ -1,9 +1,11 @@
-# Pentest Workspace — OWASP WSTG v4.2
+# Pentest Workspace
+
+An independent pentest workspace based on the OWASP® Web Security Testing Guide (WSTG) v4.2.
 
 ![Frontend](https://img.shields.io/badge/frontend-HTML%20%7C%20CSS%20%7C%20JS-informational)
 ![Backend](https://img.shields.io/badge/backend-Flask%20%2B%20SQLite-lightgrey)
 ![AI](https://img.shields.io/badge/AI-multi--provider%20%2B%20BYOK-8b5cf6)
-![License](https://img.shields.io/badge/license-MIT-green)
+![License](https://img.shields.io/badge/license-MIT%20%2B%20CC%20BY--SA%204.0-green)
 
 **[English](#english)** · **[Türkçe](#türkçe)**
 
@@ -35,6 +37,8 @@ Pentest Workspace is a web application for running penetration tests based on th
 
 The checklist works with only a static file server. Projects, findings, evidence, reports and AI features require the Flask + SQLite backend.
 
+> **Independent project:** Pentest Workspace is not an OWASP project and is not affiliated with or endorsed by the OWASP Foundation. It uses OWASP content under its Creative Commons license; see [License](#license).
+
 ### Screenshots
 
 The screenshots use a demo project with example data.
@@ -62,7 +66,7 @@ The screenshots use a demo project with example data.
 - OWASP Top 10:2025 reference module (10 categories) cross-linked to WSTG items
 - Project-specific custom test items
 - Global search, progress dashboard, Turkish/English interface
-- Bundled original WSTG v4.2 PDF (`wstg-v4_2.pdf`)
+- Links to the official WSTG v4.2 guide: each category opens its chapter online, and the PDF is downloaded from the official release
 
 **Projects and sessions** (backend required)
 - Project backup: "Back up" downloads the whole project (scope, sessions and results, notes, findings, evidence files, authorization matrix, discovery and tool runs, timeline) as one JSON file; "Restore from backup" on My Projects creates a **new** project from it. Every field is validated by type, length and allowed values, IDs are regenerated and relationships re-mapped, and image contents are checked by magic bytes; a rejected file leaves nothing behind. Backups up to 16 MB (the server request limit) can be restored
@@ -237,7 +241,8 @@ WSTG-Copilot/
 ├── data/
 │   ├── wstg-checklist.{tr,en}.json
 │   ├── owasp-top10.{tr,en}.json
-│   └── llm-security-checklist.{tr,en}.json
+│   ├── llm-security-checklist.{tr,en}.json
+│   └── LICENSE.md              # CC BY-SA 4.0 notice and sources
 ├── backend/
 │   ├── app.py                  # Flask REST API
 │   ├── models.py               # SQLAlchemy models
@@ -270,7 +275,6 @@ WSTG-Copilot/
 │   ├── test_*.py               # Tests
 │   ├── .env.example
 │   └── requirements.txt
-├── wstg-v4_2.pdf               # OWASP WSTG v4.2 guide
 └── LICENSE
 ```
 
@@ -298,9 +302,19 @@ This tool is intended for **authorized** security testing and educational use on
 
 ### License
 
-Released under the [MIT License](LICENSE).
+The code (everything outside `data/`) is released under the [MIT License](LICENSE).
 
-Test content is based on the [OWASP Web Security Testing Guide v4.2](https://owasp.org/www-project-web-security-testing-guide/), [OWASP Top 10:2025](https://owasp.org/Top10/2025/) and the OWASP LLM Top 10.
+The checklists and reference data in [`data/`](data/) are adapted and translated from OWASP material and are released under the [Creative Commons Attribution-ShareAlike 4.0 International License](https://creativecommons.org/licenses/by-sa/4.0/) (CC BY-SA 4.0), the license of the original works. See [`data/LICENSE.md`](data/LICENSE.md) for the sources and the changes made.
+
+| Source | Creator | License |
+|---|---|---|
+| [OWASP Web Security Testing Guide v4.2](https://owasp.org/www-project-web-security-testing-guide/) | OWASP Foundation and WSTG contributors | CC BY-SA 4.0 |
+| [OWASP Top 10:2025](https://owasp.org/Top10/2025/) | OWASP Foundation and the OWASP Top 10 team | CC BY-SA 4.0 |
+| [OWASP Top 10 for LLM Applications 2025](https://github.com/OWASP/www-project-top-10-for-large-language-model-applications) | OWASP Foundation and the OWASP GenAI Security Project | CC BY-SA 4.0 |
+
+The WSTG v4.2 PDF is not included in this repository. Download it from the [official WSTG v4.2 release](https://github.com/OWASP/wstg/releases/download/v4.2/wstg-v4.2.pdf) or read the guide [online](https://wstg.owasp.org/v4.2/).
+
+Pentest Workspace is an independent tool. It is not an OWASP project and is not affiliated with or endorsed by the OWASP Foundation. OWASP® is a registered trademark of the OWASP Foundation, Inc. The OWASP logo is not used in this project.
 
 ---
 
@@ -327,6 +341,8 @@ Test content is based on the [OWASP Web Security Testing Guide v4.2](https://owa
 Pentest Workspace, **OWASP Web Security Testing Guide (WSTG) v4.2** temelli sızma testleri yürütmek için geliştirilmiş bir web uygulamasıdır. WSTG checklist'ini engagement yönetimiyle birleştirir: kapsam tanımı, saldırı yüzeyi keşfi, CVSS puanlı bulgular, kanıt toplama, kural tabanlı saldırı zinciri korelasyonu, Kanban panosu ve DOCX/HTML/PDF raporlama. AI desteği (Anthropic, OpenAI, Google Gemini veya Ollama) opsiyoneldir ve üretilen her çıktı kullanıcının gözden geçirdiği bir taslaktır.
 
 Checklist yalnızca statik bir dosya sunucusuyla çalışır. Projeler, bulgular, kanıtlar, raporlar ve AI özellikleri için Flask + SQLite backend'i gerekir.
+
+> **Bağımsız proje:** Pentest Workspace bir OWASP projesi değildir; OWASP Foundation ile bağlantılı değildir ve OWASP Foundation tarafından desteklenmemektedir. OWASP içeriklerini Creative Commons lisansına uygun olarak kullanır; ayrıntılar için [Lisans](#lisans) bölümüne bakın.
 
 ### Ekran Görüntüleri
 
@@ -355,7 +371,7 @@ Ekran görüntülerinde örnek verilerle hazırlanmış bir demo proje kullanıl
 - WSTG maddelerine bağlantılı OWASP Top 10:2025 referans modülü (10 kategori)
 - Projeye özel test maddeleri
 - Global arama, ilerleme paneli, Türkçe/İngilizce arayüz
-- Orijinal WSTG v4.2 PDF'i (`wstg-v4_2.pdf`)
+- Resmî WSTG v4.2 rehberine bağlantılar: her kategori kendi bölümünü çevrimiçi açar, PDF resmî sürümden indirilir
 
 **Projeler ve oturumlar** (backend gerekir)
 - Proje yedekleme: "Yedekle", projenin tamamını (kapsam, oturumlar ve sonuçlar, notlar, bulgular, kanıt dosyaları, yetki matrisi, keşif ve araç çalıştırmaları, zaman çizelgesi) tek bir JSON dosyası olarak indirir; Projelerim'deki "Yedekten geri yükle" bundan **yeni** bir proje oluşturur. Her alan tür, uzunluk ve izin verilen değerlere göre doğrulanır, kimlikler yeniden üretilip ilişkiler eşlenir, görsel içerikleri magic byte ile kontrol edilir; reddedilen dosya geride hiçbir şey bırakmaz. 16 MB'a kadar (sunucunun istek sınırı) yedekler geri yüklenebilir
@@ -530,7 +546,8 @@ WSTG-Copilot/
 ├── data/
 │   ├── wstg-checklist.{tr,en}.json
 │   ├── owasp-top10.{tr,en}.json
-│   └── llm-security-checklist.{tr,en}.json
+│   ├── llm-security-checklist.{tr,en}.json
+│   └── LICENSE.md              # CC BY-SA 4.0 bildirimi ve kaynaklar
 ├── backend/
 │   ├── app.py                  # Flask REST API
 │   ├── models.py               # SQLAlchemy modelleri
@@ -563,7 +580,6 @@ WSTG-Copilot/
 │   ├── test_*.py               # Testler
 │   ├── .env.example
 │   └── requirements.txt
-├── wstg-v4_2.pdf               # OWASP WSTG v4.2 kılavuzu
 └── LICENSE
 ```
 
@@ -591,6 +607,16 @@ Bu araç yalnızca **yetkilendirilmiş** güvenlik testleri ve eğitim amaçlı 
 
 ### Lisans
 
-[MIT Lisansı](LICENSE) ile yayınlanmıştır.
+Kod (`data/` dışındaki her şey) [MIT Lisansı](LICENSE) ile yayınlanmıştır.
 
-Test içerikleri [OWASP Web Security Testing Guide v4.2](https://owasp.org/www-project-web-security-testing-guide/), [OWASP Top 10:2025](https://owasp.org/Top10/2025/) ve OWASP LLM Top 10 esas alınarak hazırlanmıştır.
+[`data/`](data/) klasöründeki checklist'ler ve referans veriler OWASP içeriklerinden uyarlanmış ve çevrilmiştir; orijinal eserlerin lisansı olan [Creative Commons Atıf-AynıLisanslaPaylaş 4.0 Uluslararası Lisansı](https://creativecommons.org/licenses/by-sa/4.0/deed.tr) (CC BY-SA 4.0) ile yayınlanmıştır. Kaynaklar ve yapılan değişiklikler için [`data/LICENSE.md`](data/LICENSE.md) dosyasına bakın.
+
+| Kaynak | Yazar | Lisans |
+|---|---|---|
+| [OWASP Web Security Testing Guide v4.2](https://owasp.org/www-project-web-security-testing-guide/) | OWASP Foundation and WSTG contributors | CC BY-SA 4.0 |
+| [OWASP Top 10:2025](https://owasp.org/Top10/2025/) | OWASP Foundation and the OWASP Top 10 team | CC BY-SA 4.0 |
+| [OWASP Top 10 for LLM Applications 2025](https://github.com/OWASP/www-project-top-10-for-large-language-model-applications) | OWASP Foundation and the OWASP GenAI Security Project | CC BY-SA 4.0 |
+
+WSTG v4.2 PDF'i bu repoda yer almaz. PDF'i [resmî WSTG v4.2 sürümünden](https://github.com/OWASP/wstg/releases/download/v4.2/wstg-v4.2.pdf) indirebilir ya da rehberi [çevrimiçi](https://wstg.owasp.org/v4.2/) okuyabilirsiniz.
+
+Pentest Workspace bağımsız bir araçtır. Bir OWASP projesi değildir; OWASP Foundation ile bağlantılı değildir ve OWASP Foundation tarafından desteklenmemektedir. OWASP®, OWASP Foundation, Inc.'in tescilli markasıdır. Bu projede OWASP logosu kullanılmaz.

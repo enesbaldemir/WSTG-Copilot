@@ -55,7 +55,8 @@
       heroTitle: "Web Pentest Workspace",
       heroDesc: "OWASP Web Security Testing Guide v4.2 tabanlı, tıklanabilir checklist ile her test maddesinin nasıl uygulanacağını adım adım ve örnekli şekilde gösteren pentest çalışma alanı.",
       startTest: "Teste Başla",
-      openPdf: "WSTG PDF'i Aç",
+      openPdf: "WSTG PDF'ini İndir",
+      brandSub: "OWASP® WSTG v4.2 tabanlı",
       completedLabel: "Tamamlandı",
       statDoneLabel: "Tamamlanan",
       statDoneSub: "Bitirilen testler",
@@ -89,7 +90,7 @@
       noSearchResults: q => `"${q}" için sonuç bulunamadı.`,
       completedTag: "✓ Tamamlandı",
       dataLoadError: "Veri yüklenemedi. Lütfen sayfayı yenileyin.",
-      reportTitle: "PENTEST WORKSPACE - OWASP WSTG v4.2 RAPORU",
+      reportTitle: "PENTEST WORKSPACE RAPORU (OWASP WSTG v4.2 TABANLI)",
       reportCreated: "Oluşturulma",
       reportProgress: "İlerleme",
       dateLocale: "tr-TR",
@@ -779,7 +780,8 @@
       heroTitle: "Web Pentest Workspace",
       heroDesc: "A pentest workspace built on the OWASP Web Security Testing Guide v4.2, with a clickable checklist that shows step-by-step, with examples, how to carry out every test item.",
       startTest: "Start Testing",
-      openPdf: "Open WSTG PDF",
+      openPdf: "Download WSTG PDF",
+      brandSub: "Based on OWASP® WSTG v4.2",
       completedLabel: "Completed",
       statDoneLabel: "Completed",
       statDoneSub: "Finished tests",
@@ -813,7 +815,7 @@
       noSearchResults: q => `No results found for "${q}".`,
       completedTag: "✓ Completed",
       dataLoadError: "Failed to load data. Please refresh the page.",
-      reportTitle: "PENTEST WORKSPACE - OWASP WSTG v4.2 REPORT",
+      reportTitle: "PENTEST WORKSPACE REPORT (BASED ON OWASP WSTG v4.2)",
       reportCreated: "Created",
       reportProgress: "Progress",
       dateLocale: "en-US",
@@ -2597,7 +2599,10 @@
     document.getElementById('panelDesc').textContent = cat.description;
     document.getElementById('itemSearch').value = "";
     const guide = document.getElementById('openGuideBtn');
-    if(guide) guide.style.display = currentFramework === 'wstg' ? '' : 'none';
+    if(guide){
+      guide.style.display = currentFramework === 'wstg' ? '' : 'none';
+      guide.href = wstgGuideUrl(cat.code);
+    }
     const focusExists = focusTestId && cat.tests.some(x => x.id === focusTestId);
     selectedTestId = focusExists ? focusTestId : (cat.tests[0] && cat.tests[0].id) || null;
     document.getElementById('checklistBody').classList.toggle('show-detail', !!focusExists);
@@ -2609,6 +2614,27 @@
       const row = document.querySelector(`#testList .test-row-item.selected`);
       if(row) row.scrollIntoView({block:'nearest'});
     }, 30);
+  }
+
+  // Opens the category's chapter in the official online WSTG v4.2 guide.
+  const WSTG_GUIDE_BASE = 'https://wstg.owasp.org/v4.2/';
+  const WSTG_GUIDE_CHAPTERS = {
+    'WSTG-INFO': '01-Information_Gathering',
+    'WSTG-CONF': '02-Configuration_and_Deployment_Management_Testing',
+    'WSTG-IDNT': '03-Identity_Management_Testing',
+    'WSTG-ATHN': '04-Authentication_Testing',
+    'WSTG-ATHZ': '05-Authorization_Testing',
+    'WSTG-SESS': '06-Session_Management_Testing',
+    'WSTG-INPV': '07-Input_Validation_Testing',
+    'WSTG-ERRH': '08-Testing_for_Error_Handling',
+    'WSTG-CRYP': '09-Testing_for_Weak_Cryptography',
+    'WSTG-BUSL': '10-Business_Logic_Testing',
+    'WSTG-CLNT': '11-Client-side_Testing',
+    'WSTG-APIT': '12-API_Testing'
+  };
+  function wstgGuideUrl(code){
+    const chapter = WSTG_GUIDE_CHAPTERS[code];
+    return chapter ? `${WSTG_GUIDE_BASE}4-Web_Application_Security_Testing/${chapter}/` : WSTG_GUIDE_BASE;
   }
 
   function closeCategory(){
