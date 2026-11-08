@@ -18,6 +18,7 @@ from collections import Counter
 from datetime import datetime
 
 import mapping as mapping_lib
+import report_format
 
 SEVERITY_ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4, None: 5}
 
@@ -116,7 +117,7 @@ def build_executive_summary_prompt(report_data, lang="tr"):
     )
     user_prompt = (
         f"Hedef: {session.get('target_url') or session.get('name')}\n"
-        f"Tamamlanan test: {stats['completed_tests']}/{stats['total_tests']} (%{stats['completion_pct']})\n"
+        f"Tamamlanan test: {stats['completed_tests']}/{stats['total_tests']} ({report_format.format_pct(stats['completion_pct'], 'tr')})\n"
         f"Toplam bulgu: {stats['total_findings']}\n"
         f"Önem derecesi dağılımı: {stats['severity_counts']}\n"
         f"Ortalama CVSS: {stats['avg_cvss']}, En yüksek CVSS: {stats['max_cvss']}\n\n"
@@ -144,7 +145,7 @@ def render_markdown(report_data, executive_summary=None, lang="tr"):
     lines.append(f"- **Hedef:** {s.get('target_url') or '-'}")
     lines.append(f"- **Test Uzmanı:** {s.get('tester_name') or '-'}")
     lines.append(f"- **Oluşturulma Tarihi:** {report_data['generated_at'][:10]}")
-    lines.append(f"- **Tamamlanan Testler:** {stats['completed_tests']}/{stats['total_tests']} (%{stats['completion_pct']})")
+    lines.append(f"- **Tamamlanan Testler:** {stats['completed_tests']}/{stats['total_tests']} ({report_format.format_pct(stats['completion_pct'], lang)})")
     lines.append("")
 
     if executive_summary:
@@ -228,7 +229,7 @@ def render_docx(report_data, executive_summary=None, lang="tr", output_path=None
         ("Test Uzmanı" if lang == "tr" else "Tester", s.get("tester_name") or "-"),
         ("Tarih" if lang == "tr" else "Date", report_data["generated_at"][:10]),
         ("Tamamlanan Testler" if lang == "tr" else "Completed Tests",
-         f"{stats['completed_tests']}/{stats['total_tests']} (%{stats['completion_pct']})"),
+         f"{stats['completed_tests']}/{stats['total_tests']} ({report_format.format_pct(stats['completion_pct'], lang)})"),
         ("Toplam Bulgu" if lang == "tr" else "Total Findings", str(stats["total_findings"])),
     ]
     for k, v in meta_rows:

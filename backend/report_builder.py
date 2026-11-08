@@ -20,6 +20,7 @@ import json
 import os
 from datetime import datetime
 
+import report_format
 from docx import Document
 from docx.shared import Pt, Inches, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -472,7 +473,7 @@ def build_executive_report(project, sessions, findings, all_results, source='fin
     doc.add_heading('Test Kapsami Ozeti', level=1)
     p = doc.add_paragraph()
     p.add_run("WSTG Kapsami: ").bold = True
-    p.add_run("%d/%d test (%%%s)" % (completed, WSTG_TOTAL, progress))
+    p.add_run("%d/%d test (%s)" % (completed, WSTG_TOTAL, report_format.format_pct(progress, 'tr')))
     p2 = doc.add_paragraph()
     p2.add_run("Toplam Bulgu: ").bold = True
     p2.add_run(str(len(findings)))

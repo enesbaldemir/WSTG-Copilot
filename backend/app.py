@@ -26,6 +26,7 @@ import study_metrics
 import recon
 import attack_chains
 import report_builder
+import report_format
 import report_html
 import report_generator
 import report_pdf
@@ -1121,30 +1122,10 @@ def project_dashboard(project_id):
         # --- Framework Coverage (WSTG / LLM Security / Custom) ---
         # report_builder.WSTG_INDEX iki resmi checklist'i (WSTG-04 + LLM Top10
         # 2025) zaten birleştirmiş durumda; test_id önekine göre ayırıyoruz.
-        wstg_total = len([k for k in report_builder.WSTG_INDEX if k.startswith('WSTG-')])
-        llm_total = len([k for k in report_builder.WSTG_INDEX if k.startswith('LLM-')])
+        # Raporlar da aynı hesabı kullanır (report_format.coverage), böylece pano ve
+        # rapordaki kapsam sayıları her zaman aynıdır.
         custom_total = CustomTest.query.filter_by(project_id=project_id).count()
-
-        wstg_completed_ids, llm_completed_ids, custom_completed_ids = set(), set(), set()
-        for r in all_results:
-            if r.status == 'pending':
-                continue
-            if r.test_id.startswith('WSTG-'):
-                wstg_completed_ids.add(r.test_id)
-            elif r.test_id.startswith('LLM-'):
-                llm_completed_ids.add(r.test_id)
-            elif r.test_id.startswith('CUSTOM-'):
-                custom_completed_ids.add(r.test_id)
-
-        def _coverage(completed_n, total_n):
-            return {'completed': completed_n, 'total': total_n,
-                    'pct': round((completed_n / total_n) * 100, 1) if total_n else 0}
-
-        coverage = {
-            'wstg': _coverage(len(wstg_completed_ids), wstg_total),
-            'llm': _coverage(len(llm_completed_ids), llm_total),
-            'custom': _coverage(len(custom_completed_ids), custom_total),
-        }
+        coverage = report_format.coverage(all_results, custom_total)
 
         # --- Findings by Category (Finding.test_id önekinden WSTG kategorisi) ---
         pro_findings = Finding.query.filter_by(project_id=project_id).all()
