@@ -26,6 +26,7 @@ An independent pentest workspace based on the OWASP® Web Security Testing Guide
 - [Installation](#installation)
 - [Environment Variables](#environment-variables)
 - [Running](#running)
+- [Running with Docker](#running-with-docker)
 - [Authentication](#authentication)
 - [Project Structure](#project-structure)
 - [Contributing](#contributing)
@@ -148,7 +149,7 @@ Flask API (backend/app.py)
 
 ### Requirements
 
-- Python 3 with `pip` and `venv`
+- Python 3 with `pip` and `venv`, or Docker (see [Running with Docker](#running-with-docker))
 - A modern web browser
 - Any static file server for the frontend (e.g. `python -m http.server`)
 - Optional: `nmap`, `httpx`, `whatweb`, `subfinder`, `dnsx` on `PATH` for the Tool Runner
@@ -213,6 +214,27 @@ For checklist-only use, step 1 can be skipped; progress is then kept in `localSt
 
 If an unexpected error occurs, the interface shows a short error ID (e.g. `hata kimliği: 3f9a1c2e`) instead of internal details; the full traceback is printed in the backend terminal under the same ID.
 
+### Running with Docker
+
+Docker runs the API and the frontend without installing Python. You need Docker with Docker Compose v2.24 or later.
+
+```bash
+git clone https://github.com/enesbaldemir/WSTG-Copilot.git
+cd WSTG-Copilot
+docker compose up -d --build
+docker compose exec api python app.py set-password
+```
+
+Then open `http://localhost:8000` and sign in with the password you set.
+
+- **Password:** The interface cannot set the first password when the API runs in a container, because requests reach the container from the Docker network rather than from `127.0.0.1`. Set it with the `set-password` command above; the same command resets it later.
+- **Ports:** The API (`5000`) and the frontend (`8000`) are published on `127.0.0.1` only, so they are not reachable from other machines.
+- **Data:** The database and the generated secret key are stored in the `wstg-data` volume, and evidence files in `wstg-uploads`. They are kept across `docker compose down` and rebuilds; `docker compose down -v` deletes them.
+- **Settings:** `backend/.env` is read if it exists (see [Environment Variables](#environment-variables)). For Ollama running on the same computer, set `OLLAMA_BASE_URL=http://host.docker.internal:11434`.
+- **Tool Runner:** `nmap`, `httpx`, `whatweb`, `subfinder` and `dnsx` are not included in the image, so the Tool Runner reports them as not installed.
+- **Update:** `git pull`, then `docker compose up -d --build`.
+- **Stop:** `docker compose down`.
+
 ### Authentication
 
 The backend is single-user and protected by a password.
@@ -275,6 +297,8 @@ WSTG-Copilot/
 │   ├── test_*.py               # Tests
 │   ├── .env.example
 │   └── requirements.txt
+├── Dockerfile                  # Image for the API and the frontend
+├── docker-compose.yml          # Starts both services (see Running with Docker)
 └── LICENSE
 ```
 
@@ -331,6 +355,7 @@ Pentest Workspace is an independent tool. It is not an OWASP project and is not 
 - [Kurulum](#kurulum)
 - [Ortam Değişkenleri](#ortam-değişkenleri)
 - [Çalıştırma](#çalıştırma)
+- [Docker ile Çalıştırma](#docker-ile-çalıştırma)
 - [Kimlik Doğrulama](#kimlik-doğrulama)
 - [Proje Klasör Yapısı](#proje-klasör-yapısı)
 - [Katkıda Bulunma](#katkıda-bulunma)
@@ -453,7 +478,7 @@ Flask API (backend/app.py)
 
 ### Gereksinimler
 
-- Python 3 (`pip` ve `venv` ile)
+- Python 3 (`pip` ve `venv` ile) ya da Docker (bkz. [Docker ile Çalıştırma](#docker-ile-çalıştırma))
 - Güncel bir web tarayıcısı
 - Frontend için herhangi bir statik dosya sunucusu (ör. `python -m http.server`)
 - Opsiyonel: Tool Runner için `PATH` üzerinde `nmap`, `httpx`, `whatweb`, `subfinder`, `dnsx`
@@ -518,6 +543,27 @@ Yalnızca checklist kullanılacaksa 1. adım atlanabilir; ilerleme bu durumda `l
 
 Beklenmeyen bir hata olursa arayüz iç ayrıntılar yerine kısa bir hata kimliği gösterir (ör. `hata kimliği: 3f9a1c2e`); tam traceback aynı kimlikle backend terminaline yazılır.
 
+### Docker ile Çalıştırma
+
+Docker, API'yi ve frontend'i Python kurmadan çalıştırır. Docker ve Docker Compose v2.24 veya üstü gerekir.
+
+```bash
+git clone https://github.com/enesbaldemir/WSTG-Copilot.git
+cd WSTG-Copilot
+docker compose up -d --build
+docker compose exec api python app.py set-password
+```
+
+Ardından `http://localhost:8000` adresini açın ve belirlediğiniz parolayla giriş yapın.
+
+- **Parola:** API konteynerde çalışırken ilk parola arayüzden belirlenemez, çünkü istekler konteynere `127.0.0.1`'den değil Docker ağından gelir. Parolayı yukarıdaki `set-password` komutuyla belirleyin; aynı komut sonradan parolayı sıfırlamak için de kullanılır.
+- **Portlar:** API (`5000`) ve frontend (`8000`) yalnızca `127.0.0.1` üzerinde yayınlanır, yani başka makinelerden erişilemez.
+- **Veriler:** Veritabanı ve üretilen gizli anahtar `wstg-data` volume'unda, kanıt dosyaları `wstg-uploads` volume'unda saklanır. `docker compose down` ve yeniden derlemelerde korunur; `docker compose down -v` bunları siler.
+- **Ayarlar:** `backend/.env` varsa okunur (bkz. [Ortam Değişkenleri](#ortam-değişkenleri)). Aynı bilgisayarda çalışan Ollama için `OLLAMA_BASE_URL=http://host.docker.internal:11434` kullanın.
+- **Tool Runner:** `nmap`, `httpx`, `whatweb`, `subfinder` ve `dnsx` imajda yoktur; Tool Runner bunları kurulu değil olarak gösterir.
+- **Güncelleme:** `git pull`, ardından `docker compose up -d --build`.
+- **Durdurma:** `docker compose down`.
+
 ### Kimlik Doğrulama
 
 Backend tek kullanıcılıdır ve parola ile korunur.
@@ -580,6 +626,8 @@ WSTG-Copilot/
 │   ├── test_*.py               # Testler
 │   ├── .env.example
 │   └── requirements.txt
+├── Dockerfile                  # API ve frontend için imaj
+├── docker-compose.yml          # İki servisi başlatır (bkz. Docker ile Çalıştırma)
 └── LICENSE
 ```
 
