@@ -12,6 +12,7 @@ hangisi henüz yeniden test edilmedi. Sınıflandırma retest.py'dedir.
 from datetime import datetime
 from html import escape
 
+import report_format
 import report_pdf
 import retest as retest_lib
 from report_html import SEVERITY_ORDER, SEVERITY_HEX
@@ -55,11 +56,11 @@ def _t(lang):
     return TEXT['en' if lang == 'en' else 'tr']
 
 
-def _date(iso):
+def _date(iso, lang='tr'):
     if not iso:
         return '—'
     try:
-        return datetime.fromisoformat(str(iso).replace('Z', '')).strftime('%d.%m.%Y')
+        return report_format.format_date(datetime.fromisoformat(str(iso).replace('Z', '')), lang)
     except ValueError:
         return '—'
 
@@ -112,8 +113,8 @@ def _body(project, items, counts, options, lang, pdf):
     T = _t(lang)
     template = options.get('template') or 'standard'
     title = options.get('title') or project.get('name', '') or T['title_suffix']
-    generated = datetime.utcnow().strftime('%d.%m.%Y %H:%M UTC')
-    retest_date = options.get('retest_date') or _date(max((f.get('retested_at') or '' for f in items), default='')) or '—'
+    generated = report_format.format_generated_at(lang=lang)
+    retest_date = options.get('retest_date') or _date(max((f.get('retested_at') or '' for f in items), default=''), lang) or '—'
     endpoint = (lambda e: _wrap(e, 22)) if pdf else (lambda e: f'<code>{escape(e)}</code>')
 
     cards = ''.join(
@@ -126,7 +127,7 @@ def _body(project, items, counts, options, lang, pdf):
           <td class="c"><span class="chip" style="background-color:{SEVERITY_HEX[_sev(f)]};">{_sev(f).upper()}</span></td>
           <td class="c">{endpoint(f.get("endpoint")) if f.get("endpoint") else "—"}</td>
           <td class="c" style="color:{STATE_COLOR[f["retest_state"]]};font-weight:bold;">{escape(T["state_" + f["retest_state"]])}</td>
-          <td class="c">{_date(f.get("retested_at")) if f["retest_state"] != "pending" else "—"}</td></tr>''' for f in items)
+          <td class="c">{_date(f.get("retested_at"), lang) if f["retest_state"] != "pending" else "—"}</td></tr>''' for f in items)
         widths = ('11%', '27%', '10%', '24%', '16%', '12%')
         heads = (T["code"], T["finding"], T["severity"], T["endpoint"], T["result"], T["date"])
         table = f'''<table class="rt-table"><thead><tr>
@@ -244,7 +245,7 @@ def build_html(project, findings, options=None, lang='tr'):
 def build_pdf(project, findings, options=None, lang='tr'):
     options = options or {}
     items, counts = prepare(findings, options.get('include_pending', True))
-    generated = datetime.utcnow().strftime('%d.%m.%Y %H:%M UTC')
+    generated = report_format.format_generated_at(lang=lang)
     html = f'''<!doctype html><html><head><meta charset="utf-8"><style>{PDF_CSS}</style></head><body>
 <div id="footerContent">{escape(project.get("name", ""))} · {escape(_t(lang)["subtitle"])} · {generated}</div>
 {_body(project, items, counts, options, lang, pdf=True)}</body></html>'''

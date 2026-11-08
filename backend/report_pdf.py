@@ -42,7 +42,6 @@ Windows notu (onemli):
 import io
 import os
 import threading
-from datetime import datetime
 
 import reportlab
 from reportlab.lib.fonts import addMapping
@@ -52,6 +51,7 @@ from xhtml2pdf import default as pisa_default
 from xhtml2pdf import pisa
 
 import report_authz
+import report_format
 from report_html import (
     SEVERITY_ORDER, SEVERITY_HEX, _esc, _severity_counts, _sorted_findings,
     _filter_findings, _overall_risk_label, _is_safe_data_uri,
@@ -164,17 +164,12 @@ def build_pdf_report(project, findings, all_results, options=None, executive_sum
     sev_counts = _severity_counts(scoped_findings)
     risk_label, risk_color = _overall_risk_label(sev_counts, lang)
 
-    completed = len([r for r in all_results if r.get('status') != 'pending'])
-    total_tests = len(all_results)
+    # Kapsam, sadece sonucu olan testlere göre değil tüm checklist'e göre hesaplanır
+    # (proje panosuyla aynı sayılar: örn. 38/98).
+    cov = report_format.report_coverage(all_results, lang)
 
     if not executive_summary:
-        executive_summary = (
-            f"Bu değerlendirme kapsamında toplam {total_tests} test çalıştırılmış, "
-            f"{len(scoped_findings)} bulgu tespit edilmiştir. Genel risk seviyesi: {risk_label}."
-            if lang == 'tr' else
-            f"This assessment executed {total_tests} tests and identified {len(scoped_findings)} findings. "
-            f"Overall risk rating: {risk_label}."
-        )
+        executive_summary = report_format.default_executive_summary(cov, len(scoped_findings), risk_label, lang)
 
     logo_html = ''
     if _is_safe_data_uri(logo_uri):
@@ -196,14 +191,19 @@ def build_pdf_report(project, findings, all_results, options=None, executive_sum
 
     coverage_html = ''
     if all_results:
-        pct = round((completed / total_tests) * 100, 1) if total_tests else 0
+        completed_label = 'Tamamlanan' if lang == 'tr' else 'Completed'
+        coverage_rows = ''.join(
+            f"<p>{_esc(line['label'])}: {completed_label} <b>{line['completed']}/{line['total']}</b> "
+            f"({line['pct_text']})</p>"
+            for line in cov['lines']
+        )
         coverage_html = f'''
         <div class="report-section">
           <h2>{'Test Kapsamı' if lang == 'tr' else 'Test Coverage'}</h2>
-          <p>{'Tamamlanan' if lang == 'tr' else 'Completed'}: <b>{completed}/{total_tests}</b> (%{pct})</p>
+          {coverage_rows}
         </div>'''
 
-    generated_at = datetime.utcnow().strftime('%d.%m.%Y %H:%M UTC')
+    generated_at = report_format.format_generated_at(lang=lang)
 
     html = f'''<!doctype html>
 <html lang="{lang}">
@@ -298,7 +298,7 @@ body {{ font-family: "Vera"; font-size: 9.5pt; color: #1e293b; }}
 
 <div class="report-section">
   <h2>{'Ekler' if lang == 'tr' else 'Appendices'}</h2>
-  <p>{'Test Kapsam Matrisi' if lang == 'tr' else 'Test Coverage Matrix'}: {completed}/{total_tests}</p>
+  <p>{'Test Kapsam Matrisi' if lang == 'tr' else 'Test Coverage Matrix'}: {cov['completed']}/{cov['total']}</p>
   <p>{'Toplam Bulgu' if lang == 'tr' else 'Total Findings'}: {len(scoped_findings)}</p>
 </div>
 
