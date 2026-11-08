@@ -1,0 +1,16 @@
+.git
+.github
+docs
+README.md
+**/__pycache__
+**/*.pyc
+venv
+.venv
+backend/.env
+backend/database
+backend/instance
+backend/uploads
+*.db
+*.sqlite
+*.sqlite3
+js/tests

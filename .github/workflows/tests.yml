@@ -41,3 +41,29 @@ jobs:
         run: for f in js/*.js; do node --check "$f"; done
       - name: Run frontend unit tests
         run: node --test js/tests/*.test.js
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker compose build
+      - name: Start and check the services
+        run: |
+          docker compose up -d
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:5000/api/auth/status && break
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:5000/api/auth/status
+          curl -fsS -o /dev/null http://127.0.0.1:8000/
+          # The static server must not expose the backend.
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/backend/app.py)" = "404"
+          printf 'ci-docker-password-1\nci-docker-password-1\n' | docker compose exec -T api python app.py set-password
+          curl -fsS http://127.0.0.1:5000/api/auth/status | grep -q '"configured":true'
+      - name: Logs
+        if: always()
+        run: docker compose logs
+      - name: Stop
+        if: always()
+        run: docker compose down -v
