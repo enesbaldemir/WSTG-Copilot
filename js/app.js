@@ -16,6 +16,8 @@
   // Sayfanın açıldığı host'a göre (127.0.0.1:8000 -> 127.0.0.1:5000); oturum
   // çerezi SameSite=Strict olduğundan API aynı host'ta olmalı (bkz. js/auth.js).
   const API_BASE = window.WSTGAuth.apiBaseFor(window.location);
+  // GitHub Pages canlı demosu: backend aranmaz, üstte demo bilgisi gösterilir.
+  const IS_STATIC_DEMO = window.WSTGAuth.isStaticDemo(window.location);
 
   const DATA_FILES = {
     tr: "data/wstg-checklist.tr.json",
@@ -111,6 +113,8 @@
       noSessionsYet: "Henüz kayıtlı test oturumu yok. Yeni bir oturum başlatın.",
       dbOnline: "Veritabanı bağlı",
       dbOffline: "Veritabanı yok — backend/app.py çalıştırın (yerel modda devam edilecek)",
+      demoBanner: "Canlı demo: yalnızca checklist çalışır ve ilerlemeniz bu tarayıcıda saklanır. Projeler, bulgular, raporlar ve AI için uygulamayı kendi bilgisayarınızda çalıştırın.",
+      demoBannerLink: "Kurulum",
       sessionCreated: "Oturum oluşturuldu ve DB'ye kaydedildi",
       sessionDeleted: "Oturum silindi",
       sessionDeleteConfirm: "Bu oturumu ve tüm test sonuçlarını silmek istiyor musunuz? Bu işlem geri alınamaz.",
@@ -836,6 +840,8 @@
       noSessionsYet: "No saved test sessions yet. Start a new one.",
       dbOnline: "Database connected",
       dbOffline: "No database — run backend/app.py (continuing in local mode)",
+      demoBanner: "Live demo: only the checklist works and your progress is saved in this browser. Run the app on your own computer for projects, findings, reports and AI.",
+      demoBannerLink: "Setup",
       sessionCreated: "Session created and saved to the database",
       sessionDeleted: "Session deleted",
       sessionDeleteConfirm: "Delete this session and all its test results? This cannot be undone.",
@@ -2034,7 +2040,9 @@
   }
 
   function loadLang(){
-    try{ return localStorage.getItem(LANG_KEY) || "tr"; }catch(e){ return "tr"; }
+    // Canlı demoda dil seçilmemişse tarayıcı dili kullanılır (Türkçe dışı -> İngilizce).
+    const fallback = (IS_STATIC_DEMO && !/^tr\b/i.test(navigator.language || "")) ? "en" : "tr";
+    try{ return localStorage.getItem(LANG_KEY) || fallback; }catch(e){ return fallback; }
   }
   function saveLang(l){
     try{ localStorage.setItem(LANG_KEY, l); }catch(e){}
@@ -3062,6 +3070,7 @@
   // Backend var mı ve oturum durumu ne? Backend yoksa null döner (yerel mod).
   // /auth/status giriş istemeyen tek okuma ucudur; /sessions artık 401 döner.
   function checkDb(){
+    if(IS_STATIC_DEMO) return Promise.resolve(null);
     const ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
     const timer = ctrl ? setTimeout(()=>ctrl.abort(), 2500) : null;
     return fetch(API_BASE + '/auth/status', { signal: ctrl ? ctrl.signal : undefined, credentials: 'include' })
@@ -8405,6 +8414,10 @@
 
   applyTheme();
   applyI18n();
+  if(IS_STATIC_DEMO){
+    const demoBanner = document.getElementById('demoBanner');
+    if(demoBanner) demoBanner.hidden = false;
+  }
 
   Promise.all([loadData(), loadTop10Data()]).then(()=>{
     if(!DATA) return;

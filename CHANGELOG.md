@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- Live demo on GitHub Pages. It serves only the frontend, so it runs in checklist-only mode with progress saved in the browser, shows a banner that explains this, does not look for a backend, and follows the browser language when none is chosen.
+
 ## [1.0.0] - 2026-11-11
 
 First tagged release. It covers the work from August to November 2026.
@@ -50,4 +56,5 @@ First tagged release. It covers the work from August to November 2026.
 - Licensing clarified: code under MIT, `data/` under CC BY-SA 4.0, and the project is independent from OWASP.
 - README in English and Turkish, with a demo GIF and screenshots; contributing guide, security policy and issue templates.
 
+[Unreleased]: https://github.com/enesbaldemir/WSTG-Copilot/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/enesbaldemir/WSTG-Copilot/releases/tag/v1.0.0
