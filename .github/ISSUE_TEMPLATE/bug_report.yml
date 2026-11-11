@@ -1,0 +1,52 @@
+name: Bug report
+description: Something doesn't work as expected
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. **Security vulnerabilities must not be reported here**; see [SECURITY.md](https://github.com/enesbaldemir/WSTG-Copilot/blob/main/SECURITY.md).
+        Please remove any real target names, findings, evidence or API keys from what you paste.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe the problem and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open ...
+        2. Click ...
+        3. See ...
+    validations:
+      required: true
+  - type: dropdown
+    id: setup
+    attributes:
+      label: How do you run it?
+      options:
+        - Docker (docker compose)
+        - Python backend + static file server
+        - Checklist only (static file server, no backend)
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: Output of `git rev-parse --short HEAD`, or the release you use.
+  - type: input
+    id: environment
+    attributes:
+      label: Operating system and browser
+      placeholder: Windows 11, Chrome 131
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error ID or logs
+      description: If the interface showed an error ID, paste the matching lines from the backend terminal.
+      render: text
