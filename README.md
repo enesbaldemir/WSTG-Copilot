@@ -7,7 +7,7 @@ An independent pentest workspace based on the OWASP® Web Security Testing Guide
 ![AI](https://img.shields.io/badge/AI-multi--provider%20%2B%20BYOK-8b5cf6)
 ![License](https://img.shields.io/badge/license-MIT%20%2B%20CC%20BY--SA%204.0-green)
 
-**English** · **[Türkçe](README.tr.md)**
+**[Live demo](https://enesbaldemir.github.io/WSTG-Copilot/)** · **English** · **[Türkçe](README.tr.md)**
 
 ![A short tour: WSTG tests, a test's steps, findings and the report page](docs/images/demo.gif)
 
@@ -30,6 +30,8 @@ An independent pentest workspace based on the OWASP® Web Security Testing Guide
 - [License](#license)
 
 ## Quick Start
+
+To look around first, open the **[live demo](https://enesbaldemir.github.io/WSTG-Copilot/)**. It runs the checklist in your browser; projects, findings, reports and AI need the local setup below.
 
 With Docker (Docker Compose v2.24 or later):
 

@@ -270,6 +270,9 @@ code, .mono{ font-family:var(--mono); font-size:.92em; }
 
 /* main */
 .main{ min-width:0; padding:30px 32px 48px; }
+.demo-banner{ display:flex; flex-wrap:wrap; align-items:center; gap:6px 12px; max-width:1480px; margin:0 0 20px; padding:10px 14px; border:1px solid var(--amber-border); border-radius:8px; background:var(--amber-soft); color:var(--text-2); font-size:13px; line-height:1.5; }
+.demo-banner[hidden]{ display:none; }
+.demo-banner a{ color:var(--accent-text); font-weight:600; }
 .page{ display:none; max-width:1480px; }
 .page.active{ display:block; animation:fade .15s ease; }
 @keyframes fade{ from{ opacity:.4; } to{ opacity:1; } }

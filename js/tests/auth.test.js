@@ -42,3 +42,13 @@ test('every backend error code maps to an i18n key present in both languages', (
   }
   assert.equal(A.errorKey('nope'), null);
 });
+
+test('only GitHub Pages hosts are treated as the static demo', () => {
+  assert.equal(A.isStaticDemo({ protocol: 'https:', hostname: 'enesbaldemir.github.io' }), true);
+  assert.equal(A.isStaticDemo({ protocol: 'https:', hostname: 'ENESBALDEMIR.GITHUB.IO' }), true);
+  assert.equal(A.isStaticDemo({ protocol: 'http:', hostname: '127.0.0.1' }), false);
+  assert.equal(A.isStaticDemo({ protocol: 'http:', hostname: 'localhost' }), false);
+  assert.equal(A.isStaticDemo({ protocol: 'https:', hostname: 'github.io.example.com' }), false);
+  assert.equal(A.isStaticDemo({ protocol: 'file:', hostname: '' }), false);
+  assert.equal(A.isStaticDemo(undefined), false);
+});

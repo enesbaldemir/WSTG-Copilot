@@ -7,7 +7,7 @@ OWASP® Web Security Testing Guide (WSTG) v4.2 tabanlı, bağımsız bir pentest
 ![AI](https://img.shields.io/badge/AI-multi--provider%20%2B%20BYOK-8b5cf6)
 ![License](https://img.shields.io/badge/license-MIT%20%2B%20CC%20BY--SA%204.0-green)
 
-**[English](README.md)** · **Türkçe**
+**[Canlı demo](https://enesbaldemir.github.io/WSTG-Copilot/)** · **[English](README.md)** · **Türkçe**
 
 ![Kısa bir tur: WSTG testleri, bir testin adımları, bulgular ve rapor sayfası](docs/images/demo.gif)
 
@@ -30,6 +30,8 @@ OWASP® Web Security Testing Guide (WSTG) v4.2 tabanlı, bağımsız bir pentest
 - [Lisans](#lisans)
 
 ## Hızlı Başlangıç
+
+Önce göz atmak için **[canlı demoyu](https://enesbaldemir.github.io/WSTG-Copilot/)** açın. Demo checklist'i tarayıcınızda çalıştırır; projeler, bulgular, raporlar ve AI için aşağıdaki yerel kurulum gerekir.
 
 Docker ile (Docker Compose v2.24 veya üzeri):
 

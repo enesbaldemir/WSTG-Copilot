@@ -58,5 +58,11 @@
     return status === 401 && !!body && body.code === 'auth_required';
   }
 
-  return { API_PORT, apiBaseFor, errorKey, isSessionLost, ERROR_KEYS };
+  // Statik barındırma (GitHub Pages canlı demosu): backend yoktur, bu yüzden
+  // backend aranmaz ve uygulama yalnızca checklist modunda çalışır.
+  function isStaticDemo(loc){
+    return !!(loc && typeof loc.hostname === 'string' && /\.github\.io$/i.test(loc.hostname));
+  }
+
+  return { API_PORT, apiBaseFor, errorKey, isSessionLost, isStaticDemo, ERROR_KEYS };
 });
